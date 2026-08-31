@@ -1,0 +1,22 @@
+# Kansai Surfer KS - Git ignore rules
+
+# Secrets / private runtime data
+secret_data/
+.env
+.env.*
+config/secrets.php
+config.secret.php
+
+# Logs
+*.log
+
+# Backups / archives
+*.zip
+*.tar
+*.tar.gz
+
+# Temporary / editor / OS files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
