@@ -31,19 +31,37 @@ All values must be copied from the verified hosting configuration. Do not guess 
 
 ## `nami` configuration
 
+The `nami` environment is the first deployment target used for connection testing. It must remain separate from production.
+
 Secrets:
 
+- `KS_NAMI_FTP_HOST`
 - `KS_NAMI_FTP_USER`
 - `KS_NAMI_FTP_PASSWORD`
 
 Variables:
 
-- `KS_NAMI_FTP_HOST`
-- `KS_NAMI_FTP_PORT`
-- `KS_NAMI_FTP_REMOTE_DIR`
-- `KS_NAMI_BASE_URL`
+- `KS_NAMI_FTP_SCHEME` = `ftp` for Lolipop explicit FTPS
+- `KS_NAMI_FTP_PORT` = `21`
+- `KS_NAMI_FTP_REMOTE_DIR` = `/nami`
+- `KS_NAMI_BASE_URL` = `https://nami.rss7.net/`
 
-All values must be copied from the verified hosting configuration. `nami` uploads must never target the production directory.
+The Lolipop public upload folder for `nami.rss7.net` has been verified as `nami`, so the FTP-session remote path is `/nami`.
+
+### Manual connection test
+
+`.github/workflows/test-nami-ftp.yml` is manual-only (`workflow_dispatch`). It does not deploy the site.
+
+The workflow:
+
+1. requires the GitHub Environment named `nami`;
+2. fails closed unless the URL is exactly `https://nami.rss7.net/` and the remote directory is exactly `/nami`;
+3. connects using explicit FTPS with TLS forced by `lftp`;
+4. writes one uniquely named temporary probe file into `/nami`;
+5. immediately deletes that probe file;
+6. never mirrors or deletes existing site content.
+
+This provides a real write-permission check without treating the incomplete repository as deployable site source.
 
 ## Safety rules
 
@@ -54,7 +72,8 @@ All values must be copied from the verified hosting configuration. `nami` upload
 - Do not use destructive mirror/delete synchronization unless it is separately reviewed and explicitly approved.
 - Keep production deployment manual unless the project owner explicitly approves a change.
 - A merge to `main` does not by itself mean production deployment.
-- Any future `nami` deployment workflow should be manual-only by default until separately reviewed.
+- `nami` workflows must remain manual-only unless separately reviewed.
+- Do not create a production upload workflow until the repository contains the audited production-equivalent source and its upload exclusions are reviewed.
 
 ## Repository policy
 
