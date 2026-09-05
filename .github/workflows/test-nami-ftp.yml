@@ -1,0 +1,73 @@
+name: Test nami FTP
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kansai-surfer-nami-ftp-test
+  cancel-in-progress: false
+
+jobs:
+  test-nami-ftp:
+    runs-on: ubuntu-latest
+    environment: nami
+    env:
+      DEPLOY_SCHEME: ${{ vars.KS_NAMI_FTP_SCHEME }}
+      DEPLOY_PORT: ${{ vars.KS_NAMI_FTP_PORT }}
+      DEPLOY_DIR: ${{ vars.KS_NAMI_FTP_REMOTE_DIR }}
+      SITE_URL: ${{ vars.KS_NAMI_BASE_URL }}
+
+    steps:
+      - name: Validate nami configuration
+        shell: bash
+        env:
+          DEPLOY_HOST: ${{ secrets.KS_NAMI_FTP_HOST }}
+          DEPLOY_USER: ${{ secrets.KS_NAMI_FTP_USER }}
+          DEPLOY_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          [[ -n "$DEPLOY_HOST" && -n "$DEPLOY_USER" && -n "$DEPLOY_PASSWORD" ]] \
+            || { echo "nami FTP secrets are incomplete."; exit 1; }
+          [[ "$DEPLOY_SCHEME" =~ ^(ftp|ftps)$ ]] \
+            || { echo "nami FTP scheme is invalid."; exit 1; }
+          [[ "$DEPLOY_PORT" =~ ^[0-9]{1,5}$ ]] \
+            || { echo "nami FTP port is invalid."; exit 1; }
+          [[ "$DEPLOY_DIR" == "/nami" ]] \
+            || { echo "nami remote directory must be exactly /nami."; exit 1; }
+          [[ "${SITE_URL%/}" == "https://nami.rss7.net" ]] \
+            || { echo "nami base URL must be https://nami.rss7.net/."; exit 1; }
+
+      - name: Install lftp
+        run: sudo apt-get update && sudo apt-get install -y lftp
+
+      - name: Verify nami write access with temporary probe
+        shell: bash
+        env:
+          DEPLOY_HOST: ${{ secrets.KS_NAMI_FTP_HOST }}
+          DEPLOY_USER: ${{ secrets.KS_NAMI_FTP_USER }}
+          DEPLOY_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          probe="ks-github-probe-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.txt"
+          printf 'Kansai Surfer KS nami FTP probe. Safe to delete.\n' > "/tmp/$probe"
+
+          lftp <<LFTP
+          set cmd:fail-exit yes
+          set net:max-retries 2
+          set net:timeout 20
+          set ssl:verify-certificate yes
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          open -u "$DEPLOY_USER","$DEPLOY_PASSWORD" "$DEPLOY_SCHEME://$DEPLOY_HOST:$DEPLOY_PORT"
+          cd "$DEPLOY_DIR"
+          put "/tmp/$probe" -o "$probe"
+          rm "$probe"
+          bye
+          LFTP
+
+          echo "nami FTP connection and write/delete probe succeeded."
