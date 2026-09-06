@@ -27,8 +27,8 @@ The durable visual/interaction rules are now recorded in `PROJECT_SPEC.md` under
 Key decisions:
 - Readability is the top priority.
 - Dark / near-black background with white typography.
-- Top Hero uses the approved sunrise/ocean/surfer image with text layered as HTML, not baked into the image.
-- Mobile and desktop use optimized crops from the same approved Hero scene.
+- Top Hero uses the approved sunrise/ocean/surfer visual direction with text layered as HTML, not baked into the image.
+- Mobile and desktop use optimized crops from the same approved Hero scene after the binary source asset is imported.
 - Transparent Hero header transitions to a fixed dark header on scroll.
 - Add a minimal scroll-position indicator.
 - H2 headings reveal from left to right.
@@ -54,8 +54,14 @@ Preparation branch:
 Purpose:
 - Save the confirmed redesign specification.
 - Add the Claude implementation trigger workflow.
-- Save optimized approved top-Hero assets.
+- Define the approved Hero asset contract and target filenames under `prototype/ks-redesign/assets/README.md`.
 - Create an implementation Issue after this preparation change is merged.
+
+Current media state:
+- The approved top-Hero visual has been selected in the design conversation.
+- Its binary image file is not yet committed to this Repository.
+- Do not claim the approved photograph exists in Git until that binary asset is actually imported.
+- The Isonoura-specific Hero image is still pending approval/import.
 
 ## Next action
 1. Complete and review the preparation branch.
@@ -65,8 +71,9 @@ Purpose:
 5. Trigger `@claude-implement` and verify the actual GitHub Actions result.
 6. If Claude authentication is unavailable in this repository, record that exact blocker; do not invent a successful run.
 7. Until audited production source is imported, keep code work isolated as a prototype and do not deploy it to production.
-8. When a safe prototype exists, test mobile/desktop readability, scroll header, position indicator, H2 reveal, card motion, console errors, and image loading performance.
-9. Only after the pilot standard is approved should the design be rolled out to the remaining spot pages.
+8. Import the approved top-Hero binary asset before treating the visual prototype as final; keep the Isonoura Hero slot ready until an Isonoura-specific asset is approved.
+9. When a safe prototype exists, test mobile/desktop readability, scroll header, position indicator, H2 reveal, card motion, console errors, and image loading performance.
+10. Only after the pilot standard is approved should the design be rolled out to the remaining spot pages.
 
 ## Deployment milestone remains separate
 The existing `nami` deployment milestone is still valid and is not silently replaced by this redesign work:
