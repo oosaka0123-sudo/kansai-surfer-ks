@@ -1,0 +1,54 @@
+name: Test nami FTPS read-only
+
+on:
+  push:
+    branches:
+      - test/lolipop-ftps-connection-20260906
+
+permissions:
+  contents: read
+
+jobs:
+  test-nami-ftps-readonly:
+    runs-on: ubuntu-latest
+    env:
+      DEPLOY_HOST: ftp.lolipop.jp
+      DEPLOY_SCHEME: ftp
+      DEPLOY_PORT: "21"
+      DEPLOY_DIR: /nami
+    steps:
+      - name: Validate nami secrets
+        env:
+          DEPLOY_USER: ${{ secrets.KS_NAMI_FTP_USER }}
+          DEPLOY_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          [[ -n "$DEPLOY_USER" && -n "$DEPLOY_PASSWORD" ]] || { echo "::error::nami FTP user/password secrets are incomplete."; exit 1; }
+
+      - name: Install lftp
+        run: sudo apt-get update && sudo apt-get install -y lftp
+
+      - name: Verify FTPS login and read-only access
+        env:
+          DEPLOY_USER: ${{ secrets.KS_NAMI_FTP_USER }}
+          DEPLOY_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          lftp <<LFTP
+          set cmd:fail-exit yes
+          set net:max-retries 2
+          set net:timeout 20
+          set ssl:verify-certificate yes
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          open -u "$DEPLOY_USER","$DEPLOY_PASSWORD" "$DEPLOY_SCHEME://$DEPLOY_HOST:$DEPLOY_PORT"
+          cd "$DEPLOY_DIR"
+          pwd
+          cls -1 | head -n 5
+          bye
+          LFTP
+          echo "nami FTPS authentication and read-only directory access succeeded."
+          echo "No upload, delete, mirror, rename, mkdir, or file modification was performed."
