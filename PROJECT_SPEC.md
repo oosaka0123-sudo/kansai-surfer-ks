@@ -95,7 +95,7 @@ The target is: `読みやすいのに、圧倒的にかっこいい`.
 ### Top page Hero
 - Keep the existing top-page main heading wording as the primary H1: `関西サーフィン波情報｜磯ノ浦・生見・国府の浜・伊良湖の無料波予報`.
 - Keep the current explanatory information; redesign its presentation rather than replacing it with invented surf values.
-- Use the approved sunrise/ocean/surfer Hero image asset stored under `prototype/ks-redesign/assets/`.
+- The approved sunrise/ocean/surfer Hero visual direction is fixed. The asset contract and planned filenames are documented under `prototype/ks-redesign/assets/README.md`; the binary source asset itself must be imported before the prototype claims the approved photograph is present.
 - The Hero image itself must contain no embedded title or UI text. All visible page text must be real HTML layered over the image.
 - Mobile and desktop use separate optimized crops derived from the same approved scene.
 - Use a dark gradient/overlay so white text stays readable across the photograph.
