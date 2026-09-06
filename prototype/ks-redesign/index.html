@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#05080b">
+  <meta name="description" content="関西サーファーKSのトップページ redesign preview。関西の波情報を読みやすく、素早く確認するためのテストデザインです。">
+  <title>関西サーフィン波情報｜磯ノ浦・生見・国府の浜・伊良湖の無料波予報</title>
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="script.js"></script>
+</head>
+<body data-page="top">
+  <a class="skip-link" href="#main">本文へ移動</a>
+  <header class="site-header" data-header>
+    <a class="brand" href="index.html" aria-label="Kansai Surfer KS ホーム">
+      <span class="brand-mark">KS</span><span class="brand-copy">KANSAI SURFER</span>
+    </a>
+    <button class="menu-button" type="button" aria-expanded="false" aria-controls="site-nav" data-menu-button>
+      <span></span><span></span><span></span><span class="sr-only">メニュー</span>
+    </button>
+    <nav class="site-nav" id="site-nav" aria-label="メインナビゲーション" data-nav>
+      <a href="#ranking">RANKING</a>
+      <a href="#spots">SPOTS</a>
+      <a href="#forecast">FORECAST</a>
+      <a href="isonoura.html">ISONOURA</a>
+    </nav>
+  </header>
+
+  <aside class="section-position" aria-hidden="true" data-position>
+    <span class="position-number">01</span>
+    <span class="position-line"><i></i></span>
+    <span class="position-label">TOP</span>
+  </aside>
+
+  <main id="main">
+    <section class="hero hero-top section-watch" data-section="TOP" data-section-number="01">
+      <div class="hero-media hero-photo-hook" aria-hidden="true"></div>
+      <div class="hero-shade"></div>
+      <div class="hero-inner">
+        <p class="eyebrow">Kansai Surf Forecast / Free</p>
+        <h1>関西サーフィン波情報｜<br>磯ノ浦・生見・国府の浜・伊良湖の無料波予報</h1>
+        <p class="hero-lead">朝の数分で、今日どこへ向かうか。関西から東海・四国まで、波予報とスポット情報をスマホで素早く確認。</p>
+        <div class="hero-actions">
+          <a class="button button-primary" href="#ranking">波ランキングを見る</a>
+          <a class="text-link" href="isonoura.html">磯ノ浦を見る <span aria-hidden="true">→</span></a>
+        </div>
+      </div>
+      <a class="scroll-cue" href="#ranking" aria-label="次のセクションへ"><span>SCROLL</span><i></i></a>
+    </section>
+
+    <section class="section section-watch" id="ranking" data-section="RANKING" data-section-number="02">
+      <div class="section-heading reveal-title">
+        <p class="eyebrow">Quick Check</p>
+        <h2>今日の関西波ランキング</h2>
+        <p>リアルデータ接続前のデザインプレビューです。順位・サイズ・点数などのライブ値は、この試作画面では作成しません。</p>
+      </div>
+      <div class="ranking-shell motion-card">
+        <div class="ranking-empty">
+          <span class="status-dot"></span>
+          <div>
+            <strong>LIVE DATA SLOT</strong>
+            <p>本番のランキングデータを接続すると、ここに実データだけを表示します。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-watch" id="spots" data-section="SPOTS" data-section-number="03">
+      <div class="section-heading reveal-title">
+        <p class="eyebrow">Surf Spots</p>
+        <h2>行きたい海へ、最短で。</h2>
+        <p>情報を探す時間を減らし、スポット選びに必要な導線をシンプルにまとめます。</p>
+      </div>
+      <div class="spot-grid">
+        <a class="spot-card motion-card" href="isonoura.html"><span>WAKAYAMA</span><strong>磯ノ浦</strong><em>ISONOURA</em></a>
+        <div class="spot-card motion-card muted"><span>MIE</span><strong>国府の浜</strong><em>COMING AFTER PILOT</em></div>
+        <div class="spot-card motion-card muted"><span>KOCHI</span><strong>生見</strong><em>COMING AFTER PILOT</em></div>
+        <div class="spot-card motion-card muted"><span>AICHI</span><strong>伊良湖</strong><em>COMING AFTER PILOT</em></div>
+      </div>
+    </section>
+
+    <section class="section section-watch" id="forecast" data-section="FORECAST" data-section-number="04">
+      <div class="section-heading reveal-title">
+        <p class="eyebrow">Forecast Flow</p>
+        <h2>必要な情報を、上から順に。</h2>
+      </div>
+      <div class="feature-list">
+        <article class="feature-row motion-card"><span>01</span><div><h3>ランキング</h3><p>最初に候補を絞る。朝の判断を速くする入口。</p></div></article>
+        <article class="feature-row motion-card"><span>02</span><div><h3>スポット詳細</h3><p>風・波・現地情報などをひとつの流れで確認。</p></div></article>
+        <article class="feature-row motion-card"><span>03</span><div><h3>安全・ニュース</h3><p>台風、津波、事故、コンペ情報など重要情報は状況に応じて優先表示。</p></div></article>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div><span class="brand-mark">KS</span><p>Kansai Surfer KS — NAMI REPORT</p></div>
+    <p class="preview-note">NAMI TEST PREVIEW / NOT PRODUCTION</p>
+  </footer>
+</body>
+</html>
