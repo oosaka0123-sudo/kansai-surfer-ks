@@ -56,6 +56,34 @@ The workflow:
 
 This provides a real write-permission check without treating the incomplete repository as deployable site source.
 
+### Isolated redesign preview
+
+`.github/workflows/deploy-nami-preview.yml` is a manual owner-only preview deployment path for the isolated redesign prototype under `prototype/ks-redesign/`.
+
+Trigger phrase:
+
+- `@deploy-nami-preview`
+
+The workflow runs only when the repository owner posts the trigger on a GitHub Issue. It is not triggered by pushes or merges.
+
+Preview destination:
+
+- FTP path: `/nami/ks-redesign`
+- Public URL: `https://nami.rss7.net/ks-redesign/`
+- Isonoura preview: `https://nami.rss7.net/ks-redesign/isonoura.html`
+
+Safety properties:
+
+1. deployment source is restricted to `prototype/ks-redesign/`;
+2. required prototype files must exist before upload;
+3. the host, port, `/nami` root, `ks-redesign` subdirectory, and public preview URL are hard-checked;
+4. upload uses the existing `KS_NAMI_*` secrets and explicit FTPS/TLS settings;
+5. remote delete/mirror-delete behavior is not used;
+6. production files and the production FTP target are never referenced;
+7. after upload, GitHub Actions verifies both public preview URLs return HTML successfully.
+
+This preview path is intentionally separate from a future audited full-site deployment to `nami`.
+
 ## Safety rules
 
 - Never commit real FTP/FTPS credentials, passwords, tokens, or server-only secret values.
