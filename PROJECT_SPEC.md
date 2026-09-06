@@ -64,6 +64,92 @@ Next implementation milestone:
 - The first site deployment must be non-destructive and must fail closed if the target is anything other than the verified `nami` destination.
 - Verify `https://nami.rss7.net/` after deployment before designing or enabling any production deployment flow.
 
+## Design redesign pilot — Top + Isonoura only
+
+This pilot establishes the visual and interaction standard before any wider rollout.
+
+### Scope
+- Implement only the top page and the Isonoura page first.
+- Do not redesign the other surf-point pages during this pilot.
+- The current repository does not yet contain the audited production-equivalent site source. Until that source is safely imported, redesign work must stay isolated as a non-production prototype and must not be treated as a production replacement.
+- Production deployment remains manual and out of scope for the pilot.
+
+### Priority order
+1. Readability
+2. Display speed
+3. Mobile usability
+4. Fast access to surf information
+5. Design quality
+6. Motion and interaction
+
+The target is: `読みやすいのに、圧倒的にかっこいい`.
+
+### Visual direction
+- Dark / near-black background.
+- White or soft-white typography.
+- Ocean photography as the primary visual material.
+- Cyan / ocean-blue accent only where useful; do not overuse it.
+- Modern, editorial, premium, surf-culture-oriented visual language.
+- Avoid generic AI-template styling such as excessive rounded cards, purple gradients, repeated glassmorphism, icon overload, and identical fade-up effects everywhere.
+
+### Top page Hero
+- Keep the existing top-page main heading wording as the primary H1: `関西サーフィン波情報｜磯ノ浦・生見・国府の浜・伊良湖の無料波予報`.
+- Keep the current explanatory information; redesign its presentation rather than replacing it with invented surf values.
+- Use the approved sunrise/ocean/surfer Hero image asset stored under `prototype/ks-redesign/assets/`.
+- The Hero image itself must contain no embedded title or UI text. All visible page text must be real HTML layered over the image.
+- Mobile and desktop use separate optimized crops derived from the same approved scene.
+- Use a dark gradient/overlay so white text stays readable across the photograph.
+- Motion should be subtle: very slow zoom or pan, not a fast slider and not a blocking video.
+
+### Header interaction
+- At the top of the Hero, use a transparent or near-transparent header with white text/icons.
+- As the user scrolls, transition naturally to a fixed dark header with clear navigation.
+- Avoid layout jumps and CLS during the transition.
+
+### Scroll position indicator
+- Provide a minimal scroll-linked position indicator so users can understand the current section.
+- Preferred treatment: section number + thin vertical line + short section name.
+- It must not obstruct content on small screens.
+
+### Heading motion
+- H2 headings should reveal from left to right when they enter the viewport.
+- The effect must be quick enough that information is never delayed for style.
+- After reveal, the heading remains normally readable.
+- Support `prefers-reduced-motion`.
+
+### Card / content motion
+- Cards and content blocks may reveal with restrained `transform`, `opacity`, clipping/masking, or small stagger effects.
+- Do not make every block use the same generic animation.
+- Motion must help rhythm and hierarchy without delaying information.
+
+### Isonoura page
+- `1 page = 1 spot = 1 primary Hero photo`.
+- The Isonoura page must use an Isonoura-specific approved photo; do not reuse the top-page Hero just to fill the space.
+- Do not rotate through photos from other spots on the Isonoura page.
+- Do not add score, points, wave size, or other surf values to the Hero unless they come from the real existing data flow and are part of the information design.
+- Preserve existing Isonoura data/functions and redesign the presentation around them after the production-equivalent source is imported.
+
+### Performance requirements
+- No loading splash screen.
+- Core title/navigation/information must render immediately from HTML.
+- Hero media must not wait on runtime AI or API generation.
+- Prefer CSS for motion; add JavaScript only when it creates real value.
+- Prefer AVIF with WebP fallback where practical.
+- Use responsive images / `picture` / `srcset` where appropriate.
+- Hero image is high priority; non-Hero imagery should be lazy-loaded when appropriate.
+- Keep layout dimensions explicit to reduce CLS.
+- Target Core Web Vitals remains LCP <= 2.5 s, INP <= 200 ms, CLS <= 0.1 where practical.
+
+### Agent / orchestration policy for this pilot
+- GPT/ChatGPT acts as project manager and GitHub coordinator when connected.
+- Claude Code is the preferred primary implementation agent when the Project-scoped connection is verified.
+- Jules is suitable for repetitive cross-file work after the pilot standard is approved.
+- Codex is suitable for independent JavaScript/performance/responsive verification when available.
+- GitHub Copilot is suitable for PR review when available.
+- Do not claim an agent was used unless its task actually ran.
+- Use GitHub as SSOT and keep one active implementation owner for the same scope.
+- The owner-only `@claude-implement` GitHub workflow may be used to start Claude Code implementation tasks after the workflow and repository authentication are verified.
+
 ## Content operations
 Primary operational output is short Instagram Reels copy for Kansai surf conditions.
 
