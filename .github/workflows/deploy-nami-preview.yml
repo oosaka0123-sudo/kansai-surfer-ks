@@ -77,6 +77,48 @@ jobs:
       - name: Install lftp
         run: sudo apt-get update && sudo apt-get install -y lftp
 
+      - name: Ensure isolated preview directory exists
+        shell: bash
+        env:
+          DEPLOY_USER: ${{ secrets.KS_NAMI_FTP_USER }}
+          DEPLOY_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+
+          # Lolipop rejects lftp's recursive `mkdir -p` implementation with
+          # `SITE MKDIR`. First test whether the directory already exists;
+          # otherwise create exactly one child directory with standard FTP MKD.
+          if lftp <<LFTP
+          set cmd:fail-exit yes
+          set net:max-retries 2
+          set net:timeout 20
+          set ssl:verify-certificate yes
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          open -u "$DEPLOY_USER","$DEPLOY_PASSWORD" "$DEPLOY_SCHEME://$DEPLOY_HOST:$DEPLOY_PORT"
+          cd "$DEPLOY_ROOT/$DEPLOY_SUBDIR"
+          bye
+          LFTP
+          then
+            echo "Preview directory already exists."
+          else
+            echo "Preview directory does not exist yet; creating it with standard FTP MKD."
+            lftp <<LFTP
+          set cmd:fail-exit yes
+          set net:max-retries 2
+          set net:timeout 20
+          set ssl:verify-certificate yes
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          open -u "$DEPLOY_USER","$DEPLOY_PASSWORD" "$DEPLOY_SCHEME://$DEPLOY_HOST:$DEPLOY_PORT"
+          cd "$DEPLOY_ROOT"
+          mkdir "$DEPLOY_SUBDIR"
+          cd "$DEPLOY_SUBDIR"
+          bye
+          LFTP
+          fi
+
       - name: Upload isolated preview without remote deletion
         shell: bash
         env:
@@ -94,7 +136,6 @@ jobs:
           set ftp:ssl-force true
           set ftp:ssl-protect-data true
           open -u "$DEPLOY_USER","$DEPLOY_PASSWORD" "$DEPLOY_SCHEME://$DEPLOY_HOST:$DEPLOY_PORT"
-          mkdir -p "$DEPLOY_ROOT/$DEPLOY_SUBDIR"
           mirror --reverse --verbose --parallel=2 --no-perms --exclude-glob README.md "$SOURCE_DIR" "$DEPLOY_ROOT/$DEPLOY_SUBDIR"
           bye
           LFTP
