@@ -50,3 +50,5 @@ jobs:
 
           echo "Kansai production FTPS authentication and read-only /kansai access succeeded."
           echo "No upload, delete, mirror, rename, mkdir, or file modification was performed."
+
+# Triggered for one-time production connection verification only.
