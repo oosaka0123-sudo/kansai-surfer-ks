@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#05080b">
+  <meta name="description" content="磯ノ浦の波情報ページ redesign preview。現地レポート、予報、ライブカメラ、スポット情報の情報設計を確認するテスト画面です。">
+  <title>磯ノ浦 波情報｜Kansai Surfer KS</title>
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="script.js"></script>
+</head>
+<body data-page="isonoura">
+  <a class="skip-link" href="#main">本文へ移動</a>
+  <header class="site-header" data-header>
+    <a class="brand" href="index.html" aria-label="Kansai Surfer KS ホーム">
+      <span class="brand-mark">KS</span><span class="brand-copy">KANSAI SURFER</span>
+    </a>
+    <button class="menu-button" type="button" aria-expanded="false" aria-controls="site-nav" data-menu-button>
+      <span></span><span></span><span></span><span class="sr-only">メニュー</span>
+    </button>
+    <nav class="site-nav" id="site-nav" aria-label="メインナビゲーション" data-nav>
+      <a href="index.html">HOME</a>
+      <a href="#advice">ADVICE</a>
+      <a href="#forecast">FORECAST</a>
+      <a href="#info">INFO</a>
+    </nav>
+  </header>
+
+  <aside class="section-position" aria-hidden="true" data-position>
+    <span class="position-number">01</span><span class="position-line"><i></i></span><span class="position-label">ISONOURA</span>
+  </aside>
+
+  <main id="main">
+    <section class="hero hero-spot section-watch" data-section="ISONOURA" data-section-number="01">
+      <div class="spot-hero-fallback" aria-hidden="true"><span>ISONOURA PHOTO SLOT</span></div>
+      <div class="hero-shade"></div>
+      <div class="hero-inner hero-inner-bottom">
+        <p class="eyebrow">Wakayama / Isonoura</p>
+        <h1>磯ノ浦</h1>
+        <p class="hero-lead">波予報、現地レポート、ライブカメラ、スポット情報を一つのページで。磯ノ浦専用写真は承認後にこのHeroへ差し替えます。</p>
+      </div>
+    </section>
+
+    <section class="section section-watch" id="advice" data-section="ADVICE" data-section-number="02">
+      <div class="section-heading reveal-title"><p class="eyebrow">Surf Advice</p><h2>今日のチェックポイント</h2><p>実際の予報・現地データを接続する領域です。試作では数値やコンディションを作りません。</p></div>
+      <div class="data-placeholder motion-card"><span class="status-dot"></span><strong>ADVICE DATA SLOT</strong><p>本番データ接続後、実データのみ表示。</p></div>
+    </section>
+
+    <section class="section section-watch" id="reports" data-section="REPORTS" data-section-number="03">
+      <div class="section-heading reveal-title"><p class="eyebrow">Local Report</p><h2>現地レポート</h2></div>
+      <div class="split-grid">
+        <article class="content-panel motion-card"><span class="panel-kicker">USER REPORT</span><h3>現地投稿</h3><p>承認済みLINE現地レポートなどを表示する想定の領域。</p></article>
+        <article class="content-panel motion-card"><span class="panel-kicker">LIVE CAMERA</span><h3>ライブカメラ</h3><p>既存のライブカメラ導線を、見失いにくい位置へ配置。</p></article>
+      </div>
+    </section>
+
+    <section class="section section-watch" id="forecast" data-section="FORECAST" data-section-number="04">
+      <div class="section-heading reveal-title"><p class="eyebrow">Wave Forecast</p><h2>時間別・週間予報</h2><p>数字を捏造せず、データ表示の器だけを確認できます。</p></div>
+      <div class="forecast-frame motion-card">
+        <div class="forecast-tabs" role="tablist" aria-label="予報表示サンプル"><button type="button" class="active">時間別</button><button type="button">週間</button></div>
+        <div class="forecast-empty"><strong>FORECAST DATA SLOT</strong><p>波・風・天気などの実データ接続先。</p></div>
+      </div>
+    </section>
+
+    <section class="section section-watch" id="info" data-section="INFO" data-section-number="05">
+      <div class="section-heading reveal-title"><p class="eyebrow">Spot Guide</p><h2>磯ノ浦を知る</h2></div>
+      <div class="info-grid">
+        <article class="content-panel motion-card"><span class="panel-kicker">SPOT INFO</span><h3>スポット情報</h3><p>地形・設備・注意事項など、既存情報を整理して掲載する領域。</p></article>
+        <article class="content-panel motion-card"><span class="panel-kicker">MAP</span><h3>アクセス・地図</h3><p>既存マップ導線をここへ集約。</p></article>
+        <article class="content-panel motion-card"><span class="panel-kicker">SNS</span><h3>SNS / 関連情報</h3><p>Instagramや関連コンテンツへの導線を整理。</p></article>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer"><div><span class="brand-mark">KS</span><p>Kansai Surfer KS — Isonoura</p></div><p class="preview-note">NAMI TEST PREVIEW / NOT PRODUCTION</p></footer>
+</body>
+</html>
