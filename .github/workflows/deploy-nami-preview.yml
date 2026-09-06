@@ -1,0 +1,112 @@
+name: Deploy KS redesign preview to nami
+
+on:
+  issue_comment:
+    types:
+      - created
+
+permissions:
+  contents: read
+  issues: read
+
+concurrency:
+  group: kansai-surfer-nami-redesign-preview
+  cancel-in-progress: false
+
+jobs:
+  deploy-nami-preview:
+    if: >-
+      ${{
+        github.event_name == 'issue_comment' &&
+        github.event.action == 'created' &&
+        github.event.comment.author_association == 'OWNER' &&
+        github.event.comment.user.type != 'Bot' &&
+        github.event.issue.pull_request == null &&
+        contains(github.event.comment.body, '@deploy-nami-preview')
+      }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DEPLOY_HOST: ftp.lolipop.jp
+      DEPLOY_SCHEME: ftp
+      DEPLOY_PORT: "21"
+      DEPLOY_ROOT: /nami
+      DEPLOY_SUBDIR: ks-redesign
+      SITE_URL: https://nami.rss7.net/ks-redesign/
+      SOURCE_DIR: prototype/ks-redesign
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Validate source and nami target
+        shell: bash
+        env:
+          DEPLOY_USER: ${{ secrets.KS_NAMI_FTP_USER }}
+          DEPLOY_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+
+          [[ -n "$DEPLOY_USER" && -n "$DEPLOY_PASSWORD" ]] \
+            || { echo "nami FTP user/password secrets are incomplete."; exit 1; }
+          [[ "$DEPLOY_HOST" == "ftp.lolipop.jp" ]] \
+            || { echo "nami FTP host is invalid."; exit 1; }
+          [[ "$DEPLOY_SCHEME" == "ftp" ]] \
+            || { echo "nami FTP scheme is invalid."; exit 1; }
+          [[ "$DEPLOY_PORT" == "21" ]] \
+            || { echo "nami FTP port is invalid."; exit 1; }
+          [[ "$DEPLOY_ROOT" == "/nami" ]] \
+            || { echo "nami root must be exactly /nami."; exit 1; }
+          [[ "$DEPLOY_SUBDIR" == "ks-redesign" ]] \
+            || { echo "preview subdirectory is invalid."; exit 1; }
+          [[ "${SITE_URL%/}" == "https://nami.rss7.net/ks-redesign" ]] \
+            || { echo "preview URL is invalid."; exit 1; }
+
+          test -f "$SOURCE_DIR/index.html" \
+            || { echo "Missing $SOURCE_DIR/index.html"; exit 1; }
+          test -f "$SOURCE_DIR/isonoura.html" \
+            || { echo "Missing $SOURCE_DIR/isonoura.html"; exit 1; }
+          test -f "$SOURCE_DIR/styles.css" \
+            || { echo "Missing $SOURCE_DIR/styles.css"; exit 1; }
+
+          echo "Preview source and target validation passed."
+
+      - name: Install lftp
+        run: sudo apt-get update && sudo apt-get install -y lftp
+
+      - name: Upload isolated preview without remote deletion
+        shell: bash
+        env:
+          DEPLOY_USER: ${{ secrets.KS_NAMI_FTP_USER }}
+          DEPLOY_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+
+          lftp <<LFTP
+          set cmd:fail-exit yes
+          set net:max-retries 2
+          set net:timeout 20
+          set ssl:verify-certificate yes
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          open -u "$DEPLOY_USER","$DEPLOY_PASSWORD" "$DEPLOY_SCHEME://$DEPLOY_HOST:$DEPLOY_PORT"
+          mkdir -p "$DEPLOY_ROOT/$DEPLOY_SUBDIR"
+          mirror --reverse --verbose --parallel=2 --no-perms --exclude-glob README.md "$SOURCE_DIR" "$DEPLOY_ROOT/$DEPLOY_SUBDIR"
+          bye
+          LFTP
+
+          echo "Preview upload finished. No remote delete option was used."
+
+      - name: Verify public preview URLs
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "$SITE_URL" > /tmp/ks-preview-index.html
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "${SITE_URL}isonoura.html" > /tmp/ks-preview-isonoura.html
+          grep -qi '<html' /tmp/ks-preview-index.html
+          grep -qi '<html' /tmp/ks-preview-isonoura.html
+          echo "nami preview HTTP verification succeeded: $SITE_URL"
