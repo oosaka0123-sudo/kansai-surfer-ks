@@ -1,0 +1,111 @@
+/* KS LINE投稿 公開表示CSS v3 */
+/* 画像・動画を切らずに表示。カード幅が広くなりすぎないよう調整 */
+
+.ks-line-posts{
+  max-width:1120px;
+  margin:40px auto;
+  padding:0 16px;
+}
+
+.ks-line-posts-head{
+  margin-bottom:18px;
+}
+
+.ks-line-posts-head h2{
+  font-size:1.55rem;
+  margin:0 0 6px;
+  color:#0f172a;
+}
+
+.ks-line-posts-head p{
+  margin:0;
+  color:#64748b;
+  font-size:.95rem;
+}
+
+.ks-line-post-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(260px, 360px));
+  gap:18px;
+  justify-content:start;
+}
+
+.ks-line-post-card{
+  background:#fff;
+  border:1px solid #e5e7eb;
+  border-radius:18px;
+  overflow:hidden;
+  box-shadow:0 10px 26px rgba(15,23,42,.08);
+  max-width:360px;
+}
+
+.ks-line-post-body{
+  padding:12px 14px 16px;
+}
+
+.ks-line-post-meta{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  color:#64748b;
+  font-size:.86rem;
+  margin-bottom:10px;
+}
+
+.ks-line-post-badge{
+  display:inline-flex;
+  align-items:center;
+  padding:4px 10px;
+  border-radius:999px;
+  background:#ecfeff;
+  color:#0369a1;
+  font-weight:800;
+}
+
+.ks-line-post-media{
+  display:block;
+  width:100% !important;
+  height:auto !important;
+  max-height:none !important;
+  object-fit:contain !important;
+  background:#0f172a;
+}
+
+img.ks-line-post-media{
+  height:auto !important;
+  max-height:none !important;
+}
+
+video.ks-line-post-media{
+  height:auto !important;
+  max-height:420px !important;
+  object-fit:contain !important;
+}
+
+.ks-line-post-text{
+  margin:0;
+  color:#1f2937;
+  line-height:1.7;
+  white-space:pre-wrap;
+  font-weight:600;
+}
+
+@media(max-width:900px){
+  .ks-line-post-grid{
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+  }
+  .ks-line-post-card{
+    max-width:none;
+  }
+}
+
+@media(max-width:600px){
+  .ks-line-posts{
+    margin:28px auto;
+    padding:0 12px;
+  }
+  .ks-line-post-grid{
+    grid-template-columns:1fr;
+  }
+}
