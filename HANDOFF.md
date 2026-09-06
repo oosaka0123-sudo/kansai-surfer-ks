@@ -37,17 +37,17 @@ Implemented pilot behavior includes:
 
 The Isonoura prototype preserves the intended information hierarchy for advice, reports/live-camera links, forecast, spot information, map, SNS, and related content without fabricating live values.
 
-## Top Hero media
+## Top Hero media — MERGED / DEPLOYED
 The approved Top Hero is the sunrise/ocean/paddling-surfer visual selected by the owner. All page text remains HTML layered over the image; no title/UI text is baked into the asset.
 
-Branch `feat/add-approved-top-hero-assets` now contains all four responsive Hero assets under `prototype/ks-redesign/assets/`:
+PR #19 merged all four responsive Hero assets into `main` under `prototype/ks-redesign/assets/`:
 
 - `hero-surf-mobile.avif`
 - `hero-surf-mobile.webp`
 - `hero-surf-desktop.avif`
 - `hero-surf-desktop.webp`
 
-The existing prototype CSS already references these filenames. Mobile and desktop use separate crops from the same approved scene, with AVIF primary and WebP fallback.
+The existing prototype CSS references these filenames. Mobile and desktop use separate crops from the same approved scene, with AVIF primary and WebP fallback.
 
 The Isonoura-specific Hero image is still pending approval/import. Do not reuse the Top Hero or an unrelated spot photo on the Isonoura page.
 
@@ -62,7 +62,7 @@ Observed Issue #11 implementation runs:
 
 Do not describe those turn-limited Claude runs as a successful implementation.
 
-## `nami` redesign preview
+## `nami` redesign preview — HERO REFRESH VERIFIED
 The isolated preview deployment workflow is:
 
 - `.github/workflows/deploy-nami-preview.yml`
@@ -78,17 +78,28 @@ Destination:
 - Top preview: `https://nami.rss7.net/ks-redesign/`
 - Isonoura preview: `https://nami.rss7.net/ks-redesign/isonoura.html`
 
-The preview workflow has already been proven with successful GitHub Actions run `34036724875`. The earlier FTP `SITE MKDIR` incompatibility was fixed in PR #17 by using a standard single-child `MKD` flow.
+After PR #19 merged, Issue #20 triggered refresh run `34042451147` against `main` commit `d1d470a5d60e7111636a284a18d9d117bfee522c`.
 
-Production was not touched and remote delete behavior was not used.
+Observed run evidence:
+- source and exact nami-target validation: success;
+- isolated preview directory check: success;
+- non-destructive preview upload: success;
+- all four Top Hero asset files were explicitly transferred;
+- public Top HTTP/HTML verification: success;
+- public Isonoura HTTP/HTML verification: success;
+- overall job conclusion: success.
+
+Opera live page reading also confirmed the refreshed Top preview loads with the expected H1, navigation, sections, and links. Browser screenshot capture failed twice because the screenshot connector reported that the browser was not connected, so pixel-level live screenshot verification is not claimed.
+
+Production was not touched and remote delete behavior was not used. Issue #20 was closed as completed after the successful deployment evidence was observed.
 
 ## Current next action
-1. Review and merge `feat/add-approved-top-hero-assets` through a PR if the diff contains only the intended Hero assets and current-state documentation.
-2. Re-run the isolated `nami` redesign preview deployment.
-3. Verify the Top and Isonoura preview URLs and the four Hero asset URLs over HTTPS.
-4. Visually review mobile and desktop Top Hero composition; adjust only crop/background position if needed.
-5. Select and import an Isonoura-specific Hero photo separately.
-6. After visual approval, connect only real existing surf data/functions; do not fabricate values.
+1. Review the Top Hero visually on the owner’s mobile and desktop browsers.
+2. If composition needs tuning, change only crop/background-position or overlay/readability details first; do not replace the approved scene casually.
+3. Select and import one Isonoura-specific Hero photo.
+4. Refine Top + Isonoura until the pilot visual standard is approved.
+5. After visual approval, connect only real existing surf data/functions; do not fabricate values.
+6. Only then consider rollout to the remaining spot pages.
 7. Keep production untouched until audited production-equivalent source and deployment plan are separately approved.
 
 ## Deployment boundaries
