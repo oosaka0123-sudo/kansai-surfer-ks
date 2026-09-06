@@ -1,5 +1,6 @@
 name: Test nami FTPS read-only
 
+# Temporary one-time connection check. Do not merge.
 on:
   push:
     branches:
