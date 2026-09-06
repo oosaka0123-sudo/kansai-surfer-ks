@@ -1,6 +1,6 @@
 # KS redesign prototype assets
 
-This directory is reserved for approved, web-optimized assets used by the isolated top + Isonoura redesign prototype.
+This directory contains approved, web-optimized assets for the isolated Top + Isonoura redesign prototype.
 
 ## Top Hero
 
@@ -11,21 +11,21 @@ Approved visual direction:
 - no embedded title, logo, UI, or other text in the image itself
 - HTML/CSS supplies all page text and overlays
 
-Planned filenames after the approved source image is imported:
+Committed responsive assets:
 - `hero-surf-mobile.avif`
 - `hero-surf-mobile.webp`
 - `hero-surf-desktop.avif`
 - `hero-surf-desktop.webp`
 
-The mobile and desktop versions should be optimized crops from the same approved scene. Keep the mobile crop portrait-oriented and the desktop crop wide enough for a full-viewport Hero while preserving the surfer, main wave, and sunrise.
+The mobile and desktop files are separate optimized crops from the same approved sunrise/surfer scene. AVIF is the primary format and WebP is the fallback. The desktop fallback is intentionally lightweight because the Hero keeps a dark overlay and is used as a full-viewport background.
 
-Target delivery sizes are intentionally small; choose the lowest size that still looks clean on the target viewport. Prefer AVIF and provide WebP fallback when practical.
+The prototype CSS already references these filenames, so no runtime image generation or third-party photo is required.
 
 ## Isonoura Hero
 
-Do not reuse the top Hero as the Isonoura Hero.
+Do not reuse the Top Hero as the Isonoura Hero.
 
-The Isonoura page requires one Isonoura-specific approved image. Until such an asset is approved/imported, keep the prototype structure ready for it rather than filling the page with an unrelated photo.
+The Isonoura page still requires one Isonoura-specific approved image. Until that asset is approved/imported, keep the current designed fallback rather than using an unrelated spot photo.
 
 ## Safety
 
