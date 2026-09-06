@@ -11,76 +11,105 @@ Do not mix in unrelated deployment work from other repositories.
 - Production site: `https://kansai.rss7.net/`.
 - Dedicated test target: `https://nami.rss7.net/`.
 - Production deployment remains separate and manual.
-- A merge to `main` does not mean production deployment.
-- The repository currently contains governance/deployment documentation and the `nami` FTP probe workflow, but it does not yet contain the audited production-equivalent website source.
-- The current production top page and `isonoura.html` were re-checked on 2026-09-06 before defining the redesign pilot.
-- No existing open Issue or Pull Request was found for the same top + Isonoura redesign scope before starting this task.
+- A merge to `main` does not by itself deploy production.
+- The repository still does not contain the audited production-equivalent website source.
+- The first redesign pilot remains limited to Top + Isonoura.
 
-## Redesign pilot decision
-The first design implementation scope is intentionally limited to:
+## Redesign prototype now on `main`
+The isolated prototype is stored under:
 
-1. Top page
-2. Isonoura page
+- `prototype/ks-redesign/index.html`
+- `prototype/ks-redesign/isonoura.html`
+- `prototype/ks-redesign/styles.css`
+- `prototype/ks-redesign/script.js`
 
-The durable visual/interaction rules are now recorded in `PROJECT_SPEC.md` under `Design redesign pilot — Top + Isonoura only`.
+Implemented pilot behavior includes:
+- dark / near-black editorial surf direction;
+- exact approved Top H1 wording;
+- transparent Hero header that becomes a fixed dark header on scroll;
+- responsive mobile navigation;
+- compact desktop section-position indicator;
+- left-to-right H2 reveal;
+- restrained content/card motion;
+- `prefers-reduced-motion` support;
+- no invented score, wave size, ranking, or live condition values;
+- explicit data slots for later real-data integration.
 
-Key decisions:
-- Readability is the top priority.
-- Dark / near-black background with white typography.
-- Top Hero uses the approved sunrise/ocean/surfer visual direction with text layered as HTML, not baked into the image.
-- Mobile and desktop use optimized crops from the same approved Hero scene after the binary source asset is imported.
-- Transparent Hero header transitions to a fixed dark header on scroll.
-- Add a minimal scroll-position indicator.
-- H2 headings reveal from left to right.
-- Cards/content may use restrained scroll motion.
-- Isonoura follows `1 page = 1 spot = 1 primary Hero photo` and must not reuse another spot's photo merely as filler.
-- No invented score/size/value is added for visual effect.
-- Motion must remain progressive enhancement and must not hurt loading speed or readability.
+The Isonoura prototype preserves the intended information hierarchy for advice, reports/live-camera links, forecast, spot information, map, SNS, and related content without fabricating live values.
 
-## Claude / agent orchestration
-A new owner-triggered GitHub Actions workflow is being introduced as `.github/workflows/claude-implement.yml`.
+## Media state
+- The approved Top Hero visual direction is sunrise/ocean/surfer with HTML text layered above the image.
+- The prototype is wired for `hero-surf-mobile.avif`, `hero-surf-mobile.webp`, `hero-surf-desktop.avif`, and `hero-surf-desktop.webp`.
+- Those approved binary Hero files are not yet committed to the repository, so the current preview uses the designed dark fallback when they are absent.
+- The Isonoura-specific Hero image is still pending approval/import and must not be replaced by an unrelated spot photo.
 
-Intended use:
-- Create a scoped GitHub Issue with acceptance criteria.
-- The repository owner comments `@claude-implement` on that Issue.
-- If a supported Claude credential is configured for this repository, GitHub Actions starts Claude Code using `sonnet` explicitly.
-- Claude Code is the active implementation owner for that Issue; other agents are used for review/testing rather than duplicate implementation.
-- Never report Jules, Codex, Copilot, MCP, or Claude work as completed unless the run is actually observed.
+## Claude implementation evidence
+The owner-triggered `.github/workflows/claude-implement.yml` connection is verified and uses Sonnet explicitly.
 
-## Current branch
-Preparation branch:
-- `chore/ks-redesign-orchestration`
+Observed Issue #11 implementation runs:
+- first actionable Claude run reached the 30-turn ceiling before pushing a branch;
+- retry reached the 60-turn ceiling before pushing a branch;
+- the second retry used `claude-sonnet-5`, had no permission-denial blocker, but again reached the configured turn ceiling;
+- because no Claude implementation branch was pushed, the project-manager fallback implementation was used to finish the isolated prototype and avoid further API spend on the same blocked path.
 
-Purpose:
-- Save the confirmed redesign specification.
-- Add the Claude implementation trigger workflow.
-- Define the approved Hero asset contract and target filenames under `prototype/ks-redesign/assets/README.md`.
-- Create an implementation Issue after this preparation change is merged.
+Do not describe either failed Claude run as a successful implementation.
 
-Current media state:
-- The approved top-Hero visual has been selected in the design conversation.
-- Its binary image file is not yet committed to this Repository.
-- Do not claim the approved photograph exists in Git until that binary asset is actually imported.
-- The Isonoura-specific Hero image is still pending approval/import.
+## `nami` redesign preview — SUCCESS
+The isolated preview deployment workflow is:
+
+- `.github/workflows/deploy-nami-preview.yml`
+
+Trigger:
+
+- owner Issue comment containing `@deploy-nami-preview`
+
+Source:
+
+- `prototype/ks-redesign/`
+
+Destination:
+
+- FTP path: `/nami/ks-redesign`
+- Top preview: `https://nami.rss7.net/ks-redesign/`
+- Isonoura preview: `https://nami.rss7.net/ks-redesign/isonoura.html`
+
+The first upload attempt reached Lolipop but failed because lftp `mkdir -p` produced an unsupported `SITE MKDIR` command. This was fixed in PR #17 by checking for the target directory first and creating the single `ks-redesign` child with standard FTP `MKD` when needed.
+
+Verified successful deployment run:
+
+- GitHub Actions run `34036724875`
+
+Observed successful steps:
+- checkout: success;
+- source and exact nami-target validation: success;
+- lftp installation: success;
+- isolated preview directory check/create: success;
+- non-destructive preview upload: success;
+- public Top URL HTTP/HTML verification: success;
+- public Isonoura URL HTTP/HTML verification: success;
+- overall job conclusion: success.
+
+Production was not touched. Remote delete behavior was not used.
+
+Issue #15 was closed as completed after this successful run.
+
+## Deployment boundaries
+The successful redesign preview does not mean the full site is ready for deployment.
+
+Keep these boundaries:
+- `nami/ks-redesign` is an isolated static design preview only;
+- do not treat it as production-equivalent source;
+- do not enable production auto-deploy;
+- do not mirror/delete the `/nami` root;
+- a future full-site `nami` deployment still requires audited site source and separate review.
 
 ## Next action
-1. Complete and review the preparation branch.
-2. Open a Pull Request to `main`.
-3. Merge only after checking the diff and workflow safety.
-4. Create one scoped implementation Issue for the top + Isonoura pilot.
-5. Trigger `@claude-implement` and verify the actual GitHub Actions result.
-6. If Claude authentication is unavailable in this repository, record that exact blocker; do not invent a successful run.
-7. Until audited production source is imported, keep code work isolated as a prototype and do not deploy it to production.
-8. Import the approved top-Hero binary asset before treating the visual prototype as final; keep the Isonoura Hero slot ready until an Isonoura-specific asset is approved.
-9. When a safe prototype exists, test mobile/desktop readability, scroll header, position indicator, H2 reveal, card motion, console errors, and image loading performance.
-10. Only after the pilot standard is approved should the design be rolled out to the remaining spot pages.
-
-## Deployment milestone remains separate
-The existing `nami` deployment milestone is still valid and is not silently replaced by this redesign work:
-- the first real site deployment to `nami` must be manual-only;
-- it must be non-destructive;
-- it must use audited site source;
-- it must not touch production.
+1. Open the two `nami` preview URLs on mobile and desktop and review the visual result.
+2. Import the approved Top Hero binary assets when a repository-safe binary upload path is available.
+3. Select and import an Isonoura-specific Hero photo.
+4. Refine the prototype based on the visual review before rolling the design to other spot pages.
+5. After visual approval, connect only real existing surf data/functions; do not fabricate values to complete the design.
+6. Keep production untouched until the audited production-equivalent source and deployment plan are separately approved.
 
 ## Content operations
 Keep these regular Instagram outputs in scope:
@@ -94,4 +123,4 @@ Reels should stay within 10 seconds and show rank, spot, and size concisely, wit
 Never put FTP passwords, usernames, tokens, private runtime values, or server-only secrets into this handoff, Issues, PR text, logs, or repository example files.
 
 ## Restart instruction
-On the next session, treat current GitHub `main` as SSOT. Re-read `AGENTS.md`, `PROJECT_SPEC.md`, `HANDOFF.md`, the current branch/PR state, and relevant Actions before continuing.
+On the next session, treat current GitHub `main` as SSOT. Re-read `AGENTS.md`, `PROJECT_SPEC.md`, `HANDOFF.md`, `docs/PRODUCTION_DEPLOY.md`, the current Issue/PR state, and relevant Actions before continuing.
