@@ -1,0 +1,172 @@
+name: Validate production-baseline redesign
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: ks-production-redesign-validation
+  cancel-in-progress: false
+
+jobs:
+  validate-production-redesign:
+    if: >-
+      ${{
+        github.event_name == 'issue_comment' &&
+        github.event.action == 'created' &&
+        github.event.comment.author_association == 'OWNER' &&
+        github.event.comment.user.type != 'Bot' &&
+        github.event.issue.pull_request == null &&
+        contains(github.event.comment.body, '@validate-production-redesign')
+      }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout implementation branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/top-isonoura-production-redesign
+          fetch-depth: 0
+
+      - name: Static preservation and design checks
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          required_files=(index.html isonoura.html nami_common.css nami_common.js manifest.json sw.js)
+          for f in "${required_files[@]}"; do
+            test -f "$f" || { echo "::error::Missing required file: $f"; exit 1; }
+          done
+
+          # The shared production logic should remain byte-identical unless a separate reviewed change says otherwise.
+          ACTUAL_JS_SHA="$(sha256sum nami_common.js | awk '{print $1}')"
+          EXPECTED_JS_SHA='034ecc6cd950fbacf6b082336802f0d5fd9927bbd3bf962629e8fc56d44e09fd'
+          [[ "$ACTUAL_JS_SHA" == "$EXPECTED_JS_SHA" ]] || {
+            echo "::error::nami_common.js changed from verified production baseline ($ACTUAL_JS_SHA). Review explicitly before proceeding."
+            exit 1
+          }
+          node --check nami_common.js
+          python -m json.tool manifest.json >/dev/null
+
+          python - <<'PY'
+          from pathlib import Path
+          import re, sys
+
+          top = Path('index.html').read_text(encoding='utf-8')
+          iso = Path('isonoura.html').read_text(encoding='utf-8')
+          css = Path('nami_common.css').read_text(encoding='utf-8')
+
+          exact_top_strings = [
+              '関西サーフィン波情報｜磯ノ浦・生見・国府の浜・伊良湖の無料波予報',
+              '全9ポイントの波をAPIでリアルタイムチェック',
+              '関西サーファーが本気で通う9ポイントのリアルタイムデータを、10分毎に自動更新。',
+              '★星評価と「行くべきか」判定で、迷う時間をゼロに。',
+          ]
+          for s in exact_top_strings:
+              if s not in top:
+                  raise SystemExit(f'::error::Required Top copy missing: {s}')
+
+          top_ids = [
+              'hamburger','mobileMenu','clockTag','updateInfo','lastUpdate','refreshBtn',
+              'top-hero-title','todayCard','tomorrowCard','bestSpotContainer','allSpotsGrid',
+              'waveReportGrid','blogCardGrid'
+          ]
+          iso_ids = [
+              'hamburger','mobileMenu','clockTag','updateInfo','lastUpdate','refreshBtn',
+              'verdictText','verdictStars','scoreNum','bestTime','waveVal','periodVal',
+              'windVal','swellVal','todayTip','ks-line-isonoura'
+          ]
+          for i in top_ids:
+              if not re.search(rf'id=["\']{re.escape(i)}["\']', top):
+                  raise SystemExit(f'::error::Top runtime hook ID missing: {i}')
+          for i in iso_ids:
+              if not re.search(rf'id=["\']{re.escape(i)}["\']', iso):
+                  raise SystemExit(f'::error::Isonoura runtime hook ID missing: {i}')
+
+          runtime_needles = [
+              'data/spot_${spot.key}.json',
+              'blog/articles.json',
+              'data/line_posts.json',
+          ]
+          for needle in runtime_needles:
+              if needle not in top:
+                  raise SystemExit(f'::error::Top runtime data reference missing: {needle}')
+          if 'data/spot_' not in iso and 'nami_common.js?v=1018' not in iso:
+              raise SystemExit('::error::Isonoura no longer appears wired to spot runtime data/common JS')
+
+          # Real root pages must not depend on the rejected prototype directory at runtime.
+          for name, text in [('index.html', top), ('isonoura.html', iso)]:
+              if 'prototype/ks-redesign' in text:
+                  raise SystemExit(f'::error::{name} still references prototype/ks-redesign at runtime')
+
+          # Approved Top Hero implementation requirements.
+          if '<picture' not in top.lower():
+              raise SystemExit('::error::Top Hero does not use responsive <picture> source switching')
+          for asset in ('hero-surf-mobile.avif','hero-surf-mobile.webp','hero-surf-desktop.avif','hero-surf-desktop.webp'):
+              if asset not in top:
+                  raise SystemExit(f'::error::Top does not reference approved Hero asset: {asset}')
+              matches = list(Path('img').rglob(asset)) if Path('img').exists() else []
+              if not matches:
+                  raise SystemExit(f'::error::Approved Hero asset is not present under img/: {asset}')
+
+          # Isonoura must not reuse the generic Top Hero as its spot-specific main image.
+          for asset in ('hero-surf-mobile.avif','hero-surf-mobile.webp','hero-surf-desktop.avif','hero-surf-desktop.webp'):
+              if asset in iso:
+                  raise SystemExit(f'::error::Isonoura incorrectly reuses Top Hero asset: {asset}')
+
+          # Reduced-motion is mandatory and may be implemented in page CSS or common CSS.
+          combined = top + '\n' + iso + '\n' + css
+          if 'prefers-reduced-motion' not in combined:
+              raise SystemExit('::error::prefers-reduced-motion support not found')
+
+          # Preserve all nine spot pages in navigation/data model.
+          spots = ['isonoura','kounohama','ikumi','komatsu','irago','shizunami','hamadutu','takahama','hakuto']
+          for spot in spots:
+              if spot not in top:
+                  raise SystemExit(f'::error::Top no longer contains required spot key/link: {spot}')
+
+          # No fake static wave values should be hard-wired into the live metric placeholders.
+          placeholder_patterns = [
+              r'id=["\']waveVal["\'][^>]*>\s*(?!--)',
+              r'id=["\']scoreNum["\'][^>]*>\s*(?!--)',
+          ]
+          for pat in placeholder_patterns:
+              if re.search(pat, iso):
+                  raise SystemExit('::error::Isonoura live metric placeholder appears hard-coded instead of --')
+
+          print('Static preservation/design checks passed.')
+          PY
+
+      - name: Diff scope check against verified baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE='af260549139a577745c2241593557d5c4a52fe54'
+          git cat-file -e "$BASE^{commit}"
+          echo 'Changed files from verified baseline:'
+          git diff --name-status "$BASE"...HEAD
+
+          # Production deployment/security workflows are not redesign files and must not be modified on this branch.
+          if git diff --name-only "$BASE"...HEAD | grep -E '^\.github/workflows/'; then
+            echo '::error::Implementation branch modifies GitHub workflow files. Keep redesign changes out of deployment/CI workflows.'
+            exit 1
+          fi
+
+          # Changing SW/manifest is outside this visual pilot unless separately justified.
+          if git diff --name-only "$BASE"...HEAD | grep -E '^(sw\.js|manifest\.json)$'; then
+            echo '::error::Visual redesign unexpectedly changed sw.js or manifest.json.'
+            exit 1
+          fi
+
+      - name: Report validation result
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          SHA="$(git rev-parse HEAD)"
+          gh issue comment "${{ github.event.issue.number }}" --repo "${{ github.repository }}" --body "Static production-redesign validation passed for \`feat/top-isonoura-production-redesign\` at \`$SHA\`: verified shared JS preserved, required runtime hooks/data references retained, exact Hero copy retained, approved responsive Hero assets present under \`img/\`, Isonoura does not reuse the generic Top Hero, reduced-motion support present, and no CI/PWA scope drift detected."
