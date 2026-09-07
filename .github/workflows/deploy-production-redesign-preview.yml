@@ -1,0 +1,184 @@
+name: Deploy production-baseline redesign preview
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: ks-production-redesign-nami-preview
+  cancel-in-progress: false
+
+jobs:
+  deploy-production-redesign-preview:
+    if: >-
+      ${{
+        github.event_name == 'issue_comment' &&
+        github.event.action == 'created' &&
+        github.event.comment.author_association == 'OWNER' &&
+        github.event.comment.user.type != 'Bot' &&
+        github.event.issue.pull_request == null &&
+        contains(github.event.comment.body, '@deploy-production-redesign-preview')
+      }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DEPLOY_HOST: ftp.lolipop.jp
+      DEPLOY_SCHEME: ftp
+      DEPLOY_PORT: '21'
+      DEPLOY_ROOT: /nami
+      DEPLOY_SUBDIR: ks-production-redesign
+      SITE_URL: https://nami.rss7.net/ks-production-redesign/
+      SOURCE_BRANCH: feat/top-isonoura-production-redesign
+      PROD_BASE: https://kansai.rss7.net
+
+    steps:
+      - name: Checkout redesign branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/top-isonoura-production-redesign
+          fetch-depth: 1
+
+      - name: Build isolated preview bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          STAGE="$RUNNER_TEMP/ks-production-redesign"
+          rm -rf "$STAGE"
+          mkdir -p "$STAGE/data" "$STAGE/blog"
+
+          for f in index.html isonoura.html nami_common.css nami_common.js manifest.json sw.js; do
+            test -f "$f" || { echo "Missing required redesign file: $f"; exit 1; }
+            cp "$f" "$STAGE/$f"
+          done
+          test -d img || { echo 'Missing img directory'; exit 1; }
+          cp -R img "$STAGE/img"
+
+          # Public runtime data is staged only for this isolated preview and is never committed.
+          for spot in isonoura kounohama ikumi komatsu irago shizunami hamadutu takahama hakuto; do
+            curl --fail --silent --show-error --location --retry 3 --retry-delay 2 \
+              "$PROD_BASE/data/spot_${spot}.json" -o "$STAGE/data/spot_${spot}.json"
+          done
+          curl --fail --silent --show-error --location --retry 3 --retry-delay 2 \
+            "$PROD_BASE/data/line_posts.json" -o "$STAGE/data/line_posts.json" || echo 'line_posts.json unavailable; preview will show its built-in empty state.'
+          curl --fail --silent --show-error --location --retry 3 --retry-delay 2 \
+            "$PROD_BASE/blog/articles.json" -o "$STAGE/blog/articles.json" || echo 'articles.json unavailable; preview will show its built-in fallback state.'
+
+          # Do not let an isolated preview register a service worker against nami.rss7.net root.
+          python - <<'PY'
+          from pathlib import Path
+          import re, os
+          stage = Path(os.environ['RUNNER_TEMP']) / 'ks-production-redesign'
+          for name in ('index.html', 'isonoura.html'):
+              p = stage / name
+              s = p.read_text(encoding='utf-8')
+              s = s.replace('href="/manifest.json"', 'href="manifest.json"')
+              s = re.sub(
+                  r"<script>\s*if \('serviceWorker' in navigator\) \{.*?navigator\.serviceWorker\.register\('/sw\.js'\).*?</script>",
+                  '<!-- service worker disabled in isolated nami preview -->',
+                  s,
+                  flags=re.S,
+              )
+              p.write_text(s, encoding='utf-8')
+          PY
+
+          node --check "$STAGE/nami_common.js"
+          grep -q 'top-hero' "$STAGE/index.html"
+          grep -qi 'isonoura\|磯ノ浦' "$STAGE/isonoura.html"
+          echo "Preview bundle prepared from $SOURCE_BRANCH."
+
+      - name: Validate nami FTP secrets and target
+        shell: bash
+        env:
+          DEPLOY_USER: ${{ secrets.KS_NAMI_FTP_USER }}
+          DEPLOY_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          [[ -n "$DEPLOY_USER" && -n "$DEPLOY_PASSWORD" ]] || { echo 'nami FTP secrets are incomplete.'; exit 1; }
+          [[ "$DEPLOY_ROOT" == '/nami' ]] || exit 1
+          [[ "$DEPLOY_SUBDIR" == 'ks-production-redesign' ]] || exit 1
+          [[ "${SITE_URL%/}" == 'https://nami.rss7.net/ks-production-redesign' ]] || exit 1
+
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y lftp
+
+      - name: Ensure isolated preview directory exists
+        shell: bash
+        env:
+          DEPLOY_USER: ${{ secrets.KS_NAMI_FTP_USER }}
+          DEPLOY_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          if lftp <<LFTP
+          set cmd:fail-exit yes
+          set net:max-retries 2
+          set net:timeout 20
+          set ssl:verify-certificate yes
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          open -u "$DEPLOY_USER","$DEPLOY_PASSWORD" "$DEPLOY_SCHEME://$DEPLOY_HOST:$DEPLOY_PORT"
+          cd "$DEPLOY_ROOT/$DEPLOY_SUBDIR"
+          bye
+          LFTP
+          then
+            echo 'Isolated preview directory already exists.'
+          else
+            lftp <<LFTP
+          set cmd:fail-exit yes
+          set net:max-retries 2
+          set net:timeout 20
+          set ssl:verify-certificate yes
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          open -u "$DEPLOY_USER","$DEPLOY_PASSWORD" "$DEPLOY_SCHEME://$DEPLOY_HOST:$DEPLOY_PORT"
+          cd "$DEPLOY_ROOT"
+          mkdir "$DEPLOY_SUBDIR"
+          bye
+          LFTP
+          fi
+
+      - name: Upload isolated preview without remote deletion
+        shell: bash
+        env:
+          DEPLOY_USER: ${{ secrets.KS_NAMI_FTP_USER }}
+          DEPLOY_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          STAGE="$RUNNER_TEMP/ks-production-redesign"
+          lftp <<LFTP
+          set cmd:fail-exit yes
+          set net:max-retries 2
+          set net:timeout 20
+          set ssl:verify-certificate yes
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          open -u "$DEPLOY_USER","$DEPLOY_PASSWORD" "$DEPLOY_SCHEME://$DEPLOY_HOST:$DEPLOY_PORT"
+          mirror --reverse --verbose --parallel=2 --no-perms "$STAGE" "$DEPLOY_ROOT/$DEPLOY_SUBDIR"
+          bye
+          LFTP
+          echo 'Isolated preview uploaded. No production path and no remote-delete option were used.'
+
+      - name: Verify public preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "$SITE_URL" > /tmp/top.html
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "${SITE_URL}isonoura.html" > /tmp/isonoura.html
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "${SITE_URL}data/spot_isonoura.json" > /tmp/isonoura.json
+          grep -qi '<html' /tmp/top.html
+          grep -qi '<html' /tmp/isonoura.html
+          python -m json.tool /tmp/isonoura.json >/dev/null
+          echo "Preview HTTP verification succeeded: $SITE_URL"
+
+      - name: Report preview URL
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          gh issue comment "${{ github.event.issue.number }}" --repo "${{ github.repository }}" --body "Isolated production-baseline redesign preview deployed successfully from \`$SOURCE_BRANCH\`: $SITE_URL  — production \`kansai.rss7.net\` was not modified. Runtime JSON was staged from public production only for preview and was not committed."
