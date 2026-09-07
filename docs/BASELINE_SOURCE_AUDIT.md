@@ -39,6 +39,33 @@ Establish the real-site source baseline before any further redesign. The rejecte
 
 Runtime JSON must not be committed blindly; use safe test fixtures or existing `nami` runtime data only when required for parity testing.
 
+## Fetch attempt log (2026-09-07)
+
+An implementation session attempted to replace the Library candidates in this branch with byte-for-byte production files fetched from `https://kansai.rss7.net/`, per Issue #25's `@claude-implement` instructions.
+
+- Environment: Claude Code execution sandbox for this repository's `@claude-implement` GitHub Action run.
+- DNS resolution for `kansai.rss7.net` succeeded (`157.7.107.44`).
+- `curl --fail --location` to `https://kansai.rss7.net/` and `http://kansai.rss7.net/` both failed with a TCP-level connection timeout (curl error 28) after 20-25s, retried 4 times across both schemes.
+- Control check: `https://github.com` was reachable from the same sandbox in the same session, confirming general outbound network access exists but this specific host is blocked.
+- Retried once more with the local tool's sandbox restrictions relaxed; result was identical (still blocked), indicating the block is enforced at the network/infrastructure level for this execution environment, not by the local tool wrapper.
+- No files were fetched. No production bytes were obtained. No Library candidate was substituted or relabeled as a verified production file as a result of this attempt.
+- Conclusion: this specific sandboxed session cannot reach `kansai.rss7.net`. The exact deployed `nami_common.js?v=1018`, PWA icon assets, `nami_common.css?v=1018`, and fresh copies of `index.html`/`isonoura.html`/`manifest.json`/`sw.js` remain unverified against production. The candidate hashes recorded above are unchanged and still represent Library candidates only, not confirmed production bytes.
+- Recommended next step: perform the fetch from an environment with confirmed outbound access to `kansai.rss7.net` (for example, a manually-triggered GitHub Actions workflow on a standard GitHub-hosted runner, distinct from this agent's execution sandbox), then re-run this audit step.
+
+## Local static validation results (2026-09-07)
+
+Static validation was run against the files already present on this branch (no network fetch was possible; see above).
+
+- `manifest.json`: parses as valid JSON. Valid UTF-8.
+- `sw.js`: passes `node --check` (valid JS syntax). Valid UTF-8.
+- Secret-pattern scan across `index.html`, `isonoura.html`, `manifest.json`, `sw.js`: no credential/token/API-key assignments found. One literal match on the string "SECRET MODE" / an in-page link path `/secret/test.php` in `isonoura.html` — this is page content/link text, not a credential, and was left as-is.
+- **`index.html` and `isonoura.html` FAIL UTF-8 validation.** Both files declare `<meta charset="UTF-8">` but are not valid UTF-8 throughout:
+  - `index.html` (15,008 bytes): well-formed UTF-8/HTML text up to byte offset ~7501 (ends mid-word inside a `<style>` block, `align-`), then contains non-UTF-8 binary bytes for large stretches of the remainder of the file (4,503 bytes decode as replacement characters under lossy decoding).
+  - `isonoura.html` (25,047 bytes): well-formed UTF-8/HTML/Japanese text up to byte offset ~7708, then similarly corrupts into non-UTF-8 binary bytes (6,672 replacement characters under lossy decoding).
+  - This is not a false positive from Shift-JIS or other legacy encoding — the leading portion of each file is genuinely valid UTF-8 including multi-byte Japanese characters; the corruption is confined to binary garbage appended/spliced into the tail majority of each file.
+  - No gzip or other known container magic bytes were found at the point of corruption, so this does not look like an un-decompressed HTTP response.
+  - **Conclusion: the `index.html` and `isonoura.html` currently committed on this branch (from commit `59f131f`) cannot be treated as reliable production-equivalent candidates as-is.** They must not be used for `nami` parity testing until re-verified against a clean production fetch or a known-good Library source. This finding does not change the recorded candidate hashes above (hashes are still accurate for the bytes as committed); it flags that those bytes themselves are suspect.
+
 ## Next gate
 
 1. Put the candidate Top/Isonoura/shared text source on this branch at the real production-relative paths.
