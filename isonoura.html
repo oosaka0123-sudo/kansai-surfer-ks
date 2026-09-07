@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>磯ノ浦 波情報｜ライブカメラ・風・潮汐・波予想【関西サーファー】</title>
+<meta name="description" content="磯ノ浦 波情報・ライブカメラ・風予想・潮汐情報を毎日更新。今日の波サイズやサーフィンコンディションをリアルタイムでチェック。"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@400;600;800&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,300&family=Noto+Sans+JP:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="icon" href="img/favicon.png" type="image/png">
+<link rel="stylesheet" href="nami_common.css?v=1018">
+<script src="https://elfsightcdn.com/platform.js" defer></script>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0a1520">
+<link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "ホーム",
+      "item": "https://kansai.rss7.net/index.html"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "磯ノ浦（和歌山）",
+      "item": "https://kansai.rss7.net/isonoura.html"
+    }
+  ]
+}
+</script>
+</head>
+<body>
+
+<header class="top-bar">
+  <a href="index.html" class="logo" style="text-decoration:none;">
+    <img src="img/logo-ks-white.png" alt="KS" style="height:36px;width:auto;margin-right:8px;vertical-align:middle;">
+    <span class="en">Kansai Surf</span>
+  </a>
+  <nav class="nav-pc">
+    <a href="isonoura.html" class="active"><i class="fa-solid fa-water"></i>磯ノ浦</a>
+    <a href="kounohama.html"><i class="fa-solid fa-water"></i>国府の浜</a>
+    <a href="ikumi.html"><i class="fa-solid fa-water"></i>生見</a>
+    <a href="komatsu.html"><i class="fa-solid fa-water"></i>小松海岸</a>
+    <a href="irago.html"><i class="fa-solid fa-water"></i>伊良湖</a>
+    <a href="shizunami.html"><i class="fa-solid fa-water"></i>静波</a>
+    <a href="hamadutu.html"><i class="fa-solid fa-water"></i>浜詰</a>
+    <a href="takahama.html"><i class="fa-solid fa-water"></i>高浜</a>
+    <a href="hakuto.html"><i class="fa-solid fa-water"></i>白兎</a>
+    <a href="contact.html"><i class="fa-solid fa-envelope"></i>お問い合わせ</a>
+  </nav>
+  <button class="hamburger" id="hamburger" aria-label="メニュー">
+    <span></span><span></span><span></span>
+  </button>
+  <span class="tag-live" id="clockTag"><span class="dot"></span>LIVE --:--</span>
+</header>
+
+<div class="mobile-menu" id="mobileMenu">
+  <div class="mm-section">メインメニュー</div>
+  <a href="index.html"><span class="mm-left"><i class="fa-solid fa-house"></i>ホーム</span></a>
+  <a href="blog/index.php"><span class="mm-left"><i class="fa-solid fa-newspaper"></i>ブログ</span></a>
+  <a href="https://suzuri.jp/kansaisurfer" target="_blank" rel="noopener"><span class="mm-left"><i class="fa-solid fa-shirt"></i>ショップ</span></a>
+
+  <div class="mm-section">サーフポイント</div>
+  <a href="isonoura.html" class="active"><span class="mm-left"><i class="fa-solid fa-water"></i>磯ノ浦（和歌山）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='isonoura_guide.html';">GUIDE</span></a>
+  <a href="kounohama.html"><span class="mm-left"><i class="fa-solid fa-water"></i>伊勢・国府の浜（三重）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='kounohama_guide.html';">GUIDE</span></a>
+  <a href="ikumi.html"><span class="mm-left"><i class="fa-solid fa-water"></i>四国・生見（高知）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='ikumi_guide.html';">GUIDE</span></a>
+  <a href="komatsu.html"><span class="mm-left"><i class="fa-solid fa-water"></i>四国・小松海岸（徳島）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='komatsu_guide.html';">GUIDE</span></a>
+  <a href="irago.html"><span class="mm-left"><i class="fa-solid fa-water"></i>伊良湖（愛知）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='irago_guide.html';">GUIDE</span></a>
+  <a href="shizunami.html"><span class="mm-left"><i class="fa-solid fa-water"></i>静波（静岡）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='shizunami_guide.html';">GUIDE</span></a>
+  <a href="hamadutu.html"><span class="mm-left"><i class="fa-solid fa-water"></i>浜詰（京都・日本海）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='hamadutu_guide.html';">GUIDE</span></a>
+  <a href="takahama.html"><span class="mm-left"><i class="fa-solid fa-water"></i>高浜（福井・日本海）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='takahama_guide.html';">GUIDE</span></a>
+  <a href="hakuto.html"><span class="mm-left"><i class="fa-solid fa-water"></i>白兎（鳥取・日本海）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='hakuto_guide.html';">GUIDE</span></a>
+
+  <div class="mm-section">その他</div>
+  <a href="about.html"><span class="mm-left"><i class="fa-solid fa-circle-info"></i>当サイトについて</span></a>
+  <a href="contact.html"><span class="mm-left"><i class="fa-solid fa-envelope"></i>お問い合わせ</span></a>
+  <a href="https://kansai.rss7.net/secret/test.php"><span class="mm-left"><i class="fa-solid fa-lock"></i>SECRET MODE</span></a>
+</div>
+
+<div class="top-strip">
+  <div class="crumbs">
+    <a href="index.html"><i class="fa-solid fa-house"></i> ホーム</a>
+    <span class="sep">/</span><span class="now">磯ノ浦（和歌山）</span>
+  </div>
+  <div class="update-info" id="updateInfo">
+    <span class="sync-ico"><i class="fa-solid fa-arrows-rotate"></i></span>
+    <span>最終更新: <span id="lastUpdate">--:--</span></span>
+    <button class="refresh-btn" id="refreshBtn">
+      <i class="fa-solid fa-rotate-right"></i> 更新
+    </button>
+  </div>
+</div>
+
+<section class="verdict-banner">
+  <div class="verdict-text" id="verdictText">
+    <i class="fa-solid fa-spinner fa-spin"></i> 読み込み中...
+  </div>
+  <div class="verdict-stars" id="verdictStars">☆☆☆☆☆</div>
+  <div class="verdict-score-row">
+    <div class="verdict-score"><span id="scoreNum">--</span><span class="denom">/10</span></div>
+    <div class="verdict-best-time">
+      ベスト時間 <strong id="bestTime">--</strong>
+    </div>
+  </div>
+</section>
+
+<section class="spot-hero">
+  <div class="spot-hero-grid">
+    <div>
+      <div class="spot-meta">
+        <span><i class="fa-solid fa-map-pin"></i>和歌山県 和歌山市</span>
+        <span><i class="fa-solid fa-umbrella-beach"></i>ビーチブレイク・南南西向き</span>
+        <span><i class="fa-solid fa-location-crosshairs"></i>紀伊水道</span>
+      </div>
+      <h1 class="spot-title">
+        磯ノ浦 波情報
+        <span class="spot-title-en">Isonoura — Wakayama</span>
+      </h1>
+    </div>
+
+    <div class="stats-card">
+      <div class="stats-grid">
+        <div class="stat-cell">
+          <span class="stat-ico"><i class="fa-solid fa-water"></i></span>
+          <div class="stat-label">波の高さ</div>
+          <div class="stat-val" id="waveVal">--<span class="unit">m</span></div>
+        </div>
+        <div class="stat-cell">
+          <span class="stat-ico"><i class="fa-solid fa-stopwatch"></i></span>
+          <div class="stat-label">周期</div>
+          <div class="stat-val" id="periodVal">--<span class="unit">秒</span></div>
+        </div>
+        <div class="stat-cell">
+          <span class="stat-ico"><i class="fa-solid fa-wind"></i></span>
+          <div class="stat-label">風</div>
+          <div class="stat-val" id="windVal" style="font-size:1.1rem;">--</div>
+        </div>
+        <div class="stat-cell">
+          <span class="stat-ico"><i class="fa-solid fa-arrows-to-dot"></i></span>
+          <div class="stat-label">うねり</div>
+          <div class="stat-val" id="swellVal" style="font-size:1.1rem;">--</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="context-call">
+  <div class="head"><i class="fa-solid fa-circle-info"></i> ポイントの特徴</div>
+  <div class="body">
+    磯ノ浦は和歌山県和歌山市にある関西屈指のサーフポイントです。南西風による風波に反応しやすく、風が10m以上吹けばサーフィン可能なサイズまで上がることもあります。当ページでは磯ノ浦の波情報、ライブカメラ、風向き、波予想を毎日更新しており、最新コンディションをリアルタイムで確認できます。
+  </div>
+</div>
+
+<section class="section" style="padding-top:50px;padding-bottom:50px;">
+  <h2 class="section-title">
+    <span class="no">01</span>
+    <i class="fa-solid fa-lightbulb ico"></i>
+    今日のアドバイス
+  </h2>
+  <div class="local-tips" style="max-width:720px;">
+    <h3><i class="fa-solid fa-lightbulb"></i>今日の狙い方</h3>
+    <p id="todayTip"><i class="fa-solid fa-spinner fa-spin"></i> データ取得後に表示されます。</p>
+  </div>
+</section>
+
+<section class="section">
+  <h2 class="section-title">
+    <span class="no">02</span><i class="fa-solid fa-camera-retro ico"></i>現地波レポート
+  </h2>
+  <div class="wave-report-box" style="margin:0;">
+    <div class="wave-report-head" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:16px;">
+      <p style="margin:0;font-size:0.95rem;color:var(--cream-soft,#e2d9c8);">LINEで届いた現地の写真・動画から、管理者OK済みだけを掲載します。</p>
+      <a href="https://line.me/R/ti/p/@150vqsgl"
+         target="_blank" rel="noopener"
+         style="display:inline-flex;align-items:center;gap:8px;background:#00c300;color:#fff;padding:12px 20px;border-radius:999px;font-weight:900;font-size:0.9rem;text-decoration:none;white-space:nowrap;box-shadow:0 8px 22px rgba(0,0,0,0.18);">
+        <i class="fa-brands fa-line"></i> 現地投稿に参加する（β版）
+      </a>
+    </div>
+    <div class="wave-report-grid" id="ks-line-isonoura">
+      <div class="wave-report-empty" style="grid-column:1/-1;">
+        <i class="fa-solid fa-spinner fa-spin"></i> レポートを読み込み中...
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+(function(){
+  function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function isVideo(f, t){ return t==='video' || /\.(mp4|mov|m4v|webm)$/i.test(f||''); }
+
+  fetch('/data/line_posts.json?_=' + Date.now(), { cache: 'no-store' })
+    .then(function(r){ return r.json(); })
+    .then(function(posts){
+      var items = posts.filter(function(p){
+        return p.status === 'approved' && p.spot === 'isonoura'
+          && (p.type === 'image' || p.type === 'video')
+          && p.file;
+      }).slice(0, 3);
+
+      var el = document.getElementById('ks-line-isonoura');
+      if(!el) return;
+
+      if(items.length === 0){
+        el.innerHTML = '<div class="wave-report-empty" style="grid-column:1/-1;"><strong>現地波レポート募集中</strong><br>写真・動画は管理者確認後にここへ掲載されます。</div>';
+        return;
+      }
+
+      el.innerHTML = items.map(function(p){
+        var media = p.file || '';
+        var type  = p.type || '';
+        var name  = escHtml(p.name || '現地サーファー');
+        var time  = escHtml(p.created_at || '');
+        var rawComment = p.text || '現地レポートが届きました。';
+        var comment = escHtml(rawComment).replace(/\n/g, '<br>');
+        var mediaHtml = isVideo(media, type)
+          ? '<div class="wave-report-media"><video src="' + escHtml(media) + '" controls playsinline preload="metadata"></video></div>'
+          : '<div class="wave-report-media"><img src="' + escHtml(media) + '" alt="磯ノ浦 現地投稿" loading="lazy"></div>';
+
+        return '<article class="wave-report-card">'
+          + mediaHtml
+          + '<div class="wave-report-body">'
+          + '<div class="wave-report-meta"><span>' + name + '</span><span>' + time + '</span></div>'
+          + '<h3 class="wave-report-title">和歌山</h3>'
+          + '<p class="wave-report-comment">' + comment + '</p>'
+          + '</div></article>';
+      }).join('');
+    })
+    .catch(function(){
+      var el = document.getElementById('ks-line-isonoura');
+      if(el) el.innerHTML = '<div class="wave-report-empty" style="grid-column:1/-1;">読み込みに失敗しました。</div>';
+    });
+})();
+</script>
+
+<section class="section cam-section">
+  <h2 class="section-title">
+    <span class="no">03</span><i class="fa-solid fa-video ico"></i>ライブカメラ
+  </h2>
+  <p class="cam-intro">
+    磯ノ浦のライブカメラでは最新の波情報、風向き、海面状況をリアルタイムで確認できます。サーフィン前はライブカメラと波予想をあわせてチェックすることで、より正確なコンディション判断が可能です。
+  </p>
+  <div class="cam-link-grid">
+    <a href="https://www.isonoura-w.jp/livecamera/" target="_blank" rel="noopener" class="cam-link featured">
+      <div class="head-row"><div class="ico-box"><i class="fa-solid fa-video"></i></div><span class="go-arr">→</span></div>
+      <div class="name">磯の浦 公式カメラ<span class="en">操作可能ライブカメラ</span></div>
+      <div class="meta"><span>マリンパーク</span><span class="badge official">公式</span></div>
+    </a>
+    <a href="https://www.bcm-surfpatrol.com/wave-detail/10/123/" target="_blank" rel="noopener" class="cam-link">
+      <div class="head-row"><div class="ico-box"><i class="fa-solid fa-mobile-screen"></i></div><span class="go-arr">→</span></div>
+      <div class="name">BCM 磯ノ浦<span class="en">BCM Wave Patrol</span></div>
+      <div class="meta"><span>有料アプリ</span><span class="badge paid">一部有料</span></div>
+    </a>
+    <a href="https://www.namiaru.tv/" target="_blank" rel="noopener" class="cam-link">
+      <div class="head-row"><div class="ico-box"><i class="fa-solid fa-globe"></i></div><span class="go-arr">→</span></div>
+      <div class="name">なみある？<span class="en">画面右スクロールで磯ノ浦を選択</span></div>
+      <div class="meta"><span>高画質オススメ！</span><span class="badge">無料</span></div>
+    </a>
+    <a href="https://www.windy.com/?wind,34.22,135.12,11" target="_blank" rel="noopener" class="cam-link">
+      <div class="head-row"><div class="ico-box"><i class="fa-solid fa-wind"></i></div><span class="go-arr">→</span></div>
+      <div class="name">Windy 風向マップ<span class="en">リアルタイム風</span></div>
+      <div class="meta"><span>ビジュアル</span><span class="badge">無料</span></div>
+    </a>
+  </div>
+</section>
+
+<section class="section">
+  <h2 class="section-title">
+    <span class="no">04</span><i class="fa-solid fa-chart-line ico"></i>時間別予報
+  </h2>
+  <div class="hourly-chart">
+    <div class="hourly-chart-inner">
+      <svg class="hourly-svg" id="hourlySvg" viewBox="0 0 1200 280" preserveAspectRatio="none"></svg>
+      <div class="hourly-rows" id="hourlyRows">
+        <div class="hrow-label">時刻</div>
+        <div class="hrow-cell" style="grid-column: span 12;"><i class="fa-solid fa-spinner fa-spin"></i> 読込中...</div>
+      </div>
+    </div>
+
+    <a href="https://www.umitenki.jp/tenki/3022/tide" target="_blank" rel="noopener" class="umitenki-card">
+      <div class="umi-left">
+        <div class="umi-icon">🌊</div>
+        <div class="umi-info">
+          <div class="umi-title">磯ノ浦 タイドグラフ</div>
+          <div class="umi-tags">
+            <span>📈 潮位グラフ</span>
+            <span>⛅ 天気予報</span>
+            <span>🌡 気温</span>
+            <span>🌊 波高</span>
+            <span>💧 海水温</span>
+          </div>
+          <div class="umi-desc">潮位グラフ・波・天気予報・海水温 · 海天気.jp</div>
+        </div>
+      </div>
+      <div class="umi-btn">磯ノ浦専用ページ →</div>
+    </a>
+
+    <div class="data-src">
+      <i class="fa-solid fa-database"></i>データ提供 · <a href="https://open-meteo.com" target="_blank">Open-Meteo</a>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <h2 class="section-title">
+    <span class="no">05</span><i class="fa-solid fa-calendar-week ico"></i>週間予報
+  </h2>
+  <table class="weekly-table">
+    <thead>
+      <tr>
+        <th><i class="fa-solid fa-calendar-day"></i>日付</th>
+        <th><i class="fa-solid fa-cloud-sun"></i>天気</th>
+        <th><i class="fa-solid fa-water"></i>波の高さ</th>
+        <th><i class="fa-solid fa-stopwatch"></i>周期</th>
+        <th><i class="fa-solid fa-wind"></i>風</th>
+        <th><i class="fa-solid fa-temperature-half"></i>気温</th>
+        <th><i class="fa-solid fa-flag"></i>判定</th>
+      </tr>
+    </thead>
+    <tbody id="weeklyBody">
+      <tr><td colspan="6" style="text-align:center;color:var(--teal-pale);">
+        <i class="fa-solid fa-spinner fa-spin"></i> データ取得中...
+      </td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="section">
+  <h2 class="section-title">
+    <span class="no">06</span><i class="fa-solid fa-circle-info ico"></i>スポット情報
+  </h2>
+  <div class="profile-grid">
+    <p style="color:var(--cream-soft);font-size:0.95rem;line-height:1.9;margin-bottom:16px;">磯ノ浦は和歌山県和歌山市にある関西を代表するサーフポイントです。</p>
+    <ul class="profile-list">
+      <li><div class="label"><i class="fa-solid fa-umbrella-beach"></i>ブレイク</div>
+        <div class="val"><strong>ビーチブレイク</strong>（砂地）。メイン／北／南の3ピーク型。</div></li>
+      <li><div class="label"><i class="fa-solid fa-ruler-horizontal"></i>ビーチ規模</div>
+        <div class="val">全長<strong>1,200m</strong>／奥行100m／深さ1.5m。</div></li>
+      <li><div class="label"><i class="fa-solid fa-compass"></i>ビーチ方位</div>
+        <div class="val"><strong>南南西</strong>向き。</div></li>
+      <li><div class="label"><i class="fa-solid fa-wind"></i>ベスト風向</div>
+        <div class="val"><strong>北北東</strong>のオフショア。</div></li>
+      <li><div class="label"><i class="fa-solid fa-water"></i>サイズ帯</div>
+        <div class="val">アベレージ<strong>膝〜胸</strong>。台風時に肩〜頭。</div></li>
+      <li><div class="label"><i class="fa-solid fa-train"></i>アクセス</div>
+        <div class="val"><strong>JR磯ノ浦駅 徒歩0分</strong>。大阪駅から約1時間20分。</div></li>
+    </ul>
+  </div>
+</section>
+
+<section class="section" style="background:var(--ink-deep);">
+  <h2 class="section-title">
+    <span class="no">07</span>
+    <i class="fa-solid fa-map ico"></i>
+    広域波高マップ
+  </h2>
+  <p style="color:var(--cream-soft); font-size:0.95rem; line-height:1.9; margin-bottom:20px; max-width:680px;">
+    タップで拡大表示。
+    <strong style="color:var(--coral-soft);">国際気象海洋</strong>提供の現在の波高マップです。
+  </p>
+  <img
+    src="https://www.imocwx.com/cwm/cwm_jp.gif"
+    alt="広域波高マップ"
+    onclick="document.getElementById('waveBig').style.display='flex'"
+    style="width:100%;max-width:720px;border-radius:8px;cursor:pointer;border:1px solid var(--line);"
+  >
+  <p style="font-size:0.72rem;color:var(--teal-pale);margin-top:10px;">
+    出典：<a href="https://www.imocwx.com/cwm.php?Area=0&Time=2" target="_blank" rel="noopener" style="color:var(--coral-soft);text-decoration:none;">国際気象海洋株式会社</a> / 気象庁提供
+  </p>
+</section>
+
+<div id="waveBig"
+     onclick="this.style.display='none'"
+     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:99999;align-items:center;justify-content:center;padding:10px;cursor:pointer;">
+  <img
+    src="https://www.imocwx.com/cwm/cwm_jp.gif"
+    alt="広域波高マップ 拡大表示"
+    style="width:95vw;height:auto;max-height:95vh;object-fit:contain;border-radius:8px;background:#000;"
+  >
+</div>
+
+<section class="section" style="background:var(--ink-deep);">
+  <h2 class="section-title">
+    <span class="no">08</span>
+    <i class="fa-brands fa-instagram ico"></i>
+    #磯ノ浦 SNS投稿
+  </h2>
+  <p style="color:var(--cream-soft); font-size:0.95rem; line-height:1.9; margin-bottom:30px; max-width:680px;">
+    <strong style="color:var(--coral-soft);">#磯ノ浦</strong> ハッシュタグの最新投稿を表示しています。
+    地元サーファー・ビジターのリアルタイム情報をチェック。
+  </p>
+  <div class="elfsight-wrapper" style="background: var(--cream); padding: 24px; border-radius: 8px; min-height: 220px;">
+<div class="elfsight-app-2a7d6219-cabf-4d65-ab96-58ad4a94a3bb" data-elfsight-app-lazy></div>
+  </div>
+  <p style="margin-top:14px;max-width:680px;">
+    <a href="instagram://tag?name=磯ノ浦"
+       onclick="setTimeout(function(){ location.href='https://www.instagram.com/explore/tags/磯ノ浦/'; }, 800);"
+       style="color:var(--coral-soft);text-decoration:none;font-weight:700;">
+      Instagramで #磯ノ浦 を見る
+    </a>
+  </p>
+</section>
+
+<section style="padding:40px 24px;border-bottom:1px solid var(--line);">
+  <a href="isonoura_guide.html" style="
+    display:flex;align-items:center;justify-content:space-between;gap:20px;
+    padding:24px 28px;
+    background:linear-gradient(135deg,rgba(229,82,52,0.12),rgba(45,100,112,0.1));
+    border:2px solid var(--coral);
+    text-decoration:none;color:var(--cream);
+    transition:all 0.3s;
+  " onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
+    <div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:0.68rem;color:var(--coral);letter-spacing:0.15em;margin-bottom:8px;">SURF GUIDE · 磯ノ浦完全ガイド</div>
+      <div style="font-family:'Shippori Mincho B1',serif;font-weight:800;font-size:1.4rem;margin-bottom:6px;">磯ノ浦 完全ガイド</div>
+      <div style="font-size:0.85rem;color:var(--cream-soft);">🚗 駐車場 &nbsp;🍴 グルメ &nbsp;🏨 宿泊 &nbsp;🗺️ 観光 &nbsp;🗺️ モデルコース</div>
+    </div>
+    <div style="font-family:'Fraunces',serif;font-size:2rem;color:var(--coral);flex-shrink:0;">→</div>
+  </a>
+</section>
+
+<a href="https://line.me/ti/g2/6bEYnoBF1k3E0u33QCkDiPfTpR9v_LmQSZ82Yw?utm_source=invitation&utm_medium=link_copy&utm_campaign=default"
+   target="_blank" rel="noopener" class="floating-line">
+  <div class="fl-icon"><i class="fa-brands fa-line"></i></div>
+  <div class="fl-text">
+    <span class="fl-label">磯ノ浦専用</span>
+    <span class="fl-sub">LINEコミュニティ</span>
+  </div>
+  <span class="fl-arrow">→</span>
+</a>
+
+<!-- 磯ノ浦 関連ブログ -->
+<section class="section" style="padding-top:50px;padding-bottom:60px;background:var(--ink-deep);">
+  <h2 class="section-title">
+    <span class="no">BLOG</span>
+    <i class="fa-solid fa-newspaper ico"></i>
+    磯ノ浦 関連ブログ
+  </h2>
+  <p style="color:var(--cream-soft);font-size:0.95rem;line-height:1.9;margin-bottom:24px;">
+    磯ノ浦エリアの波予想、ポイント情報、サーフニュース。
+    <a href="blog/index.php" style="color:var(--coral-soft);text-decoration:underline;">ブログ一覧を見る →</a>
+  </p>
+  <div id="isonouraBlogGrid" class="all-spots-grid" style="grid-template-columns:repeat(3,1fr);">
+    <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--teal-pale);font-size:0.9rem;">
+      記事を読み込み中...
+    </div>
+  </div>
+</section>
+<script>
+(function loadIsonouraBlogs(){
+  var grid = document.getElementById('isonouraBlogGrid');
+  if (!grid) return;
+  fetch('blog/articles.json?_=' + Date.now())
+    .then(function(res){ return res.json(); })
+    .then(function(articles){
+      var list = articles
+        .filter(function(a){
+          return (a.status || 'published') === 'published' &&
+            a.category !== '波予報' &&
+            (a.region === '磯ノ浦' ||
+             (a.title || '').indexOf('磯ノ浦') !== -1 ||
+             (a.excerpt || '').indexOf('磯ノ浦') !== -1);
+        })
+        .slice(0, 6);
+      if (!list.length) {
+        grid.innerHTML = '<div style="grid-column:1/-1;color:var(--teal-pale);padding:30px;">磯ノ浦の記事はまだありません。</div>';
+        return;
+      }
+      grid.innerHTML = list.map(function(a){
+        var thumb = a.thumb ? 'blog/' + a.thumb : 'blog/img/noimage.jpg';
+        var url = 'blog/posts/' + a.slug + '.php';
+        return '<a href="' + url + '" class="spot-card" style="text-decoration:none;color:inherit;">'
+          + '<div style="height:150px;overflow:hidden;background:#111;">'
+          + '<img src="' + thumb + '" alt="' + (a.title || '') + '" style="width:100%;height:100%;object-fit:cover;">'
+          + '</div>'
+          + '<div style="padding:14px;">'
+          + '<h3 style="font-family:Shippori Mincho B1,serif;font-size:0.95rem;margin:0;color:var(--cream);line-height:1.6;">' + (a.title || '') + '</h3>'
+          + '</div></a>';
+      }).join('');
+    })
+    .catch(function(){
+      grid.innerHTML = '<div style="grid-column:1/-1;color:var(--teal-pale);padding:30px;">ブログ記事を読み込めませんでした。</div>';
+    });
+})();
+</script>
+
+<footer>
+  <a href="index.html" class="logo" style="text-decoration:none;justify-content:center;">
+    <img src="img/logo-ks-white.png" alt="KS" style="height:24px;width:auto;margin-right:6px;vertical-align:middle;">
+    <span class="en" style="font-size:0.75rem;">Kansai Surf</span>
+  </a>
+  <div class="footer-sns" style="display:flex;align-items:center;justify-content:center;gap:24px;margin:22px 0;padding:8px 0;">
+    <a id="sns-ig" href="#" style="color:var(--cream-soft);font-size:1.7rem;line-height:1;padding:6px;"><i class="fa-brands fa-instagram"></i></a>
+    <a id="sns-fb" href="#" style="color:var(--cream-soft);font-size:1.7rem;line-height:1;padding:6px;"><i class="fa-brands fa-facebook"></i></a>
+    <a id="sns-tt" href="#" style="color:var(--cream-soft);font-size:1.7rem;line-height:1;padding:6px;"><i class="fa-brands fa-tiktok"></i></a>
+    <a id="sns-x" href="#" style="color:var(--cream-soft);font-size:1.7rem;line-height:1;padding:6px;"><i class="fa-brands fa-x-twitter"></i></a>
+    <a id="sns-yt" href="#" style="color:var(--cream-soft);font-size:1.7rem;line-height:1;padding:6px;"><i class="fa-brands fa-youtube"></i></a>
+  </div>
+  <div class="footer-links">
+    <a href="index.html">ホーム</a>
+    <a href="blog/index.php">ブログ</a>
+    <a href="https://suzuri.jp/kansaisurfer" target="_blank" rel="noopener">ショップ</a>
+  </div>
+  <div class="footer-links">
+    <a href="isonoura.html">磯ノ浦</a>
+    <a href="kounohama.html">伊勢</a>
+    <a href="ikumi.html">生見</a>
+    <a href="komatsu.html">小松</a>
+    <a href="irago.html">伊良湖</a>
+    <a href="shizunami.html">静波</a>
+    <a href="hamadutu.html">浜詰</a>
+    <a href="takahama.html">高浜</a>
+    <a href="hakuto.html">白兎</a>
+  </div>
+  <div class="footer-links" style="margin-bottom:16px;">
+    <span style="color:var(--teal-pale);font-family:'JetBrains Mono',monospace;font-size:0.65rem;letter-spacing:0.1em;align-self:center;">GUIDE</span>
+    <a href="isonoura_guide.html">磯ノ浦ガイド</a>
+    <a href="kounohama_guide.html">国府の浜ガイド</a>
+    <a href="ikumi_guide.html">生見ガイド</a>
+    <a href="komatsu_guide.html">小松ガイド</a>
+    <a href="irago_guide.html">伊良湖ガイド</a>
+    <a href="shizunami_guide.html">静波ガイド</a>
+    <a href="hamadutu_guide.html">浜詰ガイド</a>
+    <a href="takahama_guide.html">高浜ガイド</a>
+    <a href="hakuto_guide.html">白兎ガイド</a>
+  </div>
+  <div class="footer-links">
+    <a href="contact.html">お問い合わせ</a>
+    <a href="about.html">当サイトについて</a>
+  </div>
+  <div class="attr"><i class="fa-solid fa-cloud"></i> Weather data by <a href="https://open-meteo.com" target="_blank">Open-Meteo.com</a></div>
+  <div class="attr" style="margin-top:14px;">
+    <a href="https://kiseki.rss7.net/" target="_blank">映像工房 軌跡</a> ·
+    <a href="https://bitframe.rss7.net/" target="_blank">AI動画CM制作.bitframe</a> ·
+    <a href="https://rss7.net/" target="_blank">RSS7 AI Works 総合制作</a>
+  </div>
+  <div class="attr">© 2026 関西サーファー.ks · MADE IN OSAKA</div>
+</footer>
+
+<script>
+const SPOT_CONFIG = {
+  name: '磯ノ浦', nameEn: 'Isonoura', region: '和歌山県',
+  LAT: 34.18, LNG: 135.05,
+  OFFSHORE_START: 340, OFFSHORE_END: 60,
+  SWELL_BEST_MIN: 150, SWELL_BEST_MAX: 240,
+  WAVE_FACTOR: 0.7,
+  HIDE_WAVE_LABEL: true,
+  ONSHORE_BOOST: true,
+  WIND_TOLERANCE: 1.3,
+  REFRESH_INTERVAL_MS: 10 * 60 * 1000,
+  TIP_FLAT: '<strong>紀伊水道内でうねり弱め</strong>（{wave}m）。今日はSUPやロングボードの練習日和。外海（白浜方面）への遠征も検討。',
+  TIP_BLOWN: '<strong>{dir}の風{ws}m/s</strong>。磯ノ浦は風が吹いても意外と形が残る。とりあえず見に行く価値あり。',
+  TIP_PERFECT: '<strong>良いコンディション継続中</strong>。{dir}オフショア{ws}m/s、周期{p}秒。<strong>今が狙い目</strong>。',
+  TIP_BIG: '<strong>サイズアップ中</strong>（{wave}m／{label}）。磯ノ浦でこのサイズは珍しい。中級以上向き、カレント注意。',
+  TIP_NORMAL: '{label}。{condText}。磯ノ浦らしい波。ビギナー〜中級にちょうど良い。',
+};
+</script>
+<script src="nami_common.js?v=1018"></script>
+<script>
+if (typeof loadWaveReports === "function") loadWaveReports("磯ノ浦");
+</script>
+<script>
+(function waveMapRefresh(){
+  document.querySelectorAll('img[src*="cwm_jp.gif"]').forEach(function(img){
+    img.src = img.src.split('?')[0] + '?_=' + Date.now();
+  });
+})();
+</script>
+<script>
+// SNSアプリ起動（スマホ対応）
+function snsOpen(appUrl, webUrl){ var t=Date.now(); location.href=appUrl; setTimeout(function(){ if(Date.now()-t<2000) location.href=webUrl; },500); }
+document.getElementById('sns-ig').addEventListener('click',function(e){ e.preventDefault(); snsOpen('instagram://user?username=kansaisurfer.ks','https://www.instagram.com/kansaisurfer.ks/'); });
+document.getElementById('sns-fb').addEventListener('click',function(e){ e.preventDefault(); snsOpen('fb://profile/kansaisurfer','https://facebook.com/kansaisurfer'); });
+document.getElementById('sns-tt').addEventListener('click',function(e){ e.preventDefault(); snsOpen('snssdk1233://user/profile?uniqueId=ks295223','https://www.tiktok.com/@ks295223'); });
+document.getElementById('sns-x').addEventListener('click',function(e){ e.preventDefault(); snsOpen('twitter://user?screen_name=kansaisurfer','https://x.com/kansaisurfer'); });
+document.getElementById('sns-yt').addEventListener('click',function(e){ e.preventDefault(); snsOpen('vnd.youtube://www.youtube.com/@kansaisurfers','https://www.youtube.com/@kansaisurfers'); });
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/sw.js').catch(function(err) {
+      console.log('SW登録失敗:', err);
+    });
+  });
+}
+</script>
+</body>
+</html>
