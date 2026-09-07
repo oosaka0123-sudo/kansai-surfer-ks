@@ -1,0 +1,18 @@
+# Exact production baseline SHA-256
+
+Fetched by GitHub Actions directly from https://kansai.rss7.net/ for Issue #25.
+These hashes cover only files successfully fetched in this run.
+
+6b2a978c14cce9532c1bee65f605c3259071c7b186b8fb58d9e1546fbfc2d31b  index.html
+d3e2dea24b3667c379c3c2ebfb328d7a5e1c4aa5e2b2297b3e170e511e0b4893  isonoura.html
+37e40973c4aad47750935feb95b12381c0e6ee76764f14e5ab056bd5a84f297d  nami_common.css
+034ecc6cd950fbacf6b082336802f0d5fd9927bbd3bf962629e8fc56d44e09fd  nami_common.js
+9c386cfaf65d30092de61be62876a9a4b8d8afc92fa8c9893726fae355a34139  manifest.json
+6651c83357681fa053934fe9631ecdd46d6a4e7cb85302b6823789a8476a1f95  sw.js
+8bfa4af9f964566385c87658aa97c405b6bbc1ab20b5a53a8d11811d78004c8a  img/logo-ks-white.png
+7c62482665ce844b5c6beda7df4f6762f74bbf76db5bad982e3e6e6d16232683  img/favicon.png
+3a6e72200778cee87d805746744648b29128a1f090338ea34952a2d241246bd2  img/favicon-32.png
+b51e1a01a074638f69a71980972ddd9c91922fecdda4bd7b9ece4f1c2be30e89  img/icon-192.png
+00de36a687a5c687177df2a17723f5a15fefe09b6361c12210d6070a4012b800  img/icon-192-maskable.png
+005a3a516e41f990e98da91d60207355eaa198885ebde6d177d12b1942e297b9  img/icon-512.png
+8d3b5c87c425b4999e95a131886c5b1e8573d16b60c3ca0ec5e853b9b620a357  img/icon-512-maskable.png
