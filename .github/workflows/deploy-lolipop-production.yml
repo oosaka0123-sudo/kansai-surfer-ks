@@ -1,0 +1,107 @@
+name: Deploy Kansai Surfer KS to Lolipop production
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kansai-surfer-production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      FTP_SERVER: ftp.lolipop.jp
+      FTP_SERVER_DIR: /kansai
+      SITE_URL: https://kansai.rss7.net/
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+
+      - name: Validate production source is present
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f index.html || { echo '::error::Production index.html is not present on main; refusing deployment.'; exit 1; }
+          test -f isonoura.html || { echo '::error::Production isonoura.html is not present on main; refusing deployment.'; exit 1; }
+
+      - name: Prepare safe deployment bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          STAGE="$RUNNER_TEMP/kansai-production"
+          rm -rf "$STAGE"
+          mkdir -p "$STAGE"
+
+          rsync -a ./ "$STAGE/" \
+            --exclude '.git/' \
+            --exclude '.github/' \
+            --exclude '.gitignore' \
+            --exclude 'docs/' \
+            --exclude 'prototype/' \
+            --exclude 'AGENTS.md' \
+            --exclude 'HANDOFF.md' \
+            --exclude 'PROJECT_SPEC.md' \
+            --exclude 'README.md' \
+            --exclude 'data/' \
+            --exclude 'realtime/' \
+            --exclude 'logs/'
+
+          test -f "$STAGE/index.html"
+          test -f "$STAGE/isonoura.html"
+          test ! -e "$STAGE/.github"
+          test ! -e "$STAGE/prototype"
+          echo 'KS production bundle prepared. Runtime data/log directories are preserved on the server.'
+
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y lftp
+
+      - name: Validate production FTPS settings
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_PROD_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_PROD_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          test -n "$FTP_USERNAME" || { echo '::error::KS_PROD_FTP_USER is not configured.'; exit 1; }
+          test -n "$FTP_PASSWORD" || { echo '::error::KS_PROD_FTP_PASSWORD is not configured.'; exit 1; }
+          [ "$FTP_SERVER" = 'ftp.lolipop.jp' ] || { echo '::error::Unexpected FTP host.'; exit 1; }
+          [ "$FTP_SERVER_DIR" = '/kansai' ] || { echo '::error::Unexpected production directory.'; exit 1; }
+          [ "$SITE_URL" = 'https://kansai.rss7.net/' ] || { echo '::error::Unexpected production URL.'; exit 1; }
+
+      - name: Upload to Lolipop without remote deletion
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_PROD_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_PROD_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          STAGE="$RUNNER_TEMP/kansai-production"
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 20
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER"
+          mirror --reverse --verbose=1 --no-perms "$STAGE" "$FTP_SERVER_DIR"
+          bye
+          LFTP_EOF
+
+      - name: Verify production pages
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "$SITE_URL" >/tmp/ks-home.html
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "${SITE_URL}isonoura.html" >/tmp/ks-isonoura.html
+          grep -qi '<html' /tmp/ks-home.html
+          grep -qi '<html' /tmp/ks-isonoura.html
+          echo 'Kansai Surfer KS production verification succeeded.'
