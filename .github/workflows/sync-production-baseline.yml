@@ -127,7 +127,8 @@ jobs:
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add index.html isonoura.html nami_common.css nami_common.js manifest.json sw.js docs/PRODUCTION_BASELINE_SHA256.txt img favicon.ico 2>/dev/null || true
+          git add index.html isonoura.html nami_common.css nami_common.js manifest.json sw.js docs/PRODUCTION_BASELINE_SHA256.txt img
+          if [ -f favicon.ico ]; then git add favicon.ico; fi
           if git diff --cached --quiet; then
             echo 'No baseline changes to commit.'
           else
