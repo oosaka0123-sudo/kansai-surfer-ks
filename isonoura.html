@@ -14,6 +14,40 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <link rel="icon" href="img/favicon.png" type="image/png">
 <link rel="stylesheet" href="nami_common.css?v=1018">
+<style>
+/* ---- Isonoura spot-hero: dark premium treatment, no photo yet ---- */
+/* Structured so a verified Isonoura-specific photo can be dropped into
+   .spot-hero-media later (as a <picture> element) without reworking layout. */
+.spot-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+.spot-hero-media {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse at 15% -10%, rgba(45, 100, 112, 0.22) 0%, transparent 55%),
+    radial-gradient(ellipse at 100% 120%, rgba(229, 82, 52, 0.14) 0%, transparent 60%),
+    var(--ink-deep);
+}
+.spot-hero-media-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(4, 15, 24, 0.15) 0%, rgba(4, 15, 24, 0.55) 100%);
+}
+.spot-hero-grid {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---- Lightweight reveal-on-scroll, CSS-first, reduced-motion aware ---- */
+@media (prefers-reduced-motion: no-preference) {
+  .reveal { opacity: 0; transform: translateY(20px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.is-visible { opacity: 1; transform: translateY(0); }
+}
+</style>
 <script src="https://elfsightcdn.com/platform.js" defer></script>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#0a1520">
@@ -115,6 +149,10 @@
 </section>
 
 <section class="spot-hero">
+  <div class="spot-hero-media" aria-hidden="true">
+    <!-- Future: insert a verified Isonoura-specific <picture> here when approved; keep this dark treatment until then. -->
+    <div class="spot-hero-media-overlay"></div>
+  </div>
   <div class="spot-hero-grid">
     <div>
       <div class="spot-meta">
@@ -163,7 +201,7 @@
 </div>
 
 <section class="section" style="padding-top:50px;padding-bottom:50px;">
-  <h2 class="section-title">
+  <h2 class="section-title reveal">
     <span class="no">01</span>
     <i class="fa-solid fa-lightbulb ico"></i>
     今日のアドバイス
@@ -175,7 +213,7 @@
 </section>
 
 <section class="section">
-  <h2 class="section-title">
+  <h2 class="section-title reveal">
     <span class="no">02</span><i class="fa-solid fa-camera-retro ico"></i>現地波レポート
   </h2>
   <div class="wave-report-box" style="margin:0;">
@@ -245,7 +283,7 @@
 </script>
 
 <section class="section cam-section">
-  <h2 class="section-title">
+  <h2 class="section-title reveal">
     <span class="no">03</span><i class="fa-solid fa-video ico"></i>ライブカメラ
   </h2>
   <p class="cam-intro">
@@ -276,7 +314,7 @@
 </section>
 
 <section class="section">
-  <h2 class="section-title">
+  <h2 class="section-title reveal">
     <span class="no">04</span><i class="fa-solid fa-chart-line ico"></i>時間別予報
   </h2>
   <div class="hourly-chart">
@@ -313,7 +351,7 @@
 </section>
 
 <section class="section">
-  <h2 class="section-title">
+  <h2 class="section-title reveal">
     <span class="no">05</span><i class="fa-solid fa-calendar-week ico"></i>週間予報
   </h2>
   <table class="weekly-table">
@@ -337,7 +375,7 @@
 </section>
 
 <section class="section">
-  <h2 class="section-title">
+  <h2 class="section-title reveal">
     <span class="no">06</span><i class="fa-solid fa-circle-info ico"></i>スポット情報
   </h2>
   <div class="profile-grid">
@@ -360,7 +398,7 @@
 </section>
 
 <section class="section" style="background:var(--ink-deep);">
-  <h2 class="section-title">
+  <h2 class="section-title reveal">
     <span class="no">07</span>
     <i class="fa-solid fa-map ico"></i>
     広域波高マップ
@@ -391,7 +429,7 @@
 </div>
 
 <section class="section" style="background:var(--ink-deep);">
-  <h2 class="section-title">
+  <h2 class="section-title reveal">
     <span class="no">08</span>
     <i class="fa-brands fa-instagram ico"></i>
     #磯ノ浦 SNS投稿
@@ -442,7 +480,7 @@
 
 <!-- 磯ノ浦 関連ブログ -->
 <section class="section" style="padding-top:50px;padding-bottom:60px;background:var(--ink-deep);">
-  <h2 class="section-title">
+  <h2 class="section-title reveal">
     <span class="no">BLOG</span>
     <i class="fa-solid fa-newspaper ico"></i>
     磯ノ浦 関連ブログ
@@ -594,6 +632,27 @@ if ('serviceWorker' in navigator) {
     });
   });
 }
+</script>
+<script>
+// ============ Lightweight CSS-first reveal on scroll ============
+(function(){
+  var targets = Array.prototype.slice.call(document.querySelectorAll('.reveal'));
+  if(!targets.length) return;
+  var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(reduced || !('IntersectionObserver' in window)){
+    targets.forEach(function(el){ el.classList.add('is-visible'); });
+    return;
+  }
+  var observer = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if(entry.isIntersecting){
+        entry.target.classList.add('is-visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -7% 0px' });
+  targets.forEach(function(el){ observer.observe(el); });
+})();
 </script>
 </body>
 </html>
