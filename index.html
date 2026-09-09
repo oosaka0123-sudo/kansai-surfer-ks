@@ -338,46 +338,166 @@
   border-bottom-color: var(--line, rgba(242,234,217,0.14));
 }
 
-/* ---- Hero: full/near-full viewport photo + HTML/CSS text overlay ---- */
+/* ---- Hero: approved dark-upper / photo-lower composition ---- */
+.site-header-fixed .top-bar {
+  background: rgba(6, 18, 28, 0.96);
+  border-bottom-color: rgba(242,234,217,0.12);
+}
+.site-header-fixed .top-strip { display: none; }
+.site-header-fixed .logo img { height: 54px !important; width: auto !important; }
+.site-header-fixed .logo .en {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 300;
+  letter-spacing: .035em;
+}
 .top-hero {
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  min-height: 92vh;
-  min-height: 92svh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 190px 24px 70px;
-  text-align: center;
+  min-height: 100vh;
+  min-height: 100svh;
+  display: grid;
+  grid-template-rows: minmax(58svh, auto) 42svh;
+  padding: 0;
+  text-align: left;
+  background: #06121c;
   border-bottom: none;
 }
-.hero-media { position: absolute; inset: 0; z-index: 0; }
-.hero-media picture,
-.hero-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.hero-media-overlay {
-  position: absolute; inset: 0;
-  background: linear-gradient(180deg, rgba(4,15,24,.94) 0%, rgba(4,15,24,.60) 32%, rgba(4,15,24,.28) 55%, rgba(4,15,24,.80) 100%);
+.hero-copy {
+  grid-row: 1;
+  position: relative;
+  z-index: 2;
+  align-self: end;
+  width: min(100%, 1240px);
+  max-width: none;
+  margin: 0 auto;
+  padding: clamp(150px, 17svh, 205px) clamp(28px, 6vw, 82px) clamp(28px, 4.5svh, 50px);
+  box-sizing: border-box;
 }
-.hero-copy { position: relative; z-index: 1; max-width: 900px; }
+.hero-script {
+  position: absolute;
+  top: clamp(112px, 12svh, 150px);
+  right: clamp(30px, 7vw, 96px);
+  margin: 0;
+  color: rgba(245,240,232,.12);
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 300;
+  font-size: clamp(1.05rem, 2.1vw, 1.9rem);
+  letter-spacing: .03em;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.hero-kicker {
+  margin: 0 0 14px;
+  color: rgba(245,240,232,.78);
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: clamp(.74rem, 1.05vw, .9rem);
+  font-weight: 400;
+  letter-spacing: .13em;
+}
 #top-hero-title {
-  font-size: clamp(2.1rem, 5vw, 4.5rem);
-  line-height: 1.38;
-  letter-spacing: 0.03em;
-  text-shadow: 0 3px 24px rgba(0,0,0,0.45);
+  width: 100%;
+  max-width: 900px;
+  margin: 0;
+  color: var(--cream, #f5f0e8);
+  font-family: 'Shippori Mincho B1', serif;
+  font-size: clamp(2rem, 4.2vw, 3.9rem);
+  font-weight: 400;
+  line-height: 1.42;
+  letter-spacing: .012em;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  text-shadow: none;
 }
 .top-hero .subtitle {
-  font-size: clamp(1.05rem, 2vw, 1.5rem);
-  text-shadow: 0 2px 16px rgba(0,0,0,0.4);
+  margin-top: 17px;
+  color: var(--teal-pale, #9bd4cf);
+  font-size: clamp(.9rem, 1.4vw, 1.08rem);
+  font-weight: 500;
+  line-height: 1.65;
+  letter-spacing: .035em;
+  text-shadow: none;
 }
 .top-hero .lead {
-  font-size: clamp(0.95rem, 1.4vw, 1.1rem);
-  text-shadow: 0 2px 16px rgba(0,0,0,0.4);
+  max-width: 760px;
+  margin: 12px 0 0;
+  color: rgba(245,240,232,.72);
+  font-size: clamp(.8rem, 1.1vw, .96rem);
+  line-height: 1.82;
+  text-shadow: none;
 }
-@media (max-width: 600px) {
-  .top-hero { min-height: 86vh; min-height: 86svh; padding: 150px 20px 56px; }
+.hero-media {
+  grid-row: 2;
+  position: relative;
+  inset: auto;
+  z-index: 1;
+  min-height: 42svh;
+  overflow: hidden;
+  background: #06121c;
 }
-
+.hero-media picture,
+.hero-media img { width: 100%; height: 100%; display: block; }
+.hero-media img {
+  object-fit: cover;
+  object-position: 44% 42%;
+  transform: scale(1.015);
+}
+.hero-media-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, #06121c 0%, rgba(6,18,28,.46) 11%, rgba(6,18,28,.03) 34%, rgba(6,18,28,.06) 72%, rgba(6,18,28,.36) 100%);
+  pointer-events: none;
+}
+.hero-scroll, .hero-mantra {
+  position: absolute;
+  z-index: 2;
+  bottom: 16px;
+  color: rgba(255,255,255,.74);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .64rem;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+.hero-scroll { left: clamp(22px, 4vw, 60px); writing-mode: vertical-rl; transform: rotate(180deg); }
+.hero-mantra { right: clamp(22px, 4vw, 60px); }
+@media (max-width: 760px) {
+  .site-header-fixed .top-bar { padding: 10px 16px; min-height: 76px; box-sizing: border-box; }
+  .site-header-fixed .logo { min-width: 0; flex: 0 1 auto; }
+  .site-header-fixed .logo img { height: 48px !important; margin-right: 8px !important; }
+  .site-header-fixed .logo .en { font-size: .9rem; white-space: nowrap; }
+  .site-header-fixed .nav-pc { display: none !important; }
+  .site-header-fixed .sns-buttons { margin-left: auto; margin-right: 10px; gap: 13px; }
+  .site-header-fixed .sns-buttons a { font-size: 21px; }
+  .site-header-fixed .hamburger { display: flex !important; flex: 0 0 34px; }
+  .site-header-fixed .tag-live { display: none !important; }
+  .top-hero { grid-template-rows: minmax(58svh, auto) 42svh; }
+  .hero-copy { padding: 124px 22px 26px; }
+  .hero-script { top: 100px; right: 22px; font-size: .94rem; opacity: .72; }
+  .hero-kicker { margin-bottom: 11px; font-size: .7rem; letter-spacing: .1em; }
+  #top-hero-title {
+    max-width: 100%;
+    font-size: clamp(1.44rem, 6.25vw, 2.15rem);
+    line-height: 1.52;
+    letter-spacing: 0;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
+  .top-hero .subtitle { margin-top: 13px; font-size: .86rem; line-height: 1.62; }
+  .top-hero .lead { margin-top: 9px; font-size: .76rem; line-height: 1.72; }
+  .hero-media { min-height: 42svh; }
+  .hero-media img { object-position: 38% 46%; transform: scale(1.02); }
+  .hero-scroll, .hero-mantra { bottom: 13px; font-size: .56rem; }
+  .hero-mantra { max-width: 158px; text-align: right; line-height: 1.55; }
+}
+@media (max-width: 390px) {
+  .hero-copy { padding-left: 20px; padding-right: 20px; }
+  #top-hero-title { font-size: 1.38rem; line-height: 1.54; }
+  .top-hero .lead { font-size: .74rem; }
+}
 /* ---- Lightweight reveal-on-scroll, CSS-first, reduced-motion aware ---- */
 @media (prefers-reduced-motion: no-preference) {
   .reveal { opacity: 0; transform: translateY(20px); transition: opacity .7s ease, transform .7s ease; }
@@ -474,7 +594,17 @@
 </div>
 
 <section class="top-hero" id="topHero">
-  <div class="hero-media" aria-hidden="true">
+  <div class="hero-copy">
+    <p class="hero-script" aria-hidden="true">Good Waves Better Days</p>
+    <p class="hero-kicker">波がある、人生が動き出す。</p>
+    <h1 id="top-hero-title">関西サーフィン波情報｜磯ノ浦・生見・国府の浜・伊良湖の無料波予報</h1>
+    <div class="subtitle">全9ポイントの波をAPIでリアルタイムチェック</div>
+    <p class="lead">
+      関西サーファーが本気で通う9ポイントのリアルタイムデータを、10分毎に自動更新。
+      ★星評価と「行くべきか」判定で、迷う時間をゼロに。
+    </p>
+  </div>
+  <div class="hero-media">
     <picture>
       <source media="(min-width: 761px)" type="image/avif" srcset="img/hero-surf-desktop.avif">
       <source media="(min-width: 761px)" type="image/webp" srcset="img/hero-surf-desktop.webp">
@@ -482,15 +612,9 @@
       <source type="image/webp" srcset="img/hero-surf-mobile.webp">
       <img src="img/hero-surf-mobile.webp" alt="" loading="eager" fetchpriority="high" decoding="async">
     </picture>
-    <div class="hero-media-overlay"></div>
-  </div>
-  <div class="hero-copy">
-    <h1 id="top-hero-title">関西サーフィン波情報｜磯ノ浦・生見・国府の浜・伊良湖の無料波予報</h1>
-    <div class="subtitle">全9ポイントの波をAPIでリアルタイムチェック</div>
-    <p class="lead">
-      関西サーファーが本気で通う9ポイントのリアルタイムデータを、10分毎に自動更新。
-      ★星評価と「行くべきか」判定で、迷う時間をゼロに。
-    </p>
+    <div class="hero-media-overlay" aria-hidden="true"></div>
+    <span class="hero-scroll" aria-hidden="true">SCROLL</span>
+    <span class="hero-mantra" aria-hidden="true">SURF / LOCAL / LIVE BETTER</span>
   </div>
 </section>
 
