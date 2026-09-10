@@ -1,4 +1,4 @@
-name: Fix Hero video autoplay on redesign branch
+name: Fix Hero Video Autoplay
 
 on:
   issue_comment:
@@ -9,7 +9,7 @@ permissions:
   issues: write
 
 jobs:
-  fix-hero-video-autoplay:
+  fix:
     if: >-
       ${{
         github.event_name == 'issue_comment' &&
@@ -29,147 +29,75 @@ jobs:
           ref: feat/top-isonoura-production-redesign
           fetch-depth: 0
 
-      - name: Make Hero video load and autoplay immediately
+      - name: Patch index
         shell: bash
         run: |
           set -euo pipefail
-          python - <<'PY'
+          python3 - <<'PY'
           from pathlib import Path
+          import re
 
-          p = Path('index.html')
-          s = p.read_text(encoding='utf-8')
+          p = Path("index.html")
+          s = p.read_text(encoding="utf-8")
 
-          old_video = '''    <video class="hero-video" id="heroVideo" muted loop playsinline autoplay preload="none" aria-hidden="true" tabindex="-1">
-              <source data-src="img/hero-surf-real.mp4" type="video/mp4">
-            </video>'''
-          new_video = '''    <video class="hero-video" id="heroVideo" muted autoplay loop playsinline preload="auto" aria-hidden="true" tabindex="-1">
-              <source src="img/hero-surf-real.mp4" type="video/mp4">
-            </video>'''
+          s, n1 = re.subn(
+              r'<video class="hero-video" id="heroVideo"[^>]*>.*?</video>',
+              '<video class="hero-video" id="heroVideo" muted autoplay loop playsinline preload="auto" aria-hidden="true" tabindex="-1">\n      <source src="img/hero-surf-real.mp4" type="video/mp4">\n    </video>',
+              s,
+              count=1,
+              flags=re.S,
+          )
+          if n1 != 1:
+              raise SystemExit("Hero video markup not found")
 
-          # Handle current production-baseline indentation exactly as stored.
-          if old_video not in s:
-              old_video = '''    <video class="hero-video" id="heroVideo" muted loop playsinline autoplay preload="none" aria-hidden="true" tabindex="-1">
-      <source data-src="img/hero-surf-real.mp4" type="video/mp4">
-    </video>'''
-              new_video = '''    <video class="hero-video" id="heroVideo" muted autoplay loop playsinline preload="auto" aria-hidden="true" tabindex="-1">
-      <source src="img/hero-surf-real.mp4" type="video/mp4">
-    </video>'''
-          if old_video not in s:
-              raise SystemExit('Expected current Hero video markup not found; refusing broad rewrite.')
-          s = s.replace(old_video, new_video, 1)
-
-          old_script = '''<script>
+          s, n2 = re.subn(
+              r'<script>\s*\(\(\) => \{\s*const video = document\.getElementById\(\'heroVideo\'\);.*?\}\)\(\);\s*</script>',
+              '''<script>
           (() => {
             const video = document.getElementById('heroVideo');
             if (!video) return;
-            const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-            const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-            const saveData = !!(connection && connection.saveData);
-            const verySlow = !!(connection && /(^|-)2g$/.test(connection.effectiveType || ''));
-            if (reduced || saveData || verySlow) return;
-            const source = video.querySelector('source[data-src]');
-            if (!source) return;
-            const start = () => {
-              source.src = source.dataset.src;
-              source.removeAttribute('data-src');
-              video.load();
-              const ready = () => {
-                video.classList.add('is-ready');
-                video.play().catch(() => {});
-              };
-              if (video.readyState >= 3) ready();
-              else video.addEventListener('canplay', ready, { once: true });
+            video.muted = true;
+            video.defaultMuted = true;
+
+            const playHero = () => {
+              const promise = video.play();
+              if (promise && typeof promise.then === 'function') {
+                promise.then(() => video.classList.add('is-ready')).catch(() => {});
+              }
             };
-            const schedule = () => {
-              if ('requestIdleCallback' in window) requestIdleCallback(start, { timeout: 1400 });
-              else setTimeout(start, 450);
-            };
-            if (document.readyState === 'complete') schedule();
-            else window.addEventListener('load', schedule, { once: true });
+
+            video.addEventListener('playing', () => video.classList.add('is-ready'), { once: true });
+            video.addEventListener('loadeddata', playHero, { once: true });
+            video.addEventListener('canplay', playHero, { once: true });
+            playHero();
+            document.addEventListener('visibilitychange', () => {
+              if (!document.hidden && video.paused) playHero();
+            });
           })();
-          </script>'''
-          if old_script not in s:
-              old_script = '''<script>
-(() => {
-  const video = document.getElementById('heroVideo');
-  if (!video) return;
-  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-  const saveData = !!(connection && connection.saveData);
-  const verySlow = !!(connection && /(^|-)2g$/.test(connection.effectiveType || ''));
-  if (reduced || saveData || verySlow) return;
-  const source = video.querySelector('source[data-src]');
-  if (!source) return;
-  const start = () => {
-    source.src = source.dataset.src;
-    source.removeAttribute('data-src');
-    video.load();
-    const ready = () => {
-      video.classList.add('is-ready');
-      video.play().catch(() => {});
-    };
-    if (video.readyState >= 3) ready();
-    else video.addEventListener('canplay', ready, { once: true });
-  };
-  const schedule = () => {
-    if ('requestIdleCallback' in window) requestIdleCallback(start, { timeout: 1400 });
-    else setTimeout(start, 450);
-  };
-  if (document.readyState === 'complete') schedule();
-  else window.addEventListener('load', schedule, { once: true });
-})();
-</script>'''
-          new_script = '''<script>
-(() => {
-  const video = document.getElementById('heroVideo');
-  if (!video) return;
+          </script>''',
+              s,
+              count=1,
+              flags=re.S,
+          )
+          if n2 != 1:
+              raise SystemExit("Hero video bootstrap script not found")
 
-  video.muted = true;
-  video.defaultMuted = true;
-
-  const revealAndPlay = () => {
-    if (video.readyState >= 2) video.classList.add('is-ready');
-    const attempt = video.play();
-    if (attempt && typeof attempt.catch === 'function') attempt.catch(() => {});
-  };
-
-  revealAndPlay();
-  video.addEventListener('loadeddata', revealAndPlay, { once: true });
-  video.addEventListener('canplay', revealAndPlay, { once: true });
-  document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && video.paused) revealAndPlay();
-  });
-})();
-</script>'''
-          if old_script not in s:
-              raise SystemExit('Expected current deferred Hero script not found; refusing broad rewrite.')
-          s = s.replace(old_script, new_script, 1)
-          p.write_text(s, encoding='utf-8', newline='\n')
+          p.write_text(s, encoding="utf-8", newline="\n")
           PY
 
-      - name: Validate autoplay fix scope
+      - name: Validate
         shell: bash
         run: |
           set -euo pipefail
           grep -F 'muted autoplay loop playsinline preload="auto"' index.html
           grep -F '<source src="img/hero-surf-real.mp4" type="video/mp4">' index.html
-          grep -F 'video.defaultMuted = true' index.html
-          grep -F "video.addEventListener('loadeddata', revealAndPlay" index.html
-          grep -F "video.addEventListener('canplay', revealAndPlay" index.html
-          if grep -Fq 'source[data-src]' index.html; then
-            echo '::error::Deferred Hero source logic still present'
-            exit 1
-          fi
-          if grep -Fq 'requestIdleCallback(start' index.html; then
-            echo '::error::Deferred Hero start logic still present'
-            exit 1
-          fi
+          grep -F "video.addEventListener('playing'" index.html
+          ! grep -Fq 'source[data-src]' index.html
+          ! grep -Fq 'requestIdleCallback(start' index.html
           git diff --check
-          CHANGED="$(git diff --name-only)"
-          printf '%s\n' "$CHANGED"
-          test "$CHANGED" = 'index.html'
+          test "$(git diff --name-only)" = "index.html"
 
-      - name: Commit and push fix
+      - name: Commit and push
         shell: bash
         run: |
           set -euo pipefail
@@ -178,11 +106,3 @@ jobs:
           git add index.html
           git commit -m 'fix: make Top Hero video autoplay reliably'
           git push origin HEAD:feat/top-isonoura-production-redesign
-          echo "FIX_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
-
-      - name: Report commit
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          gh issue comment "${{ github.event.issue.number }}" --repo "${{ github.repository }}" --body "Hero video autoplay fix pushed to \`feat/top-isonoura-production-redesign\` at \`$FIX_SHA\`. The MP4 now uses a direct source and immediate autoplay retry logic. Production was not touched."
