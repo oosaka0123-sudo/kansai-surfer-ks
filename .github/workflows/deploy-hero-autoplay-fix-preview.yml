@@ -1,0 +1,101 @@
+name: Deploy Hero Autoplay Fix Preview
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: ks-hero-autoplay-preview-hotfix
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    if: >-
+      ${{
+        github.event_name == 'issue_comment' &&
+        github.event.action == 'created' &&
+        github.event.comment.author_association == 'OWNER' &&
+        github.event.comment.user.type != 'Bot' &&
+        github.event.issue.pull_request == null &&
+        contains(github.event.comment.body, '@deploy-hero-autoplay-fix-preview')
+      }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      DEPLOY_HOST: ftp.lolipop.jp
+      DEPLOY_ROOT: /nami
+      DEPLOY_SUBDIR: ks-production-redesign
+      SITE_URL: https://nami.rss7.net/ks-production-redesign/
+
+    steps:
+      - name: Checkout redesign branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/top-isonoura-production-redesign
+          fetch-depth: 1
+
+      - name: Prepare preview index only
+        shell: bash
+        run: |
+          set -euo pipefail
+          STAGE="$RUNNER_TEMP/ks-hero-hotfix"
+          mkdir -p "$STAGE"
+          cp index.html "$STAGE/index.html"
+          python3 - <<'PY'
+          from pathlib import Path
+          import os, re
+          p = Path(os.environ['RUNNER_TEMP']) / 'ks-hero-hotfix' / 'index.html'
+          s = p.read_text(encoding='utf-8')
+          s = s.replace('href="/manifest.json"', 'href="manifest.json"')
+          s = re.sub(
+              r"<script>\s*if \('serviceWorker' in navigator\) \{.*?navigator\.serviceWorker\.register\('/sw\.js'\).*?</script>",
+              '<!-- service worker disabled in isolated nami preview -->',
+              s,
+              flags=re.S,
+          )
+          p.write_text(s, encoding='utf-8', newline='\n')
+          PY
+          grep -F 'muted autoplay loop playsinline preload="auto"' "$STAGE/index.html"
+          grep -F '<source src="img/hero-surf-real.mp4" type="video/mp4">' "$STAGE/index.html"
+          ! grep -Fq 'source[data-src]' "$STAGE/index.html"
+
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y lftp
+
+      - name: Upload preview index only
+        shell: bash
+        env:
+          DEPLOY_USER: ${{ secrets.KS_NAMI_FTP_USER }}
+          DEPLOY_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          [[ -n "$DEPLOY_USER" && -n "$DEPLOY_PASSWORD" ]]
+          [[ "$DEPLOY_ROOT/$DEPLOY_SUBDIR" == '/nami/ks-production-redesign' ]]
+          STAGE="$RUNNER_TEMP/ks-hero-hotfix"
+          lftp <<LFTP
+          set cmd:fail-exit yes
+          set net:max-retries 2
+          set net:timeout 20
+          set ssl:verify-certificate yes
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          open -u "$DEPLOY_USER","$DEPLOY_PASSWORD" "ftp://$DEPLOY_HOST:21"
+          cd "$DEPLOY_ROOT/$DEPLOY_SUBDIR"
+          put "$STAGE/index.html" -o index.html
+          bye
+          LFTP
+
+      - name: Verify deployed Hero markup
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --max-time 20 --retry 3 --retry-delay 2 "${SITE_URL}?v=${GITHUB_RUN_ID}" > /tmp/top.html
+          grep -F 'muted autoplay loop playsinline preload="auto"' /tmp/top.html
+          grep -F '<source src="img/hero-surf-real.mp4" type="video/mp4">' /tmp/top.html
+          ! grep -Fq 'source[data-src]' /tmp/top.html
+          echo 'Hero autoplay fix is live on isolated nami preview.'
