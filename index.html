@@ -625,8 +625,8 @@
       <source type="image/webp" srcset="img/hero-surf-mobile.webp">
       <img src="img/hero-surf-mobile.webp" alt="" loading="eager" fetchpriority="high" decoding="async">
     </picture>
-    <video class="hero-video" id="heroVideo" muted loop playsinline autoplay preload="none" aria-hidden="true" tabindex="-1">
-      <source data-src="img/hero-surf-real.mp4" type="video/mp4">
+    <video class="hero-video" id="heroVideo" muted autoplay loop playsinline preload="auto" aria-hidden="true" tabindex="-1">
+      <source src="img/hero-surf-real.mp4" type="video/mp4">
     </video>
     <div class="hero-media-overlay" aria-hidden="true"></div>
     <span class="hero-scroll" aria-hidden="true">SCROLL</span>
@@ -637,30 +637,23 @@
 (() => {
   const video = document.getElementById('heroVideo');
   if (!video) return;
-  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-  const saveData = !!(connection && connection.saveData);
-  const verySlow = !!(connection && /(^|-)2g$/.test(connection.effectiveType || ''));
-  if (reduced || saveData || verySlow) return;
-  const source = video.querySelector('source[data-src]');
-  if (!source) return;
-  const start = () => {
-    source.src = source.dataset.src;
-    source.removeAttribute('data-src');
-    video.load();
-    const ready = () => {
-      video.classList.add('is-ready');
-      video.play().catch(() => {});
-    };
-    if (video.readyState >= 3) ready();
-    else video.addEventListener('canplay', ready, { once: true });
+  video.muted = true;
+  video.defaultMuted = true;
+
+  const playHero = () => {
+    const promise = video.play();
+    if (promise && typeof promise.then === 'function') {
+      promise.then(() => video.classList.add('is-ready')).catch(() => {});
+    }
   };
-  const schedule = () => {
-    if ('requestIdleCallback' in window) requestIdleCallback(start, { timeout: 1400 });
-    else setTimeout(start, 450);
-  };
-  if (document.readyState === 'complete') schedule();
-  else window.addEventListener('load', schedule, { once: true });
+
+  video.addEventListener('playing', () => video.classList.add('is-ready'), { once: true });
+  video.addEventListener('loadeddata', playHero, { once: true });
+  video.addEventListener('canplay', playHero, { once: true });
+  playHero();
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && video.paused) playHero();
+  });
 })();
 </script>
 
