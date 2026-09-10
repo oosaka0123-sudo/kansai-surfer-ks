@@ -1,0 +1,104 @@
+name: Verify Hero Video in Browser
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    if: >-
+      ${{
+        github.event_name == 'issue_comment' &&
+        github.event.action == 'created' &&
+        github.event.comment.author_association == 'OWNER' &&
+        github.event.comment.user.type != 'Bot' &&
+        github.event.issue.pull_request == null &&
+        contains(github.event.comment.body, '@verify-hero-video-browser')
+      }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+
+    steps:
+      - name: Install browser driver library
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v google-chrome >/dev/null || command -v chromium >/dev/null || command -v chromium-browser >/dev/null
+          mkdir -p "$RUNNER_TEMP/browser-check"
+          cd "$RUNNER_TEMP/browser-check"
+          npm init -y >/dev/null 2>&1
+          npm install --no-audit --no-fund playwright-core@1.55.0 >/dev/null
+
+      - name: Verify Hero actually advances in Chromium
+        shell: bash
+        env:
+          PREVIEW_URL: https://nami.rss7.net/ks-production-redesign/
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/browser-check"
+          cat > verify.cjs <<'JS'
+          const { chromium } = require('playwright-core');
+          const { execSync } = require('child_process');
+
+          function browserPath() {
+            for (const cmd of ['google-chrome', 'chromium', 'chromium-browser']) {
+              try { return execSync(`command -v ${cmd}`, {encoding:'utf8'}).trim(); } catch (_) {}
+            }
+            throw new Error('No Chromium browser found on runner');
+          }
+
+          (async () => {
+            const browser = await chromium.launch({
+              headless: true,
+              executablePath: browserPath(),
+              args: ['--disable-dev-shm-usage', '--no-sandbox']
+            });
+            const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+            const url = `${process.env.PREVIEW_URL}?browsercheck=${Date.now()}`;
+            const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+            if (!response || !response.ok()) throw new Error(`Preview HTTP status ${response && response.status()}`);
+            await page.waitForSelector('#heroVideo', { timeout: 10000 });
+
+            const states = [];
+            for (let i = 0; i < 5; i++) {
+              await page.waitForTimeout(i === 0 ? 1200 : 1000);
+              states.push(await page.$eval('#heroVideo', v => ({
+                currentTime: Number(v.currentTime.toFixed(3)),
+                paused: v.paused,
+                readyState: v.readyState,
+                networkState: v.networkState,
+                muted: v.muted,
+                autoplay: v.autoplay,
+                loop: v.loop,
+                playsInline: v.playsInline,
+                currentSrc: v.currentSrc,
+                videoWidth: v.videoWidth,
+                videoHeight: v.videoHeight,
+                className: v.className
+              })));
+            }
+            console.log(JSON.stringify(states, null, 2));
+
+            const times = states.map(s => s.currentTime);
+            const deltas = times.slice(1).map((t, i) => t - times[i]);
+            const progressed = deltas.some(d => d > 0.45) || (Math.max(...times) - Math.min(...times) > 0.8);
+            const final = states[states.length - 1];
+
+            if (!final.currentSrc.endsWith('/img/hero-surf-real.mp4')) throw new Error(`Unexpected video source: ${final.currentSrc}`);
+            if (!final.muted || !final.autoplay || !final.loop || !final.playsInline) throw new Error('Required muted/autoplay/loop/playsinline state is not active');
+            if (final.readyState < 2 || final.videoWidth < 1 || final.videoHeight < 1) throw new Error('Video media did not decode');
+            if (final.paused) throw new Error('Hero video is paused');
+            if (!progressed) throw new Error(`Hero video currentTime did not advance: ${times.join(', ')}`);
+            if (!final.className.includes('is-ready')) throw new Error(`Hero video never became visible: ${final.className}`);
+
+            console.log(`PASS: Hero video is visibly enabled and currentTime advanced: ${times.join(' -> ')}`);
+            await browser.close();
+          })().catch(async err => {
+            console.error(err && err.stack || err);
+            process.exit(1);
+          });
+          JS
+          node verify.cjs
