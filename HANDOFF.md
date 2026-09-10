@@ -1,11 +1,11 @@
 # Kansai Surfer KS - Current Handoff
 
-Updated: 2026-09-10 20:36 JST
+Updated: 2026-09-10 20:58 JST
 
 ## Restart first
 This handoff is for `oosaka0123-sudo/kansai-surfer-ks` only.
 
-At the next session, read this file first, then inspect current GitHub Issue #27, draft PR #28, the redesign branch, and the latest Actions runs before making changes.
+At the next session, read this file first, then inspect Issue #27, draft PR #28, the redesign branch, and current GitHub Actions state before making changes.
 
 Do not return to the old isolated prototype as the implementation target. The real target is the verified production-equivalent Top + Isonoura baseline.
 
@@ -13,8 +13,7 @@ Do not return to the old isolated prototype as the implementation target. The re
 - Repository: `oosaka0123-sudo/kansai-surfer-ks`
 - Production: `https://kansai.rss7.net/`
 - Test host: `https://nami.rss7.net/`
-- Current `main` observed before this handoff update: `c406ba2c7ae5e2134b29a486f66a07080059392e` (`ci: add real-browser Hero video verification`)
-- Production has NOT been deployed from the redesign work in this session.
+- Production has NOT been deployed from this redesign work.
 - Do not run production deployment without explicit owner approval in the current turn.
 
 ## Real redesign workstream
@@ -23,10 +22,10 @@ Issue:
 
 Draft PR:
 - #28 `feat: production Top + Isonoura redesign`
-- State at handoff: OPEN / DRAFT / not merged
+- State verified 2026-09-10: OPEN / DRAFT / not merged / mergeable
 - Branch: `feat/top-isonoura-production-redesign`
-- Head observed at handoff: `7c70457bec450eec389c1722826ac94077dafdc8`
-- PR remained mergeable, but must stay draft until browser QA and owner visual approval are complete.
+- Head verified: `7c70457bec450eec389c1722826ac94077dafdc8`
+- Keep PR #28 draft until remaining browser QA and owner visual approval are complete.
 
 Verified production baseline used for the redesign:
 - `af260549139a577745c2241593557d5c4a52fe54`
@@ -41,10 +40,10 @@ Actual production-source files are the target:
 Do not implement the final site inside `prototype/ks-redesign/`.
 
 ## Owner-approved Top Hero direction
-The approved Top Hero must remain the source of truth:
+The approved Top Hero remains the source of truth:
 - dark navy/black upper area with generous negative space;
 - approved sunrise/ocean/paddling-surfer scene in the lower area;
-- photo should sit relatively high within the lower Hero area;
+- photo relatively high within the lower Hero area;
 - HTML/CSS text overlay, never baked into the image;
 - white KS logo / Kansai Surf branding;
 - Instagram, Facebook and hamburger visible on mobile;
@@ -56,7 +55,7 @@ The approved Top Hero must remain the source of truth:
 
 Do not regenerate or replace the approved Hero scene unless the owner explicitly asks.
 
-Responsive approved scene assets are already present on the redesign branch:
+Responsive approved still assets are already present on the redesign branch:
 - `img/hero-surf-mobile.avif`
 - `img/hero-surf-mobile.webp`
 - `img/hero-surf-desktop.avif`
@@ -64,55 +63,91 @@ Responsive approved scene assets are already present on the redesign branch:
 
 Isonoura needs its own spot-specific photo. Do not reuse the generic Top Hero for Isonoura.
 
-## Current blocker: Hero video is still not moving
-The owner reported immediately before handoff: `動いてないね`.
+## Hero video blocker status: RESOLVED on current isolated preview
+The earlier handoff said the Hero video was still using deferred `data-src` loading. That description is now stale relative to the current PR branch.
 
-The redesign branch currently contains a Hero video element for:
-- `img/hero-surf-real.mp4`
+Current `feat/top-isonoura-production-redesign/index.html` uses the reliable direct source form:
+- `<source src="img/hero-surf-real.mp4" type="video/mp4">`
+- `autoplay muted loop playsinline preload="auto"`
+- poster fallback remains present
+- JavaScript attempts `play()` and retries
+- `loadeddata` / `canplay` add `.is-ready`
 
-But the observed `index.html` still uses deferred loading logic:
-- `<source data-src="img/hero-surf-real.mp4">`
-- video source is assigned after page load / idle scheduling;
-- poster image remains underneath until the video receives `canplay` and `.is-ready` is added.
+### HTTP / preview verification
+Preview checked:
+- `https://nami.rss7.net/ks-production-redesign/`
 
-So the next session must treat `Hero video does not visibly autoplay` as the active bug, not as completed work.
+Verified from the authorized Surface:
+- preview HTML returns HTTP 200;
+- deployed HTML references `img/hero-surf-real.mp4` directly;
+- MP4 returns HTTP 200;
+- content type is `video/mp4`;
+- the file is served with normal media headers including content length / byte range support.
 
-### Failed repair attempts that must not be described as successful
+### REAL browser playback verification
+Verified on the Surface using fresh browser profiles and a 390x844 mobile viewport.
+
+Chrome:
+- `paused=false`;
+- `readyState=4`;
+- `currentTime` advanced from about 4.35s to 6.36s over a two-second interval;
+- `.is-ready=true`;
+- video dimensions were non-zero;
+- no media error.
+
+Opera:
+- `paused=false`;
+- `readyState=4`;
+- `currentTime` advanced across checks;
+- `.is-ready=true`;
+- computed `opacity=1`, visible/displayed, with a positive on-screen rectangle;
+- video dimensions were non-zero;
+- no media error.
+
+Visual-frame confirmation in Opera:
+- two full viewport screenshots were captured two seconds apart;
+- screenshot hashes differed;
+- `FRAME_CHANGED=True`.
+
+Conclusion: the current isolated `nami` production-redesign preview visibly plays the Hero video in real Chrome and Opera browser engines. No further Hero code patch is justified at this point.
+
+The earlier `動いてないね` observation was likely from an older preview revision or stale browser/cache state, but the exact original cause is NOT proven. Do not claim a Service Worker was definitively the cause.
+
+If the owner's normal day-to-day Opera profile still shows a frozen Hero, the next diagnostic should reproduce specifically in that existing profile before changing code again.
+
+## Failed historical repair attempts — keep for audit only
+These failures happened before the current working branch state and must not be described as the mechanism that fixed the Hero:
+
 1. Claude retry:
-   - Workflow: `Claude Implementation`
-   - Run: `34449978508`
-   - Result: FAILURE in `Run Claude Code implementation`
-   - No reliable Hero-video fix was produced by that run.
+- Workflow: `Claude Implementation`
+- Run: `34449978508`
+- Result: FAILURE in `Run Claude Code implementation`.
 
-2. One-shot workflow added on main:
-   - `.github/workflows/fix-hero-video-autoplay.yml`
-   - creation commit: `e85ffb6cf1b14dcc66c9372f239aa5eea57d4ffc`
-   - first observed Actions run: `34450109784`
-   - result: FAILURE with no jobs, indicating the workflow did not execute the intended branch repair.
-   - Also, the trigger comment had already been posted before the new workflow existed, so it could not have repaired the branch at that point.
+2. One-shot workflow on main:
+- `.github/workflows/fix-hero-video-autoplay.yml`
+- creation commit: `e85ffb6cf1b14dcc66c9372f239aa5eea57d4ffc`
+- observed run: `34450109784`
+- result: FAILURE with no jobs.
 
-Do not claim the one-shot fix was applied.
+The current PR head `7c70457bec450eec389c1722826ac94077dafdc8` had no GitHub check-runs attached when rechecked after browser verification. Therefore browser verification above is the authoritative current Hero result; do not invent a passing CI check.
 
 ## Recommended next sequence
-1. Inspect current branch `feat/top-isonoura-production-redesign` and confirm `img/hero-surf-real.mp4` actually exists and is a valid playable MP4.
-2. Inspect `.github/workflows/fix-hero-video-autoplay.yml` syntax/parser failure and either repair it safely or edit the redesign branch directly through an auditable branch commit.
-3. Simplify Hero video loading for reliability: direct `src`, `muted autoplay loop playsinline`, poster fallback, and a small `play()` retry. Avoid delaying the only motion until idle if the owner expects it to move immediately.
-4. Verify in a REAL browser on the `nami` preview, especially Android/Chrome/Opera-sized mobile viewport. Static HTML checks are not enough for autoplay.
-5. Confirm the approved still image remains the fallback and first-paint visual if autoplay is blocked by browser policy or data-saving/reduced-motion settings.
-6. Only after the video visibly moves and the owner approves the Hero, continue Top + Isonoura QA.
-7. Keep PR #28 draft. Do not merge or deploy production without explicit approval.
+1. Do NOT reopen Hero loading code unless the owner's normal browser profile reproduces the freeze.
+2. Keep PR #28 Draft and production untouched.
+3. Continue remaining Top + Isonoura browser/visual QA from the production-equivalent preview.
+4. Verify responsive layout, navigation, live-data hooks, Isonoura spot-specific imagery, reduced-motion behavior, and no regression to existing public functionality.
+5. Obtain owner visual approval before moving PR #28 out of Draft.
+6. Merge/deploy production only after explicit owner approval in that turn.
 
 ## Preview / QA
-Production-equivalent redesign preview workflow exists:
+Production-equivalent redesign preview workflow:
 - `.github/workflows/deploy-production-redesign-preview.yml`
-- intended preview: `https://nami.rss7.net/ks-production-redesign/`
+- preview: `https://nami.rss7.net/ks-production-redesign/`
 
-There is also historical isolated-prototype preview infrastructure under `/nami/ks-redesign`; do not confuse that with the production-baseline redesign target.
-
-Real-browser Hero verification infrastructure was added to `main` by commit `c406ba2c7ae5e2134b29a486f66a07080059392e`. Inspect its current workflow/run state at restart rather than assuming it passed.
+There is also historical isolated-prototype preview infrastructure under `/nami/ks-redesign`; do not confuse it with the production-baseline redesign target.
 
 ## Production deployment workflow
-A manual production workflow exists:
+Manual workflow:
 - `.github/workflows/deploy-lolipop-production.yml`
 - destination guard: `/kansai`
 - URL guard: `https://kansai.rss7.net/`
@@ -120,30 +155,7 @@ A manual production workflow exists:
 - runtime `data/`, `realtime/`, `logs/` excluded/preserved
 - production secrets: `KS_PROD_FTP_USER`, `KS_PROD_FTP_PASSWORD`
 
-The production workflow is manual by design. Do not trigger it as part of handoff/restart.
-
-## Other Lolipop deployment context from this chat
-Deployment workflows were also added directly to Lolipop-hosted site repositories rather than to `ai-master`:
-- `sleague-now`: `.github/workflows/deploy-lolipop.yml`, commit `d09c5a411a312799d6fb3d435bac24aa2c863762`
-- `kansai-surfer-ks`: `.github/workflows/deploy-lolipop-production.yml`, commit `f9d5494d6a4855202857825855b8329f8765b647`
-
-Existing Lolipop workflows were already present in:
-- `claudecode-kyoshitsu`
-- `50plus`
-- `rss7-ai-works`
-
-Do not modify `ai-master` merely to duplicate these site deployment workflows.
-
-## AI Works side note from this chat
-For `oosaka0123-sudo/rss7-ai-works`, Lolipop FTP authentication was confirmed working. The failed production run was blocked by missing production Environment secret `RSS7_ADMIN_PASSWORD`, not by the FTP password.
-
-Observed failed run:
-- `Deploy production` run `34079106845`
-- FTP configuration/authentication reached the server/API-directory inspection stage;
-- failure occurred at `Ensure server-only API config exists`;
-- required secret: `RSS7_ADMIN_PASSWORD` (workflow requires 12+ characters).
-
-Never put the secret value in chat or repository docs.
+Do not trigger production deployment as part of restart/handoff.
 
 ## KS non-negotiable implementation rules
 - preserve live data/API hooks, PWA, SEO, blog/report sections and public links;
@@ -167,4 +179,4 @@ Instagram Reels priority:
 Never commit or expose FTP passwords, tokens, GitHub secrets, admin passwords, private runtime values, or server-only config.
 
 ## One-line restart instruction
-`kansai-surfer-ks の HANDOFF.md を読んで、Issue #27 / PR #28 の Hero動画が動かない所から再開して。実ブラウザ確認まで進めて、PRはdraft・本番は触らない。`
+`kansai-surfer-ks の HANDOFF.md を読んで、Issue #27 / PR #28 を再開して。Hero動画は現行namiプレビューでChrome/Opera実ブラウザ再生確認済み。PRはDraft・本番は触らず、Top + Isonouraの残りQAから進めて。`
