@@ -1,0 +1,188 @@
+name: Fix Hero video autoplay on redesign branch
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  fix-hero-video-autoplay:
+    if: >-
+      ${{
+        github.event_name == 'issue_comment' &&
+        github.event.action == 'created' &&
+        github.event.comment.author_association == 'OWNER' &&
+        github.event.comment.user.type != 'Bot' &&
+        github.event.issue.pull_request == null &&
+        contains(github.event.comment.body, '@fix-hero-video-autoplay')
+      }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout redesign branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/top-isonoura-production-redesign
+          fetch-depth: 0
+
+      - name: Make Hero video load and autoplay immediately
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+
+          old_video = '''    <video class="hero-video" id="heroVideo" muted loop playsinline autoplay preload="none" aria-hidden="true" tabindex="-1">
+              <source data-src="img/hero-surf-real.mp4" type="video/mp4">
+            </video>'''
+          new_video = '''    <video class="hero-video" id="heroVideo" muted autoplay loop playsinline preload="auto" aria-hidden="true" tabindex="-1">
+              <source src="img/hero-surf-real.mp4" type="video/mp4">
+            </video>'''
+
+          # Handle current production-baseline indentation exactly as stored.
+          if old_video not in s:
+              old_video = '''    <video class="hero-video" id="heroVideo" muted loop playsinline autoplay preload="none" aria-hidden="true" tabindex="-1">
+      <source data-src="img/hero-surf-real.mp4" type="video/mp4">
+    </video>'''
+              new_video = '''    <video class="hero-video" id="heroVideo" muted autoplay loop playsinline preload="auto" aria-hidden="true" tabindex="-1">
+      <source src="img/hero-surf-real.mp4" type="video/mp4">
+    </video>'''
+          if old_video not in s:
+              raise SystemExit('Expected current Hero video markup not found; refusing broad rewrite.')
+          s = s.replace(old_video, new_video, 1)
+
+          old_script = '''<script>
+          (() => {
+            const video = document.getElementById('heroVideo');
+            if (!video) return;
+            const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            const saveData = !!(connection && connection.saveData);
+            const verySlow = !!(connection && /(^|-)2g$/.test(connection.effectiveType || ''));
+            if (reduced || saveData || verySlow) return;
+            const source = video.querySelector('source[data-src]');
+            if (!source) return;
+            const start = () => {
+              source.src = source.dataset.src;
+              source.removeAttribute('data-src');
+              video.load();
+              const ready = () => {
+                video.classList.add('is-ready');
+                video.play().catch(() => {});
+              };
+              if (video.readyState >= 3) ready();
+              else video.addEventListener('canplay', ready, { once: true });
+            };
+            const schedule = () => {
+              if ('requestIdleCallback' in window) requestIdleCallback(start, { timeout: 1400 });
+              else setTimeout(start, 450);
+            };
+            if (document.readyState === 'complete') schedule();
+            else window.addEventListener('load', schedule, { once: true });
+          })();
+          </script>'''
+          if old_script not in s:
+              old_script = '''<script>
+(() => {
+  const video = document.getElementById('heroVideo');
+  if (!video) return;
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+  const saveData = !!(connection && connection.saveData);
+  const verySlow = !!(connection && /(^|-)2g$/.test(connection.effectiveType || ''));
+  if (reduced || saveData || verySlow) return;
+  const source = video.querySelector('source[data-src]');
+  if (!source) return;
+  const start = () => {
+    source.src = source.dataset.src;
+    source.removeAttribute('data-src');
+    video.load();
+    const ready = () => {
+      video.classList.add('is-ready');
+      video.play().catch(() => {});
+    };
+    if (video.readyState >= 3) ready();
+    else video.addEventListener('canplay', ready, { once: true });
+  };
+  const schedule = () => {
+    if ('requestIdleCallback' in window) requestIdleCallback(start, { timeout: 1400 });
+    else setTimeout(start, 450);
+  };
+  if (document.readyState === 'complete') schedule();
+  else window.addEventListener('load', schedule, { once: true });
+})();
+</script>'''
+          new_script = '''<script>
+(() => {
+  const video = document.getElementById('heroVideo');
+  if (!video) return;
+
+  video.muted = true;
+  video.defaultMuted = true;
+
+  const revealAndPlay = () => {
+    if (video.readyState >= 2) video.classList.add('is-ready');
+    const attempt = video.play();
+    if (attempt && typeof attempt.catch === 'function') attempt.catch(() => {});
+  };
+
+  revealAndPlay();
+  video.addEventListener('loadeddata', revealAndPlay, { once: true });
+  video.addEventListener('canplay', revealAndPlay, { once: true });
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && video.paused) revealAndPlay();
+  });
+})();
+</script>'''
+          if old_script not in s:
+              raise SystemExit('Expected current deferred Hero script not found; refusing broad rewrite.')
+          s = s.replace(old_script, new_script, 1)
+          p.write_text(s, encoding='utf-8', newline='\n')
+          PY
+
+      - name: Validate autoplay fix scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F 'muted autoplay loop playsinline preload="auto"' index.html
+          grep -F '<source src="img/hero-surf-real.mp4" type="video/mp4">' index.html
+          grep -F 'video.defaultMuted = true' index.html
+          grep -F "video.addEventListener('loadeddata', revealAndPlay" index.html
+          grep -F "video.addEventListener('canplay', revealAndPlay" index.html
+          if grep -Fq 'source[data-src]' index.html; then
+            echo '::error::Deferred Hero source logic still present'
+            exit 1
+          fi
+          if grep -Fq 'requestIdleCallback(start' index.html; then
+            echo '::error::Deferred Hero start logic still present'
+            exit 1
+          fi
+          git diff --check
+          CHANGED="$(git diff --name-only)"
+          printf '%s\n' "$CHANGED"
+          test "$CHANGED" = 'index.html'
+
+      - name: Commit and push fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'fix: make Top Hero video autoplay reliably'
+          git push origin HEAD:feat/top-isonoura-production-redesign
+          echo "FIX_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Report commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          gh issue comment "${{ github.event.issue.number }}" --repo "${{ github.repository }}" --body "Hero video autoplay fix pushed to \`feat/top-isonoura-production-redesign\` at \`$FIX_SHA\`. The MP4 now uses a direct source and immediate autoplay retry logic. Production was not touched."
