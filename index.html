@@ -357,18 +357,20 @@
   overflow: hidden;
   min-height: 100vh;
   min-height: 100svh;
-  display: grid;
-  grid-template-rows: minmax(58svh, auto) 42svh;
+  display: block;
   padding: 0;
   text-align: left;
   background: #06121c;
   border-bottom: none;
 }
 .hero-copy {
-  grid-row: 1;
   position: relative;
-  z-index: 2;
-  align-self: end;
+  z-index: 3;
+  min-height: 100vh;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   width: min(100%, 1240px);
   max-width: none;
   margin: 0 auto;
@@ -430,11 +432,11 @@
   text-shadow: none;
 }
 .hero-media {
-  grid-row: 2;
-  position: relative;
-  inset: auto;
+  position: absolute;
+  inset: 0;
   z-index: 1;
-  min-height: 42svh;
+  width: 100%;
+  min-height: 100%;
   overflow: hidden;
   background: #06121c;
 }
@@ -460,7 +462,7 @@
   position: absolute;
   inset: 0;
   z-index: 2;
-  background: linear-gradient(180deg, #06121c 0%, rgba(6,18,28,.46) 11%, rgba(6,18,28,.03) 34%, rgba(6,18,28,.06) 72%, rgba(6,18,28,.36) 100%);
+  background: linear-gradient(180deg, rgba(6,18,28,.86) 0%, rgba(6,18,28,.70) 34%, rgba(6,18,28,.58) 68%, rgba(6,18,28,.72) 100%);
   pointer-events: none;
 }
 .hero-scroll, .hero-mantra {
@@ -485,8 +487,8 @@
   .site-header-fixed .sns-buttons a { font-size: 21px; }
   .site-header-fixed .hamburger { display: flex !important; flex: 0 0 34px; }
   .site-header-fixed .tag-live { display: none !important; }
-  .top-hero { grid-template-rows: minmax(58svh, auto) 42svh; }
-  .hero-copy { padding: 124px 22px 26px; }
+  .top-hero { display: block; }
+  .hero-copy { min-height: 100svh; padding: 124px 22px 96px; justify-content: center; }
   .hero-script { top: 100px; right: 22px; font-size: .94rem; opacity: .72; }
   .hero-kicker { margin-bottom: 11px; font-size: .7rem; letter-spacing: .1em; }
   #top-hero-title {
@@ -500,7 +502,7 @@
   }
   .top-hero .subtitle { margin-top: 13px; font-size: .86rem; line-height: 1.62; }
   .top-hero .lead { margin-top: 9px; font-size: .76rem; line-height: 1.72; }
-  .hero-media { min-height: 42svh; }
+  .hero-media { min-height: 100svh; }
   .hero-media img, .hero-media video { object-position: 38% 46%; }
   .hero-media img { transform: scale(1.02); }
   .hero-scroll, .hero-mantra { bottom: 13px; font-size: .56rem; }
