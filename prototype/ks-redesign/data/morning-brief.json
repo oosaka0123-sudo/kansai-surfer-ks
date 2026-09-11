@@ -1,0 +1,32 @@
+{
+  "preview": true,
+  "date": "2026-09-06",
+  "weekday": "日",
+  "generated_at": "2026-09-06T06:00:00+09:00",
+  "headline": "日本海側が優勢。太平洋側はサイズがあるものの風の影響に注意。",
+  "ranking": [
+    {"rank": 1, "spot": "白兎", "size": "カタ", "wind": "朝はほぼ無風", "note": "朝のコンディションに期待"},
+    {"rank": 2, "spot": "高浜", "size": "カタ", "wind": "朝は弱め", "note": "朝イチ狙い"},
+    {"rank": 3, "spot": "浜詰", "size": "ハラ", "wind": "弱い北東", "note": "比較的まとまりやすい"},
+    {"rank": 4, "spot": "磯ノ浦", "size": "モモ〜コシ", "wind": "朝は弱め", "note": "早朝をチェック"},
+    {"rank": 5, "spot": "生見", "size": "アタマ〜オーバーヘッド", "wind": "朝は北北東・のち南東", "note": "サイズと風に注意"}
+  ],
+  "spots": [
+    {"name": "磯ノ浦", "current": "モモ〜コシ", "wind": "朝は風が弱め", "forecast": "日中はオンショア化に注意"},
+    {"name": "国府の浜", "current": "コシ〜アタマ", "wind": "朝は弱め", "forecast": "日中は風の影響に注意"},
+    {"name": "生見", "current": "アタマ〜オーバーヘッド", "wind": "朝は北北東の弱い風", "forecast": "午前中以降の南東風に注意"},
+    {"name": "小松海岸", "current": null, "wind": null, "forecast": null},
+    {"name": "伊良湖", "current": "コシ〜アタマ", "wind": "北東〜南東風", "forecast": "風が強まる場合は波質低下に注意"},
+    {"name": "静波", "current": "コシ〜アタマ", "wind": "北東風の影響", "forecast": "安全性を優先して判断"},
+    {"name": "浜詰", "current": "ハラ", "wind": "弱い北東風", "forecast": "比較的まとまりやすい見込み"},
+    {"name": "高浜", "current": "カタ", "wind": "朝は比較的弱め", "forecast": "風速・気圧変化を確認"},
+    {"name": "白兎", "current": "カタ", "wind": "朝はほぼ無風", "forecast": "サイズ変化が出やすいため最新確認推奨"}
+  ],
+  "competition_news": [
+    {"type": "WSL", "title": "本日分はテストデータのため記事未接続", "body": "実運用では最新の大会結果・開催予定・日本人選手の動向のみを掲載します。"},
+    {"type": "S.LEAGUE", "title": "本日分はテストデータのため記事未接続", "body": "実運用では大会速報・ランキング変動・次戦情報など、確認できた事実だけを掲載します。"}
+  ],
+  "safety_news": [],
+  "closing": "今日は日本海側が優勢。太平洋側はサイズだけでなく風を見ながらポイント選びを。",
+  "sources_note": "NAMI TEST PREVIEW / 実運用前の表示・構成確認用データです。"
+}
