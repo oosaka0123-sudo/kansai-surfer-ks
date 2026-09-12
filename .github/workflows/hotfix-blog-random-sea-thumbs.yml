@@ -18,6 +18,9 @@ jobs:
       FTP_SERVER_DIR: /kansai
       SITE_URL: https://kansai.rss7.net
     steps:
+      - name: Checkout patcher
+        uses: actions/checkout@v4
+
       - name: Install tools
         run: sudo apt-get update -qq && sudo apt-get install -y lftp php-cli
 
@@ -68,71 +71,10 @@ jobs:
           php -l "$F"
 
       - name: Patch automatic random sea eyecatch
-        shell: python
+        shell: bash
         run: |
-          from pathlib import Path
-          p = Path(r"${{ runner.temp }}/ks-blog-hotfix/save_post.php")
-          text = p.read_text(encoding="utf-8")
-          if "function ks_random_sea_thumb" not in text:
-              anchor = "\nfunction ks_related_posts_html("
-              if anchor not in text:
-                  raise SystemExit("helper anchor not found")
-              helper = r'''
-function ks_random_sea_thumb($root){
-    $candidates = [
-        "/img/isonoura_hero.jpg",
-        "/img/kounohama_hero.jpg",
-        "/img/ikumi_guide_hero.jpeg",
-        "/img/komatsu_guide_hero.jpeg",
-        "/img/irago_guide_hero.jpeg",
-        "/img/shizunami_guide_hero.jpeg",
-        "/img/hakuto_guide_hero.jpeg"
-    ];
-    $available = [];
-    foreach($candidates as $path){
-        if (file_exists($root . $path)) $available[] = $path;
-    }
-    if (empty($available)) return "";
-    try {
-        return $available[random_int(0, count($available) - 1)];
-    } catch (Throwable $e) {
-        return $available[array_rand($available)];
-    }
-}
-'''
-              text = text.replace(anchor, "\n" + helper + anchor, 1)
-
-              old = '$thumbPath = "../" . ltrim($thumb, "/");'
-              new = '$thumbPath = (strpos($thumb, "/") === 0) ? $thumb : "../" . ltrim($thumb, "/");'
-              if old not in text: raise SystemExit("related thumb anchor not found")
-              text = text.replace(old, new, 1)
-
-              old = '$ogImage = ($thumbRelative !== "" && $thumbRelative !== "img/noimage.jpg") ? $siteUrl."/blog/".$thumbRelative : "";'
-              new = '$ogImage = ($thumbRelative !== "" && $thumbRelative !== "img/noimage.jpg") ? ((strpos($thumbRelative, "/") === 0) ? $siteUrl.$thumbRelative : $siteUrl."/blog/".$thumbRelative) : "";'
-              if old not in text: raise SystemExit("OG image anchor not found")
-              text = text.replace(old, new, 1)
-
-              old = '$articleThumb = ($thumb !== "img/noimage.jpg") ? "../" . $thumb : "";'
-              new = '$articleThumb = ($thumb !== "img/noimage.jpg") ? ((strpos($thumb, "/") === 0) ? $thumb : "../" . $thumb) : "";'
-              if old not in text: raise SystemExit("edit thumb anchor not found")
-              text = text.replace(old, new, 1)
-
-              anchor = '$inlineHtmls = [];'
-              if anchor not in text: raise SystemExit("inline image anchor not found")
-              random_block = r'''// 新規投稿で画像未指定なら、既存の海・サーフポイント写真からランダム設定
-$explicitClear = (($_POST["selectedThumb"] ?? "") === "__clear__");
-if ($editSlug === "" && !$explicitClear && $thumb === "img/noimage.jpg") {
-    $seaThumb = ks_random_sea_thumb($root);
-    if ($seaThumb !== "") {
-        $thumb = $seaThumb;
-        $articleThumb = $seaThumb;
-    }
-}
-
-'''
-              text = text.replace(anchor, random_block + anchor, 1)
-              p.write_text(text, encoding="utf-8")
-          print("random sea eyecatch patch ready")
+          set -euo pipefail
+          python scripts/hotfix_random_sea_thumb.py "$RUNNER_TEMP/ks-blog-hotfix/save_post.php"
 
       - name: Syntax and safety checks
         shell: bash
