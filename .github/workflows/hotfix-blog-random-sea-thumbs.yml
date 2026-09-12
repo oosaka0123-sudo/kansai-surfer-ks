@@ -1,0 +1,184 @@
+name: Hotfix blog random sea thumbs
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ks-blog-random-sea-thumbs
+  cancel-in-progress: false
+
+jobs:
+  hotfix:
+    runs-on: ubuntu-latest
+    env:
+      FTP_SERVER: ftp.lolipop.jp
+      FTP_SERVER_DIR: /kansai
+      SITE_URL: https://kansai.rss7.net
+    steps:
+      - name: Install tools
+        run: sudo apt-get update -qq && sudo apt-get install -y lftp php-cli
+
+      - name: Validate production connection settings
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_PROD_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_PROD_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          test -n "$FTP_USERNAME"
+          test -n "$FTP_PASSWORD"
+          test "$FTP_SERVER" = "ftp.lolipop.jp"
+          test "$FTP_SERVER_DIR" = "/kansai"
+          test "$SITE_URL" = "https://kansai.rss7.net"
+
+      - name: Download current live save_post.php
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_PROD_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_PROD_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          WORK="$RUNNER_TEMP/ks-blog-hotfix"
+          mkdir -p "$WORK"
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER"
+          get "$FTP_SERVER_DIR/admin/save_post.php" -o "$WORK/save_post.php"
+          bye
+          LFTP_EOF
+          test -s "$WORK/save_post.php"
+          cp "$WORK/save_post.php" "$WORK/save_post.before.php"
+
+      - name: Validate expected live CMS structure
+        shell: bash
+        run: |
+          set -euo pipefail
+          F="$RUNNER_TEMP/ks-blog-hotfix/save_post.php"
+          grep -Fq 'function ks_related_posts_html' "$F"
+          grep -Fq '$thumb = "img/noimage.jpg";' "$F"
+          grep -Fq '$inlineHtmls = [];' "$F"
+          php -l "$F"
+
+      - name: Patch automatic random sea eyecatch
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path(r"${{ runner.temp }}/ks-blog-hotfix/save_post.php")
+          text = p.read_text(encoding="utf-8")
+          if "function ks_random_sea_thumb" not in text:
+              anchor = "\nfunction ks_related_posts_html("
+              if anchor not in text:
+                  raise SystemExit("helper anchor not found")
+              helper = r'''
+function ks_random_sea_thumb($root){
+    $candidates = [
+        "/img/isonoura_hero.jpg",
+        "/img/kounohama_hero.jpg",
+        "/img/ikumi_guide_hero.jpeg",
+        "/img/komatsu_guide_hero.jpeg",
+        "/img/irago_guide_hero.jpeg",
+        "/img/shizunami_guide_hero.jpeg",
+        "/img/hakuto_guide_hero.jpeg"
+    ];
+    $available = [];
+    foreach($candidates as $path){
+        if (file_exists($root . $path)) $available[] = $path;
+    }
+    if (empty($available)) return "";
+    try {
+        return $available[random_int(0, count($available) - 1)];
+    } catch (Throwable $e) {
+        return $available[array_rand($available)];
+    }
+}
+'''
+              text = text.replace(anchor, "\n" + helper + anchor, 1)
+
+              old = '$thumbPath = "../" . ltrim($thumb, "/");'
+              new = '$thumbPath = (strpos($thumb, "/") === 0) ? $thumb : "../" . ltrim($thumb, "/");'
+              if old not in text: raise SystemExit("related thumb anchor not found")
+              text = text.replace(old, new, 1)
+
+              old = '$ogImage = ($thumbRelative !== "" && $thumbRelative !== "img/noimage.jpg") ? $siteUrl."/blog/".$thumbRelative : "";'
+              new = '$ogImage = ($thumbRelative !== "" && $thumbRelative !== "img/noimage.jpg") ? ((strpos($thumbRelative, "/") === 0) ? $siteUrl.$thumbRelative : $siteUrl."/blog/".$thumbRelative) : "";'
+              if old not in text: raise SystemExit("OG image anchor not found")
+              text = text.replace(old, new, 1)
+
+              old = '$articleThumb = ($thumb !== "img/noimage.jpg") ? "../" . $thumb : "";'
+              new = '$articleThumb = ($thumb !== "img/noimage.jpg") ? ((strpos($thumb, "/") === 0) ? $thumb : "../" . $thumb) : "";'
+              if old not in text: raise SystemExit("edit thumb anchor not found")
+              text = text.replace(old, new, 1)
+
+              anchor = '$inlineHtmls = [];'
+              if anchor not in text: raise SystemExit("inline image anchor not found")
+              random_block = r'''// 新規投稿で画像未指定なら、既存の海・サーフポイント写真からランダム設定
+$explicitClear = (($_POST["selectedThumb"] ?? "") === "__clear__");
+if ($editSlug === "" && !$explicitClear && $thumb === "img/noimage.jpg") {
+    $seaThumb = ks_random_sea_thumb($root);
+    if ($seaThumb !== "") {
+        $thumb = $seaThumb;
+        $articleThumb = $seaThumb;
+    }
+}
+
+'''
+              text = text.replace(anchor, random_block + anchor, 1)
+              p.write_text(text, encoding="utf-8")
+          print("random sea eyecatch patch ready")
+
+      - name: Syntax and safety checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          F="$RUNNER_TEMP/ks-blog-hotfix/save_post.php"
+          php -l "$F"
+          grep -Fq 'function ks_random_sea_thumb' "$F"
+          grep -Fq '/img/isonoura_hero.jpg' "$F"
+          grep -Fq '$editSlug === ""' "$F"
+          ! grep -Fq 'GOOGLE_API_KEY' "$F"
+
+      - name: Save pre-change backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ks-save-post-before-random-sea-${{ github.run_id }}
+          path: ${{ runner.temp }}/ks-blog-hotfix/save_post.before.php
+          retention-days: 30
+
+      - name: Upload only patched save_post.php
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_PROD_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_PROD_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          WORK="$RUNNER_TEMP/ks-blog-hotfix"
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER"
+          put "$WORK/save_post.php" -o "$FTP_SERVER_DIR/admin/save_post.php"
+          get "$FTP_SERVER_DIR/admin/save_post.php" -o "$WORK/save_post.verify.php"
+          bye
+          LFTP_EOF
+          cmp "$WORK/save_post.php" "$WORK/save_post.verify.php"
+
+      - name: Verify public site remains healthy
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 4 "$SITE_URL/blog/index.php" >/tmp/ks-blog.html
+          curl --fail --silent --show-error --location --retry 4 "$SITE_URL/admin/index.php" >/tmp/ks-admin.html
+          grep -qi '<html' /tmp/ks-blog.html
+          grep -qi '<html' /tmp/ks-admin.html
+          echo 'Production blog hotfix verified.'
