@@ -354,7 +354,8 @@
   <h2 class="section-title reveal">
     <span class="no">05</span><i class="fa-solid fa-calendar-week ico"></i>週間予報
   </h2>
-  <table class="weekly-table">
+  <div class="weekly-table-scroll" role="region" aria-label="Weekly forecast - swipe horizontally to see all columns" tabindex="0">
+    <table class="weekly-table">
     <thead>
       <tr>
         <th><i class="fa-solid fa-calendar-day"></i>日付</th>
@@ -367,11 +368,12 @@
       </tr>
     </thead>
     <tbody id="weeklyBody">
-      <tr><td colspan="6" style="text-align:center;color:var(--teal-pale);">
+      <tr><td colspan="7" style="text-align:center;color:var(--teal-pale);">
         <i class="fa-solid fa-spinner fa-spin"></i> データ取得中...
       </td></tr>
     </tbody>
-  </table>
+    </table>
+  </div>
 </section>
 
 <section class="section">

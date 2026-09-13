@@ -425,7 +425,13 @@ body::before {
 /* ==========================================================
    WEEKLY TABLE
    ========================================================== */
-.weekly-table { width: 100%; border-collapse: collapse; border: 1px solid var(--line); }
+.weekly-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-inline: contain;
+}
+.weekly-table { width: 100%; min-width: 720px; border-collapse: collapse; border: 1px solid var(--line); }
 .weekly-table th,
 .weekly-table td { padding: 14px 16px; border-bottom: 1px solid var(--line); text-align: left; font-size: 0.9rem; }
 .weekly-table th {
@@ -433,6 +439,8 @@ body::before {
   background: rgba(45, 100, 112, 0.06); font-weight: 600;
 }
 .weekly-table td { font-family: "Fraunces", serif; font-weight: 300; }
+.weekly-table th,
+.weekly-table td { white-space: nowrap; }
 .weekly-table .day { font-family: "Shippori Mincho B1", serif; font-weight: 600; font-size: 1rem; }
 .weekly-table .day .num { font-family: "JetBrains Mono", monospace; font-size: 0.72rem; color: var(--teal-pale); margin-left: 8px; }
 .weekly-table tr:hover { background: rgba(229, 82, 52, 0.04); }
