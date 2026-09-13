@@ -1,0 +1,1656 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>関西の波情報｜9ポイント無料リアルタイム比較【関西サーファーKS】</title>
+<meta name="description" content="磯ノ浦・生見・国府の浜・伊良湖・静波など関西周辺9ポイントの波情報を無料でリアルタイム比較。毎朝7時に今日の波、毎夕17時に明日の予報を更新。今日どこが一番いいか一目でわかります。">
+<meta name="keywords" content="波情報,サーフィン,関西,磯ノ浦,生見,国府の浜,和歌山,高知,三重,波予報,リアルタイム,サーフィンスポット">
+<meta property="og:title" content="関西の波情報｜関西サーファーKS">
+<meta property="og:description" content="磯ノ浦・伊勢・四国のリアルタイム波情報。本日一番良いポイントを毎日提示。">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@400;600;800&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,300&family=Noto+Sans+JP:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="icon" href="favicon.ico" type="image/x-icon">
+<link rel="stylesheet" href="nami_common.css?v=1018">
+<style>
+/* ---- 今日+明日 2カード並び ---- */
+.forecast-two-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+@media(max-width:700px){
+  .forecast-two-cards { grid-template-columns: 1fr; }
+}
+.forecast-card-wrap .main-forecast-card {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100%;
+  text-decoration: none;
+  color: inherit;
+}
+.forecast-card-wrap .main-forecast-thumb {
+  width: 100% !important;
+  min-width: unset !important;
+  max-width: unset !important;
+  height: 0 !important;
+  padding-bottom: 56.25% !important;
+  position: relative !important;
+  overflow: hidden;
+  flex-shrink: 0 !important;
+}
+.forecast-card-wrap .main-forecast-thumb img {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+.forecast-card-wrap .main-forecast-thumb.placeholder {
+  height: 180px !important;
+  padding-bottom: 0 !important;
+  position: relative !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}
+.forecast-card-wrap .main-forecast-body {
+  flex: 1;
+  padding: 16px 18px 20px !important;
+  width: auto !important;
+}
+.forecast-card-wrap .main-forecast-body h3 {
+  font-size: 1rem !important;
+  line-height: 1.6 !important;
+}
+.forecast-card-wrap .main-forecast-body p {
+  font-size: 0.85rem !important;
+  line-height: 1.7 !important;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ---- アイキャッチ付きブログカードグリッド ---- */
+.blog-card-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+@media(max-width:900px){ .blog-card-grid { grid-template-columns: repeat(2, 1fr); } }
+@media(max-width:500px){ .blog-card-grid { grid-template-columns: 1fr; } }
+
+.blog-eyecatch-card {
+  display: flex;
+  flex-direction: column;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.2s, border-color 0.2s;
+}
+.blog-eyecatch-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--coral, #ff6347);
+}
+.bec-thumb {
+  width: 100%;
+  aspect-ratio: 16/9;
+  overflow: hidden;
+  background: rgba(255,255,255,0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--teal-pale, #7ecac3);
+  font-size: 2rem;
+}
+.bec-thumb img {
+  width: 100%;
+  height: auto;
+  max-height: 520px;
+  object-fit: contain;
+  display: block;
+}
+.bec-thumb.no-img {
+  background: rgba(255,255,255,0.06);
+}
+.bec-body {
+  padding: 12px 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+.bec-cat {
+  font-size: 0.72rem;
+  background: var(--coral, #ff6347);
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  width: fit-content;
+}
+.bec-body h3 {
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--cream, #f5f0e8);
+  margin: 0;
+  font-family: 'Shippori Mincho B1', serif;
+}
+.bec-body p {
+  font-size: 0.78rem;
+  color: var(--cream-soft, #c8c0b0);
+  line-height: 1.6;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+
+/* ---- 承認済み動画・画像レポート ---- */
+.wave-report-section {
+  padding-top: 28px;
+  padding-bottom: 24px;
+}
+.wave-report-box {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 28px;
+  border-radius: 18px;
+  background: rgba(255,255,255,0.045);
+  border: 1px solid rgba(255,255,255,0.10);
+  box-shadow: 0 12px 35px rgba(0,0,0,0.18);
+}
+.wave-report-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+.wave-report-head h2 {
+  margin: 0;
+  color: var(--cream, #f5f0e8);
+  font-size: 1.35rem;
+  font-family: 'Shippori Mincho B1', serif;
+}
+.wave-report-head p {
+  margin: 6px 0 0;
+  color: var(--cream-soft, #c8c0b0);
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+.wave-report-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+@media(max-width:900px){ .wave-report-grid { grid-template-columns: repeat(2, 1fr); } }
+@media(max-width:560px){
+  .wave-report-box { padding: 20px; }
+  .wave-report-head { display:block; }
+  .wave-report-grid { grid-template-columns: 1fr; }
+}
+.wave-report-card {
+  display: block;
+  overflow: hidden;
+  border-radius: 14px;
+  background: rgba(0,0,0,0.18);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: inherit;
+  text-decoration: none;
+}
+.wave-report-media {
+  width: 100%;
+  background: rgba(255,255,255,0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--teal-pale, #7ecac3);
+  overflow: hidden;
+}
+.wave-report-media video, .wave-report-media img {
+  width: 100%;
+  height: auto;
+  max-height: 520px;
+  object-fit: contain;
+  display: block;
+}
+.wave-report-body { padding: 12px 14px 15px; }
+.wave-report-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--teal-pale, #7ecac3);
+  font-size: 0.75rem;
+  margin-bottom: 7px;
+}
+.wave-report-title {
+  margin: 0 0 6px;
+  color: var(--cream, #f5f0e8);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+.wave-report-comment {
+  margin: 0;
+  color: var(--cream-soft, #c8c0b0);
+  font-size: 0.82rem;
+  line-height: 1.6;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.wave-report-empty {
+  text-align: center;
+  color: var(--cream-soft, #c8c0b0);
+  padding: 24px 10px;
+  border: 1px dashed rgba(255,255,255,0.16);
+  border-radius: 14px;
+  line-height: 1.8;
+}
+.wave-report-join {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: #06c755;
+  color: #fff;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+
+.wave-report-textonly {
+  min-height: 160px;
+  background: rgba(255,255,255,0.06);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--teal-pale, #7ecac3);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+.wave-report-textonly i {
+  font-size: 2rem;
+}
+
+.sns-buttons {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-right: 8px;
+}
+.sns-buttons a {
+  color: #fff;
+  font-size: 22px;
+  opacity: 0.85;
+  transition: opacity 0.2s;
+  text-decoration: none;
+}
+.sns-buttons a:hover {
+  opacity: 1;
+  color: #ff6b35;
+}
+/* ---- Hero: transparent-over-photo header, fixed dark after scroll ---- */
+.site-header-fixed {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+}
+.site-header-fixed .top-bar {
+  position: relative;
+  background: transparent;
+  border-bottom-color: transparent;
+  backdrop-filter: none;
+  transition: background 0.35s ease, backdrop-filter 0.35s ease, border-color 0.35s ease;
+}
+.site-header-fixed .top-strip {
+  background: transparent;
+  border-bottom-color: transparent;
+  transition: background 0.35s ease, border-color 0.35s ease;
+}
+.site-header-fixed.is-scrolled .top-bar {
+  background: rgba(11, 29, 42, 0.95);
+  backdrop-filter: blur(12px);
+  border-bottom-color: var(--line, rgba(242,234,217,0.14));
+}
+.site-header-fixed.is-scrolled .top-strip {
+  background: rgba(11, 29, 42, 0.92);
+  border-bottom-color: var(--line, rgba(242,234,217,0.14));
+}
+
+/* ---- Hero: approved dark-upper / photo-lower composition ---- */
+.site-header-fixed .top-bar {
+  background: rgba(6, 18, 28, 0.36);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  border-bottom-color: rgba(242,234,217,0.08);
+}
+.site-header-fixed .top-strip { display: none; }
+.site-header-fixed .logo img { height: 54px !important; width: auto !important; }
+.site-header-fixed .logo .en {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 300;
+  letter-spacing: .035em;
+}
+.top-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 100vh;
+  min-height: 100svh;
+  display: block;
+  padding: 0;
+  text-align: left;
+  background: #06121c;
+  border-bottom: none;
+}
+.hero-copy {
+  position: relative;
+  z-index: 3;
+  min-height: 100vh;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: min(100%, 1240px);
+  max-width: none;
+  margin: 0 auto;
+  padding: clamp(150px, 17svh, 205px) clamp(28px, 6vw, 82px) clamp(28px, 4.5svh, 50px);
+  box-sizing: border-box;
+}
+.hero-script {
+  position: absolute;
+  top: clamp(112px, 12svh, 150px);
+  right: clamp(30px, 7vw, 96px);
+  margin: 0;
+  color: rgba(245,240,232,.12);
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 300;
+  font-size: clamp(1.05rem, 2.1vw, 1.9rem);
+  letter-spacing: .03em;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.hero-kicker {
+  margin: 0 0 14px;
+  color: rgba(245,240,232,.78);
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: clamp(.74rem, 1.05vw, .9rem);
+  font-weight: 400;
+  letter-spacing: .13em;
+}
+#top-hero-title {
+  width: 100%;
+  max-width: 900px;
+  margin: 0;
+  color: var(--cream, #f5f0e8);
+  font-family: 'Shippori Mincho B1', serif;
+  font-size: clamp(2rem, 4.2vw, 3.9rem);
+  font-weight: 400;
+  line-height: 1.42;
+  letter-spacing: .012em;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  text-shadow: none;
+}
+.top-hero .subtitle {
+  margin-top: 17px;
+  color: var(--teal-pale, #9bd4cf);
+  font-size: clamp(.9rem, 1.4vw, 1.08rem);
+  font-weight: 500;
+  line-height: 1.65;
+  letter-spacing: .035em;
+  text-shadow: none;
+}
+.top-hero .lead {
+  max-width: 760px;
+  margin: 12px 0 0;
+  color: rgba(245,240,232,.72);
+  font-size: clamp(.8rem, 1.1vw, .96rem);
+  line-height: 1.82;
+  text-shadow: none;
+}
+.hero-media {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  min-height: 100%;
+  overflow: hidden;
+  background: #06121c;
+}
+.hero-media picture,
+.hero-media img,
+.hero-media video { width: 100%; height: 100%; display: block; }
+.hero-media picture { position: absolute; inset: 0; }
+.hero-media img,
+.hero-media video {
+  object-fit: cover;
+  object-position: 44% 42%;
+}
+.hero-media img { transform: scale(1.015); }
+.hero-video {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity .45s ease;
+}
+.hero-video.is-ready { opacity: 1; }
+.hero-media-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: linear-gradient(180deg, rgba(6,18,28,.86) 0%, rgba(6,18,28,.70) 34%, rgba(6,18,28,.58) 68%, rgba(6,18,28,.72) 100%);
+  pointer-events: none;
+}
+.hero-scroll, .hero-mantra {
+  position: absolute;
+  z-index: 3;
+  bottom: 16px;
+  color: rgba(255,255,255,.74);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .64rem;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+.hero-scroll { left: clamp(22px, 4vw, 60px); writing-mode: vertical-rl; transform: rotate(180deg); }
+.hero-mantra { right: clamp(22px, 4vw, 60px); }
+@media (max-width: 760px) {
+  .site-header-fixed .top-bar { padding: 10px 16px; min-height: 76px; box-sizing: border-box; }
+  .site-header-fixed .logo { min-width: 0; flex: 0 1 auto; }
+  .site-header-fixed .logo img { height: 48px !important; margin-right: 8px !important; }
+  .site-header-fixed .logo .en { font-size: .9rem; white-space: nowrap; }
+  .site-header-fixed .nav-pc { display: none !important; }
+  .site-header-fixed .sns-buttons { margin-left: auto; margin-right: 10px; gap: 13px; }
+  .site-header-fixed .sns-buttons a { font-size: 21px; }
+  .site-header-fixed .hamburger { display: flex !important; flex: 0 0 34px; }
+  .site-header-fixed .tag-live { display: none !important; }
+  .top-hero { display: block; }
+  .hero-copy { min-height: 100svh; padding: 124px 22px 96px; justify-content: center; }
+  .hero-script { top: 100px; right: 22px; font-size: .94rem; opacity: .72; }
+  .hero-kicker { margin-bottom: 11px; font-size: .7rem; letter-spacing: .1em; }
+  #top-hero-title {
+    max-width: 100%;
+    font-size: clamp(1.44rem, 6.25vw, 2.15rem);
+    line-height: 1.52;
+    letter-spacing: 0;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
+  .top-hero .subtitle { margin-top: 13px; font-size: .86rem; line-height: 1.62; }
+  .top-hero .lead { margin-top: 9px; font-size: .76rem; line-height: 1.72; }
+  .hero-media { min-height: 100svh; }
+  .hero-media img, .hero-media video { object-position: 38% 46%; }
+  .hero-media img { transform: scale(1.02); }
+  .hero-scroll, .hero-mantra { bottom: 13px; font-size: .56rem; }
+  .hero-mantra { max-width: 158px; text-align: right; line-height: 1.55; }
+}
+@media (max-width: 390px) {
+  .hero-copy { padding-left: 20px; padding-right: 20px; }
+  #top-hero-title { font-size: 1.38rem; line-height: 1.54; }
+  .top-hero .lead { font-size: .74rem; }
+}
+/* ---- Lightweight reveal-on-scroll, CSS-first, reduced-motion aware ---- */
+@media (prefers-reduced-motion: no-preference) {
+  .reveal { opacity: 0; transform: translateY(20px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.is-visible { opacity: 1; transform: translateY(0); }
+  .hero-copy { animation: heroCopyIn .9s ease both; animation-delay: .05s; }
+  @keyframes heroCopyIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+}
+</style>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0a1520">
+<link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "ホーム",
+      "item": "https://kansai.rss7.net/index.html"
+    }
+  ]
+}
+</script>
+</head>
+<body>
+
+<div class="site-header-fixed" id="siteHeaderFixed">
+<header class="top-bar">
+  <a href="index.html" class="logo" style="text-decoration:none;">
+    <img src="img/logo-ks-white.png" alt="KS" style="height:36px;width:auto;margin-right:8px;vertical-align:middle;">
+    <span class="en">Kansai Surf</span>
+  </a>
+  <nav class="nav-pc">
+    <a href="isonoura.html"><i class="fa-solid fa-water"></i>磯ノ浦</a>
+    <a href="kounohama.html"><i class="fa-solid fa-water"></i>国府の浜</a>
+    <a href="ikumi.html"><i class="fa-solid fa-water"></i>生見</a>
+    <a href="komatsu.html"><i class="fa-solid fa-water"></i>小松海岸</a>
+    <a href="irago.html"><i class="fa-solid fa-water"></i>伊良湖</a>
+    <a href="shizunami.html"><i class="fa-solid fa-water"></i>静波</a>
+    <a href="hamadutu.html"><i class="fa-solid fa-water"></i>浜詰</a>
+    <a href="takahama.html"><i class="fa-solid fa-water"></i>高浜</a>
+    <a href="hakuto.html"><i class="fa-solid fa-water"></i>白兎</a>
+  </nav>
+  <div class="sns-buttons">
+    <a href="https://www.instagram.com/kansaisurfer.ks/" target="_blank" rel="noopener" aria-label="Instagram">
+      <i class="fa-brands fa-instagram"></i>
+    </a>
+    <a href="https://facebook.com/kansaisurfer" target="_blank" rel="noopener" aria-label="Facebook">
+      <i class="fa-brands fa-facebook"></i>
+    </a>
+  </div>
+  <button class="hamburger" id="hamburger" aria-label="メニュー">
+    <span></span><span></span><span></span>
+  </button>
+  <span class="tag-live" id="clockTag"><span class="dot"></span>LIVE --:--</span>
+</header>
+
+<div class="mobile-menu" id="mobileMenu">
+  <div class="mm-section">メインメニュー</div>
+  <a href="index.html"><span class="mm-left"><i class="fa-solid fa-house"></i>ホーム</span></a>
+  <a href="blog/index.php"><span class="mm-left"><i class="fa-solid fa-newspaper"></i>ブログ</span></a>
+  <a href="https://suzuri.jp/kansaisurfer" target="_blank" rel="noopener"><span class="mm-left"><i class="fa-solid fa-shirt"></i>ショップ</span></a>
+
+  <div class="mm-section">サーフポイント</div>
+  <a href="isonoura.html"><span class="mm-left"><i class="fa-solid fa-water"></i>磯ノ浦（和歌山）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='isonoura_guide.html';">GUIDE</span></a>
+  <a href="kounohama.html"><span class="mm-left"><i class="fa-solid fa-water"></i>伊勢・国府の浜（三重）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='kounohama_guide.html';">GUIDE</span></a>
+  <a href="ikumi.html"><span class="mm-left"><i class="fa-solid fa-water"></i>四国・生見（高知）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='ikumi_guide.html';">GUIDE</span></a>
+  <a href="komatsu.html"><span class="mm-left"><i class="fa-solid fa-water"></i>四国・小松海岸（徳島）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='komatsu_guide.html';">GUIDE</span></a>
+  <a href="irago.html"><span class="mm-left"><i class="fa-solid fa-water"></i>伊良湖（愛知）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='irago_guide.html';">GUIDE</span></a>
+  <a href="shizunami.html"><span class="mm-left"><i class="fa-solid fa-water"></i>静波（静岡）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='shizunami_guide.html';">GUIDE</span></a>
+  <a href="hamadutu.html"><span class="mm-left"><i class="fa-solid fa-water"></i>浜詰（京都・日本海）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='hamadutu_guide.html';">GUIDE</span></a>
+  <a href="takahama.html"><span class="mm-left"><i class="fa-solid fa-water"></i>高浜（福井・日本海）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='takahama_guide.html';">GUIDE</span></a>
+  <a href="hakuto.html"><span class="mm-left"><i class="fa-solid fa-water"></i>白兎（鳥取・日本海）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='hakuto_guide.html';">GUIDE</span></a>
+
+  <div class="mm-section">その他</div>
+  <a href="about.html"><span class="mm-left"><i class="fa-solid fa-circle-info"></i>当サイトについて</span></a>
+  <a href="contact.html"><span class="mm-left"><i class="fa-solid fa-envelope"></i>お問い合わせ</span></a>
+  <a href="https://kansai.rss7.net/secret/test.php"><span class="mm-left"><i class="fa-solid fa-lock"></i>SECRET MODE</span></a>
+</div>
+
+<div class="top-strip">
+  <div class="crumbs"><span class="now"><i class="fa-solid fa-house"></i> ホーム</span></div>
+  <div class="update-info" id="updateInfo">
+    <span class="sync-ico"><i class="fa-solid fa-arrows-rotate"></i></span>
+    <span>最終更新: <span id="lastUpdate">--:--</span></span>
+    <button class="refresh-btn" id="refreshBtn"><i class="fa-solid fa-rotate-right"></i> 更新</button>
+  </div>
+</div>
+</div>
+
+<section class="top-hero" id="topHero">
+  <div class="hero-copy">
+    <p class="hero-script" aria-hidden="true">Good Waves Better Days</p>
+    <p class="hero-kicker">波がある、人生が動き出す。</p>
+    <h1 id="top-hero-title">関西サーフィン波情報｜磯ノ浦・生見・国府の浜・伊良湖の無料波予報</h1>
+    <div class="subtitle">全9ポイントの波をAPIでリアルタイムチェック</div>
+    <p class="lead">
+      関西サーファーが本気で通う9ポイントのリアルタイムデータを、10分毎に自動更新。
+      ★星評価と「行くべきか」判定で、迷う時間をゼロに。
+    </p>
+  </div>
+  <div class="hero-media">
+    <picture class="hero-poster">
+      <source media="(min-width: 761px)" type="image/avif" srcset="img/hero-surf-desktop.avif">
+      <source media="(min-width: 761px)" type="image/webp" srcset="img/hero-surf-desktop.webp">
+      <source type="image/avif" srcset="img/hero-surf-mobile.avif">
+      <source type="image/webp" srcset="img/hero-surf-mobile.webp">
+      <img src="img/hero-surf-mobile.webp" alt="" loading="eager" fetchpriority="high" decoding="async">
+    </picture>
+    <video class="hero-video" id="heroVideo" muted autoplay loop playsinline preload="auto" aria-hidden="true" tabindex="-1">
+      <source src="img/hero-surf-real.mp4" type="video/mp4">
+    </video>
+    <div class="hero-media-overlay" aria-hidden="true"></div>
+    <span class="hero-scroll" aria-hidden="true">SCROLL</span>
+    <span class="hero-mantra" aria-hidden="true">SURF / LOCAL / LIVE BETTER</span>
+  </div>
+</section>
+<script>
+(() => {
+  const video = document.getElementById('heroVideo');
+  if (!video) return;
+  video.muted = true;
+  video.defaultMuted = true;
+
+  const playHero = () => {
+    const promise = video.play();
+    if (promise && typeof promise.then === 'function') {
+      promise.then(() => video.classList.add('is-ready')).catch(() => {});
+    }
+  };
+
+  video.addEventListener('playing', () => video.classList.add('is-ready'), { once: true });
+  video.addEventListener('loadeddata', playHero, { once: true });
+  video.addEventListener('canplay', playHero, { once: true });
+  playHero();
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && video.paused) playHero();
+  });
+})();
+</script>
+
+<!-- ============ 🌊 今日の波情報＆明日の波予想（YouTube） ============ -->
+<style>
+/* スマホのみ：YouTubeカードを画面幅いっぱいに */
+@media (max-width: 768px) {
+  .youtube-card {
+    width: 100vw !important;
+    max-width: none !important;
+    margin-left: calc(50% - 50vw) !important;
+    margin-right: calc(50% - 50vw) !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    box-sizing: border-box;
+  }
+
+  .youtube-card-frame {
+    width: 100% !important;
+    border-radius: 0 !important;
+  }
+
+  .youtube-card .meta {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+</style>
+<section class="section" style="padding-top:0;padding-bottom:30px;">
+  <h2 class="section-title reveal">
+    <i class="fa-brands fa-youtube ico"></i>
+    🌊 今日の波情報＆明日の波予想
+  </h2>
+  <div class="cam-link featured youtube-card" style="grid-column:1/-1;">
+    <div class="youtube-card-frame" style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:6px;">
+      <iframe src="https://www.youtube.com/embed/videoseries?list=UUr3isu_iYJLLWLuZjKGLE7w"
+        style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;"
+        allowfullscreen loading="lazy"></iframe>
+    </div>
+    <div class="meta" style="margin-top:10px;text-align:center;">
+      <small style="display:block;color:var(--cream-soft);margin-bottom:8px;">
+        毎日更新
+      </small>
+      <a href="https://www.youtube.com/@kansaisurfes/videos" target="_blank" rel="noopener" style="color:var(--coral);">▶ YouTubeで見る →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ LATEST ARTICLES ============ -->
+<section class="main-forecast-section">
+  <h2 class="section-title reveal">
+    <span class="no">01</span>
+    <i class="fa-solid fa-newspaper ico"></i>
+    今日の波と明日の予想
+  </h2>
+
+  <!-- 今日＋明日 2カード -->
+  <div class="forecast-two-cards" id="forecastTwoCards">
+    <div class="forecast-card-wrap" id="todayCard">
+      <div class="main-forecast-card loading">
+        <div class="main-forecast-thumb placeholder"><i class="fa-solid fa-sun"></i></div>
+        <div class="main-forecast-body">
+          <div class="main-forecast-meta">今日の波情報｜毎朝7:00更新</div>
+          <h3>読み込み中...</h3>
+          <p>今日の波情報を取得しています。</p>
+        </div>
+      </div>
+    </div>
+    <div class="forecast-card-wrap" id="tomorrowCard">
+      <div class="main-forecast-card loading">
+        <div class="main-forecast-thumb placeholder"><i class="fa-solid fa-water"></i></div>
+        <div class="main-forecast-body">
+          <div class="main-forecast-meta">明日の予想｜毎日17:00更新</div>
+          <h3>読み込み中...</h3>
+          <p>明日の波予想を取得しています。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TODAY'S BEST ============ -->
+
+
+<section class="best-spot-section">
+  <div class="best-spot-label">
+    <span class="badge-best">🔥 TODAY'S BEST</span>
+    今、一番良いポイント
+  </div>
+  <div id="bestSpotContainer">
+    <div style="text-align:center;padding:80px;color:var(--teal-pale);">
+      <i class="fa-solid fa-spinner fa-spin" style="font-size:2rem;"></i>
+      <p style="margin-top:14px;font-family:'Shippori Mincho B1',serif;">計算中...</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ALL SPOTS ============ -->
+<section class="all-spots-section">
+  <h2 class="section-title reveal">
+    <span class="no">02</span>
+    <i class="fa-solid fa-map-location-dot ico"></i>
+    全ポイント一覧
+  </h2>
+  <p style="color:var(--cream-soft);font-size:0.95rem;line-height:1.9;margin-bottom:30px;">
+    全ポイントの今のコンディションを比較。<strong style="color:var(--coral-soft);">遠征計画にどうぞ</strong>。
+  </p>
+  <div class="all-spots-grid" id="allSpotsGrid">
+    <div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--teal-pale);">
+      <i class="fa-solid fa-spinner fa-spin"></i> 読込中...
+    </div>
+  </div>
+</section>
+
+
+
+<!-- 承認済み動画・画像レポート -->
+<section class="wave-report-section" id="waveReportsSection">
+  <div class="wave-report-box">
+    <div class="wave-report-head" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;">
+      <div>
+        <h2 class="reveal"><i class="fa-solid fa-video"></i> 現地波レポート</h2>
+        <p>LINEで届いた現地の写真・動画から、管理者OK済みだけを掲載します。</p>
+      </div>
+      <a href="https://line.me/R/ti/p/@150vqsgl"
+         target="_blank" rel="noopener"
+         style="
+          display:inline-flex;
+          align-items:center;
+          justify-content:center;
+          gap:8px;
+          background:#00c300;
+          color:#fff;
+          padding:12px 20px;
+          border-radius:999px;
+          font-weight:900;
+          font-size:0.9rem;
+          text-decoration:none;
+          white-space:nowrap;
+          box-shadow:0 8px 22px rgba(0,0,0,0.18);
+         ">
+        <i class="fa-brands fa-line"></i> 現地投稿に参加する（β版）
+      </a>
+    </div>
+    <div class="wave-report-grid" id="waveReportGrid">
+      <div class="wave-report-empty" style="grid-column:1/-1;">
+        <i class="fa-solid fa-spinner fa-spin"></i> レポートを読み込み中...
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LINEバナー -->
+<section style="padding-top: 30px; padding-bottom: 50px;">
+  <div class="line-banner">
+    <div class="content">
+      <div>
+        <h2 class="reveal"><i class="fa-brands fa-line"></i>NAMI OSAKA コミュニティ</h2>
+        <p class="lead">
+          大阪のサーファーが集まる<strong>地域コミュニティ</strong>。
+          波情報の共有、一緒に行く仲間募集、初心者の質問相談まで。
+          関西で本気でサーフィンを楽しむなら、まず参加！
+        </p>
+      </div>
+      <a href="https://line.me/ti/g2/gJhhK1rx3DXRkf8XpIaUqSacY9ePlJKI3tH53A?utm_source=invitation&utm_medium=link_copy&utm_campaign=default"
+         target="_blank" rel="noopener" class="join-btn">
+        <i class="fa-brands fa-line"></i> オープンチャットに参加
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- お問い合わせCTA -->
+<div class="contact-cta">
+  <h2 class="reveal"><i class="fa-solid fa-envelope"></i> お問い合わせ・スポンサー募集</h2>
+  <p>
+    サイトへのご意見・改善提案、スポット情報の追加リクエスト、
+    <strong style="color:var(--coral);">スポンサー・広告掲載のご相談</strong>はこちらから。
+    地元サーフショップ様、宿泊施設様、飲食店様のお問い合わせもお待ちしています。
+  </p>
+  <div class="contact-buttons">
+    <a href="contact.html" class="contact-btn primary">
+      <i class="fa-solid fa-paper-plane"></i> お問い合わせフォーム
+    </a>
+  </div>
+</div>
+
+
+
+<section class="seo-intro">
+  <h2>
+    関西サーファーのための波情報ポータル —
+    APIで全9ポイントの波をリアルタイムチェック
+    「kansaisurfer.ks」
+  </h2>
+
+  <p>
+    関西サーファー.ks は、
+    関西・四国・東海・日本海エリアの主要サーフポイントを網羅した、
+    関西サーファー向け無料波情報ポータルです。
+
+    磯ノ浦（和歌山）、国府の浜（三重・伊勢）、生見（高知・四国）、
+    小松海岸（徳島）、伊良湖（愛知）、静波（静岡）、
+    浜詰（京都）、高浜（福井）、白兎（鳥取）など、
+    全9ポイントのリアルタイム波情報を掲載。
+
+    波の高さ・周期・風向などの海況データを
+    <strong>10分毎に自動更新</strong>し、
+    「今どこが良いか」<strong>「明日どこへ向かうか」</strong>を
+    一目で判断できる構成になっています。
+  </p>
+
+  <h3>主要カバーポイント</h3>
+
+  <p>
+    <strong>磯ノ浦（和歌山）</strong>：
+    JR磯ノ浦駅徒歩0分、関西サーフィンの聖地。
+    南南西向き、北北東オフショア。
+  </p>
+
+  <p>
+    <strong>国府の浜（三重・伊勢）</strong>：
+    伊勢志摩エリア最大級のサーフポイント。
+    真東向き、真西オフショア。
+  </p>
+
+  <p>
+    <strong>生見（高知・四国）</strong>：
+    太平洋直撃の真東向きビーチ。
+    台風シーズンの四国遠征定番ポイント。
+  </p>
+
+  <p>
+    <strong>日本海エリア</strong>：
+    浜詰（京都）、高浜（福井）、白兎（鳥取）など、
+    冬型シーズンに強い日本海ポイントにも対応。
+  </p>
+</section>
+
+
+<a href="https://line.me/ti/g2/gJhhK1rx3DXRkf8XpIaUqSacY9ePlJKI3tH53A?utm_source=invitation&utm_medium=link_copy&utm_campaign=default"
+   target="_blank" rel="noopener" class="floating-line">
+  <div class="fl-icon"><i class="fa-brands fa-line"></i></div>
+  <div class="fl-text">
+    <span class="fl-label">NAMI OSAKA</span>
+    <span class="fl-sub">LINEオープンチャット</span>
+  </div>
+  <span class="fl-arrow">→</span>
+</a>
+
+<!-- ============ ブログ一覧（フッター上） ============ -->
+<section class="section" style="padding-top:50px;padding-bottom:60px;">
+  <h2 class="section-title reveal">
+    <span class="no">03</span>
+    <i class="fa-solid fa-newspaper ico"></i>
+    最新ブログ記事
+  </h2>
+  <p style="color:var(--cream-soft);font-size:0.9rem;margin-bottom:16px;">
+    波予想・ポイントガイド・ローカルニュース ／ <a href="blog/index.php" style="color:var(--coral-soft);text-decoration:underline;">すべて見る →</a>
+  </p>
+  <div id="blogCardGrid" class="blog-card-grid">
+    <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--teal-pale);font-size:0.9rem;">
+      <i class="fa-solid fa-spinner fa-spin"></i> 記事を読み込み中...
+    </div>
+  </div>
+</section>
+
+
+
+
+
+<footer>
+  <a href="index.html" class="logo" style="text-decoration:none;justify-content:center;">
+    <img src="img/logo-ks-white.png" alt="KS" style="height:24px;width:auto;margin-right:6px;vertical-align:middle;">
+    <span class="en" style="font-size:0.75rem;">Kansai Surf</span>
+  </a>
+  <div class="footer-sns" style="display:flex;align-items:center;justify-content:center;gap:24px;margin:22px 0;padding:8px 0;">
+    <a id="sns-ig" href="#" style="color:var(--cream-soft);font-size:1.7rem;line-height:1;padding:6px;"><i class="fa-brands fa-instagram"></i></a>
+    <a id="sns-fb" href="#" style="color:var(--cream-soft);font-size:1.7rem;line-height:1;padding:6px;"><i class="fa-brands fa-facebook"></i></a>
+    <a id="sns-tt" href="#" style="color:var(--cream-soft);font-size:1.7rem;line-height:1;padding:6px;"><i class="fa-brands fa-tiktok"></i></a>
+    <a id="sns-x" href="#" style="color:var(--cream-soft);font-size:1.7rem;line-height:1;padding:6px;"><i class="fa-brands fa-x-twitter"></i></a>
+    <a id="sns-yt" href="#" style="color:var(--cream-soft);font-size:1.7rem;line-height:1;padding:6px;"><i class="fa-brands fa-youtube"></i></a>
+  </div>
+
+  <div class="footer-links">
+    <a href="index.html">ホーム</a>
+    <a href="blog/index.php">ブログ</a>
+    <a href="https://suzuri.jp/kansaisurfer" target="_blank" rel="noopener">ショップ</a>
+  </div>
+
+  <div class="footer-links">
+    <a href="isonoura.html">磯ノ浦</a>
+    <a href="kounohama.html">伊勢</a>
+    <a href="ikumi.html">生見</a>
+    <a href="komatsu.html">小松</a>
+    <a href="irago.html">伊良湖</a>
+    <a href="shizunami.html">静波</a>
+    <a href="hamadutu.html">浜詰</a>
+    <a href="takahama.html">高浜</a>
+    <a href="hakuto.html">白兎</a>
+  </div>
+
+  <div class="footer-links" style="margin-bottom:16px;">
+    <span style="color:var(--teal-pale);font-family:'JetBrains Mono',monospace;font-size:0.65rem;letter-spacing:0.1em;align-self:center;">GUIDE</span>
+    <a href="isonoura_guide.html">磯ノ浦ガイド</a>
+    <a href="kounohama_guide.html">国府の浜ガイド</a>
+    <a href="ikumi_guide.html">生見ガイド</a>
+    <a href="komatsu_guide.html">小松ガイド</a>
+    <a href="irago_guide.html">伊良湖ガイド</a>
+    <a href="shizunami_guide.html">静波ガイド</a>
+    <a href="hamadutu_guide.html">浜詰ガイド</a>
+    <a href="takahama_guide.html">高浜ガイド</a>
+    <a href="hakuto_guide.html">白兎ガイド</a>
+  </div>
+
+  <div class="footer-links">
+    <a href="contact.html">お問い合わせ</a>
+    <a href="about.html">当サイトについて</a>
+    <a href="privacy.html">プライバシーポリシー</a>
+  </div>
+
+  <div class="attr"><i class="fa-solid fa-cloud"></i> Weather data by <a href="https://open-meteo.com" target="_blank">Open-Meteo.com</a></div>
+  <div class="attr" style="margin-top:14px;">
+    <a href="https://kiseki.rss7.net/" target="_blank">映像工房 軌跡</a> ·
+    <a href="https://bitframe.rss7.net/" target="_blank">AI動画CM制作.bitframe</a> ·
+    <a href="https://rss7.net/" target="_blank">RSS7 AI Works 総合制作</a>
+  </div>
+  <div class="attr">© 2026 関西サーファー.ks · MADE IN OSAKA</div>
+</footer>
+
+<script>
+// ===========================================================
+// 波報 NAMI REPORT - トップページ
+// 9ポイント拡張対応: 下のSPOTS配列に追加するだけ
+// ===========================================================
+
+const SPOTS = [
+  { key: 'isonoura',  name: '磯ノ浦', region: '和歌山',
+    lat: 34.18, lng: 135.05,
+    offshoreStart: 340, offshoreEnd: 60,
+    swellMin: 150, swellMax: 240,
+    waveFactor: 0.7,
+    page: 'isonoura.html' },
+  { key: 'kounohama', name: '国府の浜', region: '伊勢・三重',
+    lat: 34.34, lng: 136.92,
+    offshoreStart: 240, offshoreEnd: 300,
+    swellMin: 60, swellMax: 150,
+    page: 'kounohama.html' },
+  { key: 'ikumi', name: '生見', region: '四国・高知',
+    lat: 33.50, lng: 134.30,
+    offshoreStart: 240, offshoreEnd: 300,
+    swellMin: 60, swellMax: 150,
+    page: 'ikumi.html' },
+  { key: 'komatsu', name: '小松海岸', region: '四国・徳島',
+    lat: 34.095, lng: 134.601,
+    offshoreStart: 0, offshoreEnd: 90,
+    swellMin: 180, swellMax: 270,
+    page: 'komatsu.html' },
+  { key: 'irago', name: '伊良湖', region: '愛知',
+    lat: 34.573, lng: 137.022,
+    offshoreStart: 270, offshoreEnd: 30,
+    swellMin: 90, swellMax: 200,
+    page: 'irago.html' },
+  { key: 'shizunami', name: '静波', region: '静岡',
+    lat: 34.726, lng: 138.218,
+    offshoreStart: 270, offshoreEnd: 50,
+    swellMin: 150, swellMax: 220,
+    page: 'shizunami.html' },
+  { key: 'hamadutu', name: '浜詰', region: '京都・日本海',
+    lat: 35.644, lng: 135.086,
+    offshoreStart: 120, offshoreEnd: 200,
+    swellMin: 280, swellMax: 360,
+    page: 'hamadutu.html' },
+  { key: 'takahama', name: '高浜', region: '福井・日本海',
+    lat: 35.487, lng: 135.513,
+    offshoreStart: 120, offshoreEnd: 200,
+    swellMin: 270, swellMax: 360,
+    page: 'takahama.html' },
+  { key: 'hakuto', name: '白兎', region: '鳥取・日本海',
+    lat: 35.512, lng: 134.168,
+    offshoreStart: 120, offshoreEnd: 200,
+    swellMin: 270, swellMax: 360,
+    page: 'hakuto.html' },
+];
+
+const DIRS_JP = ['北','北北東','北東','東北東','東','東南東','南東','南南東','南','南南西','南西','西南西','西','西北西','北西','北北西'];
+function degToDirJp(d){if(d==null||isNaN(d))return'--';return DIRS_JP[Math.round(d/22.5)%16];}
+function windArrowRotation(d){if(d==null||isNaN(d))return 0;return(d+180)%360;}
+function safeNum(v,fb=null){return(v==null||isNaN(v))?fb:v;}
+function formatTime(d){return d.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});}
+
+function isOffshoreFor(spot, deg) {
+  if (deg == null) return false;
+  if (spot.offshoreStart > spot.offshoreEnd) return deg >= spot.offshoreStart || deg <= spot.offshoreEnd;
+  return deg >= spot.offshoreStart && deg <= spot.offshoreEnd;
+}
+function isOnshoreFor(spot, deg) {
+  if (deg == null) return false;
+  let oc;
+  if (spot.offshoreStart > spot.offshoreEnd) oc = ((spot.offshoreStart + spot.offshoreEnd + 360) / 2) % 360;
+  else oc = (spot.offshoreStart + spot.offshoreEnd) / 2;
+  const onc = (oc + 180) % 360;
+  let diff = Math.abs(deg - onc);
+  if (diff > 180) diff = 360 - diff;
+  return diff <= 60;
+}
+function getWindCond(spot, deg) {
+  if (deg == null) return 'unknown';
+  if (isOffshoreFor(spot, deg)) return 'offshore';
+  if (isOnshoreFor(spot, deg)) return 'onshore';
+  return 'side';
+}
+function swellDirScoreFor(spot, dir) {
+  if (dir == null) return 0.7;
+  if (dir >= spot.swellMin && dir <= spot.swellMax) return 1.0;
+  if (dir >= spot.swellMin - 30 && dir <= spot.swellMax + 30) return 0.7;
+  return 0.4;
+}
+
+function calcScoreFor(spot, h, p, ws, wd, sd) {
+  if (h == null || h < 0.2) return 0.5;
+  if (h < 0.3) return Math.min(1.5, h * 4);
+
+  let sizeScore;
+  if (h < 0.4) sizeScore = 1.5;
+  else if (h < 0.6) sizeScore = 2.5;
+  else if (h < 1.0) sizeScore = 4.0;
+  else if (h < 1.5) sizeScore = 5.0;
+  else if (h < 2.0) sizeScore = 4.5;
+  else if (h < 2.5) sizeScore = 3.5;
+  else sizeScore = 2.5;
+
+  let periodScore = 1.0;
+  if (p != null) {
+    if (p < 5) periodScore = 0.3;
+    else if (p < 7) periodScore = 0.8;
+    else if (p < 9) periodScore = 1.3;
+    else if (p < 11) periodScore = 1.7;
+    else periodScore = 2.0;
+  }
+
+  let windMult;
+  const ws_ = ws != null ? ws : 5;
+  if (ws_ < 1.5) windMult = 1.0;
+  else if (isOffshoreFor(spot, wd)) {
+    if (ws_ < 4) windMult = 1.0;
+    else if (ws_ < 7) windMult = 0.95;
+    else if (ws_ < 10) windMult = 0.85;
+    else windMult = 0.7;
+  } else if (isOnshoreFor(spot, wd)) {
+    if (ws_ < 3) windMult = 0.85;
+    else if (ws_ < 5) windMult = 0.65;
+    else if (ws_ < 8) windMult = 0.4;
+    else windMult = 0.2;
+  } else {
+    if (ws_ < 3) windMult = 0.95;
+    else if (ws_ < 6) windMult = 0.8;
+    else if (ws_ < 9) windMult = 0.6;
+    else windMult = 0.4;
+  }
+
+  // 大波+オンショア危険補正: 1.5m超で強オンショアは追加減点
+  if (h >= 1.5 && isOnshoreFor(spot, wd) && ws_ >= 4) {
+    return Math.min(10, Math.max(0, (sizeScore + periodScore) * windMult * swellDirScoreFor(spot, sd) * 0.5));
+  }
+
+  return Math.min(10, Math.max(0, (sizeScore + periodScore) * windMult * swellDirScoreFor(spot, sd)));
+}
+
+function scoreToStars(score) {
+  let stars = 1;
+  if (score >= 2.5) stars = 2;
+  if (score >= 4.0) stars = 3;
+  if (score >= 5.5) stars = 4;
+  if (score >= 7.0) stars = 5;
+  return '★'.repeat(stars) + '☆'.repeat(5 - stars);
+}
+
+function getVerdict(score, waveH, windCond, windSpeed) {
+  if (waveH == null) return { emoji: '❓', text: '取得中', action: 'action-meh' };
+  // 大波で強オンショア = 危険判定
+  if (waveH >= 2.0 && windCond === 'onshore' && windSpeed >= 5) return { emoji: '⚠️', text: '危険、避けよ', action: 'action-no' };
+  if (waveH < 0.25) return { emoji: '😴', text: '諦めよ', action: 'action-no' };
+  if (score >= 7.0) return { emoji: '🔥', text: '完全GO', action: 'action-go' };
+  if (score >= 5.5) return { emoji: '✨', text: '行くべし', action: 'action-go' };
+  if (score >= 4.0) return { emoji: '👍', text: 'アリ', action: 'action-ok' };
+  if (score >= 2.5) return { emoji: '🤔', text: '微妙', action: 'action-meh' };
+  return { emoji: '😴', text: '諦めよ', action: 'action-no' };
+}
+
+// 重複しないコンディションタグ生成
+function getConditionTags(spot, waveH, waveP, windSpeed, windDir) {
+  const tags = [];
+  const wc = getWindCond(spot, windDir);
+
+  // サイズ系（必ず1つ）
+  if (waveH != null) {
+    // 磯ノ浦だけ厳しめ判定
+    if (spot.key === 'isonoura' || spot.name === '磯ノ浦') {
+      if (waveH < 0.35) tags.push({ t: 'スネ', c: 'warn' });
+      else if (waveH < 0.55) tags.push({ t: 'スネ〜ヒザ', c: '' });
+      else if (waveH < 0.8) tags.push({ t: 'ヒザ', c: '' });
+      else if (waveH < 1.1) tags.push({ t: '腰サイズ', c: '' });
+      else if (waveH < 1.4) tags.push({ t: '胸サイズ', c: 'good' });
+      else if (waveH < 1.7) tags.push({ t: '肩サイズ', c: 'good' });
+      else if (waveH < 2.1) tags.push({ t: '頭サイズ', c: 'good' });
+      else tags.push({ t: '頭オーバー', c: 'warn' });
+    } else {
+      if (waveH < 0.3) tags.push({ t: 'フラット', c: 'warn' });
+      else if (waveH < 0.5) tags.push({ t: '膝サイズ', c: '' });
+      else if (waveH < 0.8) tags.push({ t: '腰サイズ', c: '' });
+      else if (waveH < 1.1) tags.push({ t: '腹サイズ', c: '' });
+      else if (waveH < 1.4) tags.push({ t: '胸サイズ', c: 'good' });
+      else if (waveH < 1.7) tags.push({ t: '肩サイズ', c: 'good' });
+      else if (waveH < 2.1) tags.push({ t: '頭サイズ', c: 'good' });
+      else tags.push({ t: '頭オーバー', c: 'warn' });
+    }
+  }
+
+  // 風系（必ず1つ）
+  if (windSpeed != null && windSpeed < 1.5) tags.push({ t: '無風', c: 'good' });
+  else if (wc === 'offshore') tags.push({ t: 'オフショア', c: 'good' });
+  else if (wc === 'onshore') {
+    if (windSpeed >= 6) tags.push({ t: '強オンショア', c: 'warn' });
+    else tags.push({ t: 'オンショア', c: 'warn' });
+  } else if (wc === 'side') tags.push({ t: 'サイドショア', c: '' });
+
+  // レベル系（必ず1つ）
+  if (waveH != null) {
+    if (waveH < 0.5) tags.push({ t: 'ロング向き', c: '' });
+    else if (waveH < 0.8) tags.push({ t: '初心者向き', c: '' });
+    else if (waveH < 1.4) tags.push({ t: '中級者向き', c: '' });
+    else if (waveH < 2.0) tags.push({ t: '上級者向き', c: '' });
+    else tags.push({ t: 'デンジャラス', c: 'warn' });
+  }
+
+  // 周期系（条件次第）
+  if (waveP != null && waveP >= 10) tags.push({ t: 'うねりキレイ', c: 'good' });
+  else if (waveP != null && waveP < 6 && waveH != null && waveH > 0.3) tags.push({ t: '風波多め', c: '' });
+
+  return tags;
+}
+
+function findCurrentHourIdx(times) {
+  const now = new Date();
+  let idx = 0;
+  for (let i = 0; i < times.length; i++) {
+    if (new Date(times[i]) <= now) idx = i;
+    else break;
+  }
+  return idx;
+}
+
+async function fetchSpotData(spot) {
+  try {
+    const res = await fetch(`data/spot_${spot.key}.json?_=${Date.now()}`, { cache: 'no-store' });
+    if (!res.ok) throw new Error('JSON HTTP ' + res.status);
+    const data = await res.json();
+    return { spot, marine: data.marine, weather: data.weather, updatedAt: data.updated_at, error: null };
+  } catch (err) {
+    return { spot, marine: null, weather: null, updatedAt: null, error: err.message };
+  }
+}
+
+let lastFetchTime = 0;
+
+function renderTagsHtml(tags) {
+  return tags.map(t => `<span class="sc-tag ${t.c}">${t.t}</span>`).join('');
+}
+
+function renderBestSpot(r) {
+  const verdict = getVerdict(r.score, r.waveH, getWindCond(r.spot, r.windDir), r.windSpeed);
+  const stars = scoreToStars(r.score);
+  const tags = getConditionTags(r.spot, r.waveH, r.waveP, r.windSpeed, r.windDir);
+
+  let windDisplay = '--';
+  if (r.windDir != null && r.windSpeed != null) {
+    const rot = windArrowRotation(r.windDir);
+    windDisplay = `<i class="fa-solid fa-location-arrow" style="color:var(--coral);transform:rotate(${rot - 45}deg);font-size:0.85rem;"></i> ${degToDirJp(r.windDir)} ${r.windSpeed.toFixed(1)}m/s`;
+  }
+
+  return `
+    <a href="${r.spot.page}" class="best-spot-card">
+      <div class="name">${r.spot.name}<span class="region">${r.spot.region}</span></div>
+      <div class="stars">${stars}</div>
+      <div class="verdict-row">
+        <div class="verdict ${verdict.action}">${verdict.emoji} ${verdict.text}</div>
+        <div class="score">${r.score.toFixed(1)}<span class="denom">/10</span></div>
+      </div>
+      <div class="stats-row">
+        <div>
+          <div class="bs-stat-label">波の高さ</div>
+          <div class="bs-stat-val">${r.waveH != null ? r.waveH.toFixed(1) : '--'}<span class="unit">m</span></div>
+        </div>
+        <div>
+          <div class="bs-stat-label">周期</div>
+          <div class="bs-stat-val">${r.waveP != null ? r.waveP.toFixed(0) : '--'}<span class="unit">秒</span></div>
+        </div>
+        <div>
+          <div class="bs-stat-label">風</div>
+          <div class="bs-stat-val" style="font-size:1rem;">${windDisplay}</div>
+        </div>
+      </div>
+      <div class="tags-row">${renderTagsHtml(tags)}</div>
+      <div class="go-link">詳細を見る <span style="font-family:'Fraunces',serif;font-size:1.3rem;">→</span></div>
+    </a>
+  `;
+}
+
+function renderSpotMini(r, isBest) {
+  const verdict = getVerdict(r.score, r.waveH, getWindCond(r.spot, r.windDir), r.windSpeed);
+  const stars = scoreToStars(r.score);
+  const tags = getConditionTags(r.spot, r.waveH, r.waveP, r.windSpeed, r.windDir);
+
+  let windDisplay = '--';
+  if (r.windDir != null && r.windSpeed != null) {
+    const rot = windArrowRotation(r.windDir);
+    windDisplay = `<i class="fa-solid fa-location-arrow" style="color:var(--coral);transform:rotate(${rot - 45}deg);font-size:0.7rem;"></i> ${degToDirJp(r.windDir)} ${r.windSpeed.toFixed(0)}`;
+  }
+
+  return `
+    <a href="${r.spot.page}" class="spot-mini ${isBest ? 'is-best' : ''}">
+      <div class="sm-head">
+        <div class="sm-name">${r.spot.name}<span class="region">${r.spot.region}</span></div>
+        <div class="sm-score">${r.score.toFixed(1)}<span class="denom">/10</span></div>
+      </div>
+      <div class="sm-stars">${stars}</div>
+      <div class="sm-verdict ${verdict.action}">${verdict.emoji} ${verdict.text}</div>
+      <div class="sm-stats">
+        <div class="sm-stat">
+          <div class="sm-stat-l">波</div>
+          <div class="sm-stat-v">${r.waveH != null ? r.waveH.toFixed(1) : '--'}<span class="u">m</span></div>
+        </div>
+        <div class="sm-stat">
+          <div class="sm-stat-l">周期</div>
+          <div class="sm-stat-v">${r.waveP != null ? r.waveP.toFixed(0) : '--'}<span class="u">秒</span></div>
+        </div>
+        <div class="sm-stat">
+          <div class="sm-stat-l">風</div>
+          <div class="sm-stat-v" style="font-size:0.78rem;">${windDisplay}</div>
+        </div>
+      </div>
+      <div class="sm-tags">${renderTagsHtml(tags.slice(0, 3))}</div>
+      <div class="sm-bottom">詳細 →</div>
+    </a>
+  `;
+}
+
+async function fetchAll() {
+  const updateEl = document.getElementById('updateInfo');
+  updateEl.classList.add('syncing');
+  document.getElementById('lastUpdate').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+  lastFetchTime = Date.now();
+
+  const results = await Promise.all(SPOTS.map(fetchSpotData));
+  const latestUpdated = results.map(r => r.updatedAt).filter(Boolean).sort().pop();
+
+  const enriched = results.map(({ spot, marine, weather, error }) => {
+    if (error || !marine || !weather || !marine.hourly) return { spot, error: true };
+    const mIdx = findCurrentHourIdx(marine.hourly.time);
+    const waveH = safeNum(marine.hourly.wave_height[mIdx]);
+    const waveP = safeNum(marine.hourly.wave_period[mIdx]);
+    const swellD = safeNum(marine.hourly.swell_wave_direction?.[mIdx]);
+    const w = weather.current || {};
+    const windSpeed = safeNum(w.wind_speed_10m);
+    const windDir = safeNum(w.wind_direction_10m);
+    const score = calcScoreFor(spot, waveH, waveP, windSpeed, windDir, swellD);
+    return { spot, waveH, waveP, windSpeed, windDir, swellD, score };
+  });
+
+  // ベスト判定
+  const validResults = enriched.filter(r => !r.error);
+  const sorted = [...validResults].sort((a, b) => b.score - a.score);
+
+  // TODAY'S BEST
+  const bestEl = document.getElementById('bestSpotContainer');
+  if (sorted.length > 0) {
+    bestEl.innerHTML = renderBestSpot(sorted[0]);
+  } else {
+    bestEl.innerHTML = '<div style="text-align:center;padding:60px;color:var(--coral);">データ取得失敗</div>';
+  }
+
+  // ALL SPOTS
+  const allEl = document.getElementById('allSpotsGrid');
+  if (validResults.length > 0) {
+    const bestKey = sorted[0]?.spot.key;
+    // 元の順番（SPOTS定義順）で表示、ベストにマーク
+    allEl.innerHTML = enriched.map(r => {
+      if (r.error) {
+        return `<div class="spot-mini" style="text-align:center;color:var(--teal-pale);">${r.spot.name}<br>取得失敗</div>`;
+      }
+      return renderSpotMini(r, r.spot.key === bestKey);
+    }).join('');
+  } else {
+    allEl.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--coral);">データ取得失敗</div>';
+  }
+
+  document.getElementById('lastUpdate').textContent = latestUpdated ? formatTime(new Date(latestUpdated.replace(' ', 'T'))) : formatTime(new Date());
+  setTimeout(() => updateEl.classList.remove('syncing'), 600);
+}
+
+document.getElementById('refreshBtn').addEventListener('click', fetchAll);
+
+// ハンバーガー
+const hamburger = document.getElementById('hamburger');
+const mobileMenu = document.getElementById('mobileMenu');
+hamburger.addEventListener('click', () => {
+  hamburger.classList.toggle('active');
+  mobileMenu.classList.toggle('open');
+});
+window.__namiHamburgerBound = true;
+
+function updateClock() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2, '0');
+  const m = String(now.getMinutes()).padStart(2, '0');
+  document.getElementById('clockTag').innerHTML = `<span class="dot"></span>LIVE ${h}:${m} JST`;
+}
+updateClock();
+setInterval(updateClock, 30000);
+
+fetchAll();
+setInterval(fetchAll, 60 * 60 * 1000);
+
+// ============ ブログ記事読み込み ============
+function getArticleImage(a) {
+  if (!a) return '';
+  const keys = ['image','image_url','imageUrl','thumbnail','thumbnail_url','thumb','thumb_url',
+    'eyecatch','eyecatch_url','eyecatchUrl','featured_image','featured_image_url',
+    'featuredImage','featuredImageUrl','cover','cover_image','og_image','main_image','img'];
+  for (const k of keys) {
+    if (a[k] && String(a[k]).trim()) return String(a[k]).trim();
+  }
+  const htmlFields = ['content','body','html','article','description','summary','excerpt'];
+  for (const k of htmlFields) {
+    const s = String(a[k] || '');
+    const m = s.match(/<img[^>]+src=["']([^"']+)["']/i);
+    if (m && m[1]) return m[1];
+  }
+  if (a.slug) return 'blog/img/' + encodeURIComponent(a.slug) + '.jpg';
+  return '';
+}
+function getArticleUrl(a) {
+  if (a.url) return a.url;
+  if (a.link) return a.link;
+  if (a.slug) return 'blog/posts/' + encodeURIComponent(a.slug) + '.php';
+  return 'blog/index.php';
+}
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+}
+
+function buildForecastCard(article, metaLabel, fallbackTitle, fallbackDesc) {
+  if (!article) {
+    return '<div class="main-forecast-card">'
+      + '<div class="main-forecast-thumb placeholder"><i class="fa-solid fa-water"></i></div>'
+      + '<div class="main-forecast-body">'
+      + '<div class="main-forecast-meta">' + metaLabel + '</div>'
+      + '<h3>' + fallbackTitle + '</h3><p>' + fallbackDesc + '</p>'
+      + '</div></div>';
+  }
+  const img = getArticleImage(article);
+  const url = getArticleUrl(article);
+  const title = escapeHtml(article.title || fallbackTitle);
+  const desc = escapeHtml(article.excerpt || article.description || fallbackDesc);
+  let imgSrc = img;
+  if (img && !img.startsWith('http') && !img.startsWith('blog/') && !img.startsWith('/')) {
+    imgSrc = 'blog/' + img;
+  }
+  return '<a class="main-forecast-card" href="' + url + '">'
+    + (imgSrc
+      ? '<div class="main-forecast-thumb"><img src="' + escapeHtml(imgSrc) + '" alt="" onerror="this.parentNode.className=\'main-forecast-thumb placeholder\';this.parentNode.innerHTML=\'<i class=&quot;fa-solid fa-water&quot;></i>\';"></div>'
+      : '<div class="main-forecast-thumb placeholder"><i class="fa-solid fa-water"></i></div>')
+    + '<div class="main-forecast-body">'
+    + '<div class="main-forecast-meta">' + metaLabel + '</div>'
+    + '<h3>' + title + '</h3><p>' + desc + '</p>'
+    + '<span class="main-forecast-link">記事を見る <i class="fa-solid fa-arrow-right"></i></span>'
+    + '</div></a>';
+}
+
+function buildBlogCard(a) {
+  const img = getArticleImage(a);
+  const url = getArticleUrl(a);
+  const title = escapeHtml(a.title || '');
+  const cat = escapeHtml(a.category || '');
+  const excerpt = escapeHtml(a.excerpt || '');
+  let imgSrc = img;
+  if (img && !img.startsWith('http') && !img.startsWith('blog/') && !img.startsWith('/')) {
+    imgSrc = 'blog/' + img;
+  }
+  return '<a class="blog-eyecatch-card" href="' + url + '">'
+    + '<div class="bec-thumb">'
+    + (imgSrc
+      ? '<img src="' + escapeHtml(imgSrc) + '" alt="' + title + '" loading="lazy">'
+      : '<i class="fa-solid fa-water"></i>')
+    + '</div>'
+    + '<div class="bec-body">'
+    + (cat ? '<span class="bec-cat">' + cat + '</span>' : '')
+    + '<h3>' + title + '</h3>'
+    + (excerpt ? '<p>' + excerpt + '</p>' : '')
+    + '</div></a>';
+}
+
+(async function loadArticles() {
+  try {
+    const res = await fetch('blog/articles.json?_=' + Date.now());
+    const articles = await res.json();
+    const published = Array.isArray(articles)
+      ? articles.filter(a => (a.status || 'published') === 'published') : [];
+
+    // 今日の波：slugが wave-today の記事だけを対象にする
+    const todayArticle = published.find(a =>
+      /wave-today/.test(a.slug || '')
+    ) || null;
+
+    // 明日の予想
+    const tomorrowArticle = published.find(a =>
+      /wave-forecast/.test(a.slug || '')
+    ) || null;
+
+    const todayWrap = document.getElementById('todayCard');
+    if (todayWrap) todayWrap.innerHTML = buildForecastCard(
+      todayArticle, '今日の波情報｜毎朝7:00更新', '今日の波情報', '今朝の各スポット波状況をまとめています。');
+
+    const tomorrowWrap = document.getElementById('tomorrowCard');
+    if (tomorrowWrap) tomorrowWrap.innerHTML = buildForecastCard(
+      tomorrowArticle, '明日の予想｜毎日17:00更新', '明日の波予想', '明日の波予想をチェック。週末・遠征前の参考にどうぞ。');
+
+    // アイキャッチ付きブログカードグリッド（波予報記事を除外・最新4件）
+    const grid = document.getElementById('blogCardGrid');
+    if (grid) {
+      const recent = published
+        .filter(a =>
+          !/wave-today|wave-forecast/.test(a.slug || '') &&
+          !/波予報|波情報|波予想|今日の波|明日の/.test((a.category || '') + (a.title || ''))
+        )
+        .slice(0, 4);
+      grid.innerHTML = recent.length
+        ? recent.map(a => buildBlogCard(a)).join('')
+        : '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--teal-pale);">記事がまだありません</div>';
+    }
+  } catch(e) {
+    const todayWrap = document.getElementById('todayCard');
+    const tomorrowWrap = document.getElementById('tomorrowCard');
+    const grid = document.getElementById('blogCardGrid');
+    if (todayWrap) todayWrap.innerHTML = buildForecastCard(null, '今日の波情報', '読み込み失敗', '');
+    if (tomorrowWrap) tomorrowWrap.innerHTML = buildForecastCard(null, '明日の予想', '読み込み失敗', '');
+    if (grid) grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--coral);">読み込み失敗</div>';
+  }
+})();
+
+window.addEventListener('pageshow', (event) => {
+  if (event.persisted) fetchAll();
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && Date.now() - lastFetchTime > 3 * 60 * 1000) fetchAll();
+});
+
+
+// ============ 承認済み動画・画像レポート読み込み ============
+function isVideoMedia(url, type) {
+  const u = String(url || '').toLowerCase().split('?')[0];
+  return String(type || '').toLowerCase().includes('video') || /\.(mp4|webm|mov|m4v)$/i.test(u);
+}
+function normalizeMediaUrl(url) {
+  if (!url) return '';
+  url = String(url).trim();
+  if (url.startsWith('http') || url.startsWith('/')) return url;
+  return url;
+}
+function getReportMedia(r) {
+  return normalizeMediaUrl(r.video_url || r.videoUrl || r.movie_url || r.media_url || r.mediaUrl || r.image_url || r.imageUrl || r.photo_url || r.photoUrl || r.file || '');
+}
+function buildWaveReportCard(r) {
+  const media = getReportMedia(r);
+  const type = r.type || r.media_type || r.mediaType || '';
+  const spotNameMap = {
+    isonoura: '和歌山', '磯ノ浦': '和歌山',
+    kounohama: '伊勢', '国府の浜': '伊勢',
+    ikumi: '四国', '生見': '四国',
+    komatsu: '徳島', '小松海岸': '徳島',
+    irago: '愛知', '伊良湖': '愛知',
+    shizunami: '静岡', '静波': '静岡',
+    hamadutu: '京都', '浜詰': '京都',
+    takahama: '福井', '高浜': '福井',
+    hakuto: '鳥取', '白兎': '鳥取',
+    community: 'コミュニティ', '': 'トップページ'
+  };
+  const spotKey = r.spot || r.point || r.location || '';
+  const spot = escapeHtml(spotNameMap[spotKey] || spotKey || 'スポット未設定');
+  const size = escapeHtml(r.size || r.wave_size || r.waveSize || '');
+  const name = escapeHtml(r.name || r.user || r.nickname || '現地サーファー');
+  const time = escapeHtml(r.time || r.created_at || r.createdAt || r.date || '');
+  const comment = escapeHtml(r.comment || r.text || r.message || '現地レポートが届きました。');
+  const title = size ? spot + '｜' + size : spot;
+
+  let mediaHtml = '';
+  if (media) {
+    if (isVideoMedia(media, type)) {
+      mediaHtml = '<div class="wave-report-media"><video src="' + escapeHtml(media) + '" controls playsinline preload="metadata"></video></div>';
+    } else {
+      mediaHtml = '<div class="wave-report-media"><img src="' + escapeHtml(media) + '" alt="' + spot + ' 現地波レポート" loading="lazy"></div>';
+    }
+  } else {
+    mediaHtml = '<div class="wave-report-textonly"><i class="fa-solid fa-comment-dots"></i><span>TEXT REPORT</span></div>';
+  }
+
+  return '<article class="wave-report-card">'
+    + mediaHtml
+    + '<div class="wave-report-body">'
+    + '<div class="wave-report-meta"><span>' + name + '</span><span>' + time + '</span></div>'
+    + '<h3 class="wave-report-title">' + title + '</h3>'
+    + '<p class="wave-report-comment">' + comment + '</p>'
+    + '</div></article>';
+}
+(async function loadWaveReports() {
+  const grid = document.getElementById('waveReportGrid');
+  if (!grid) return;
+  try {
+    const res = await fetch('data/line_posts.json?_=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) throw new Error('not found');
+    const raw = await res.json();
+    const posts = Array.isArray(raw) ? raw : (raw.posts || raw.items || raw.reports || []);
+    const approved = posts
+      .filter(r => r && (r.approved === true || r.status === 'approved' || r.status === 'published' || r.public === true))
+      .slice(0, 3);
+    if (!approved.length) throw new Error('empty');
+    grid.innerHTML = approved.map(buildWaveReportCard).join('');
+  } catch(e) {
+    grid.innerHTML = '<div class="wave-report-empty" style="grid-column:1/-1;">'
+      + '<strong>現地波レポート募集中</strong><br>'
+      + '写真・動画は管理者確認後にここへ掲載されます。<br>'
+      + '<a class="wave-report-join" href="https://line.me/ti/g2/gJhhK1rx3DXRkf8XpIaUqSacY9ePlJKI3tH53A?utm_source=invitation&utm_medium=link_copy&utm_campaign=default" target="_blank" rel="noopener">'
+      + '<i class="fa-brands fa-line"></i> LINEで参加する</a>'
+      + '</div>';
+  }
+})();
+
+</script>
+
+<script src="nami_common.js?v=1018"></script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/sw.js').catch(function(err) {
+      console.log('SW登録失敗:', err);
+    });
+  });
+}
+</script>
+
+<script>
+// SNSアプリ起動（スマホ対応）
+function snsOpen(appUrl, webUrl){ var t=Date.now(); location.href=appUrl; setTimeout(function(){ if(Date.now()-t<2000) location.href=webUrl; },500); }
+document.getElementById('sns-ig').addEventListener('click',function(e){ e.preventDefault(); snsOpen('instagram://user?username=kansaisurfer.ks','https://www.instagram.com/kansaisurfer.ks/'); });
+document.getElementById('sns-fb').addEventListener('click',function(e){ e.preventDefault(); snsOpen('fb://profile/kansaisurfer','https://facebook.com/kansaisurfer'); });
+document.getElementById('sns-tt').addEventListener('click',function(e){ e.preventDefault(); snsOpen('snssdk1233://user/profile?uniqueId=ks295223','https://www.tiktok.com/@ks295223'); });
+document.getElementById('sns-x').addEventListener('click',function(e){ e.preventDefault(); snsOpen('twitter://user?screen_name=kansaisurfer','https://x.com/kansaisurfer'); });
+document.getElementById('sns-yt').addEventListener('click',function(e){ e.preventDefault(); snsOpen('vnd.youtube://www.youtube.com/@kansaisurfers','https://www.youtube.com/@kansaisurfers'); });
+</script>
+
+<script>
+// ============ Hero: transparent→fixed dark header on scroll ============
+(function(){
+  var hdr = document.getElementById('siteHeaderFixed');
+  if(!hdr) return;
+  var syncHeader = function(){
+    hdr.classList.toggle('is-scrolled', window.scrollY > 24);
+  };
+  syncHeader();
+  window.addEventListener('scroll', syncHeader, { passive: true });
+})();
+
+// ============ Lightweight CSS-first reveal on scroll ============
+(function(){
+  var targets = Array.prototype.slice.call(document.querySelectorAll('.reveal'));
+  if(!targets.length) return;
+  var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(reduced || !('IntersectionObserver' in window)){
+    targets.forEach(function(el){ el.classList.add('is-visible'); });
+    return;
+  }
+  var observer = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if(entry.isIntersecting){
+        entry.target.classList.add('is-visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -7% 0px' });
+  targets.forEach(function(el){ observer.observe(el); });
+})();
+</script>
+</body>
+</html>
