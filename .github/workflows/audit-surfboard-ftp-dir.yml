@@ -1,0 +1,57 @@
+name: Audit Surfboard FTP Directory
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/audit-surfboard-ftp-dir.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    env:
+      FTP_SERVER: ftp.lolipop.jp
+    steps:
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y lftp
+
+      - name: Validate credentials exist
+        env:
+          FTP_USERNAME: ${{ secrets.KS_PROD_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_PROD_FTP_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +x
+          test -n "$FTP_USERNAME" || { echo '::error::KS_PROD_FTP_USER missing'; exit 1; }
+          test -n "$FTP_PASSWORD" || { echo '::error::KS_PROD_FTP_PASSWORD missing'; exit 1; }
+          echo 'Production FTP credentials are configured.'
+
+      - name: List remote root directory names only
+        env:
+          FTP_USERNAME: ${{ secrets.KS_PROD_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_PROD_FTP_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +x
+          lftp <<LFTP_EOF > /tmp/root-list.txt
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 20
+          set net:max-retries 2
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER"
+          cls -1 /
+          bye
+          LFTP_EOF
+          sed 's#/$##' /tmp/root-list.txt | sed '/^$/d' | sort -u
+          if grep -qxE '/?surfboard/?' /tmp/root-list.txt; then
+            echo 'SURFBOARD_DIR_EXISTS=yes'
+          else
+            echo 'SURFBOARD_DIR_EXISTS=no'
+          fi
