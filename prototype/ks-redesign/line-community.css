@@ -1,0 +1,46 @@
+/* LINE COMMUNITY page only — additive styles, does not modify styles.css */
+.line-banner-slot{border-top:1px solid rgba(255,255,255,.4);border-bottom:1px solid var(--line);padding:34px 0}
+.line-banner-grid{display:grid;gap:14px}
+.line-banner-grid--spots{gap:12px}
+
+.line-banner{
+  display:flex;align-items:center;gap:16px;
+  min-height:72px;padding:16px 20px;
+  background:linear-gradient(135deg,rgba(6,199,85,.16),rgba(6,199,85,.05));
+  border:1px solid rgba(6,199,85,.45);
+  border-radius:14px;
+  color:var(--text);
+  transition:transform .15s ease,background .2s ease,border-color .2s ease;
+  -webkit-tap-highlight-color:transparent;
+}
+a.line-banner:hover,a.line-banner:focus-visible{background:linear-gradient(135deg,rgba(6,199,85,.28),rgba(6,199,85,.08));border-color:#06c755;transform:translateY(-1px)}
+a.line-banner:active{transform:translateY(0) scale(.99)}
+.line-banner.is-disabled{background:rgba(255,255,255,.03);border-color:var(--line);color:var(--muted);cursor:default;pointer-events:none}
+
+.line-banner-icon{flex:0 0 auto;width:42px;height:42px;border-radius:10px;display:grid;place-items:center;background:#06c755;color:#04210f;font-weight:800;font-size:11px;letter-spacing:.02em}
+.line-banner.is-disabled .line-banner-icon{background:rgba(255,255,255,.08);color:var(--muted)}
+
+.line-banner-body{flex:1 1 auto;display:flex;flex-direction:column;gap:3px;min-width:0}
+.line-banner-title{font-size:15px;font-weight:700;line-height:1.35}
+.line-banner-desc{font-size:12px;color:var(--muted);line-height:1.5}
+.line-banner.is-disabled .line-banner-desc{color:#5f6a72}
+
+.line-banner-status{flex:0 0 auto;display:flex;align-items:center}
+.line-banner-arrow{font-size:18px;color:#06c755}
+.line-banner-badge{font-size:10px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border:1px solid var(--line);border-radius:999px;color:var(--muted);white-space:nowrap}
+
+.line-banner--main{min-height:88px;padding:22px 24px;border-radius:16px;border-width:2px;background:linear-gradient(135deg,rgba(6,199,85,.32),rgba(6,199,85,.08))}
+.line-banner--main .line-banner-title{font-size:19px}
+.line-banner--main .line-banner-icon{width:48px;height:48px;font-size:13px}
+.line-banner--main.is-disabled{background:rgba(255,255,255,.03)}
+
+.line-note{margin-top:28px;font-size:12px;color:var(--muted);line-height:1.8}
+
+@media(min-width:700px){
+  .line-banner-grid--spots{grid-template-columns:repeat(2,1fr)}
+}
+
+@media(max-width:480px){
+  .line-banner{padding:14px 16px;gap:12px}
+  .line-banner--main{padding:18px 18px}
+}
