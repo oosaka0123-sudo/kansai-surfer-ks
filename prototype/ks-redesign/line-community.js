@@ -5,12 +5,23 @@
   // 決まったら、該当する `url` の値を文字列に置き換えるだけでバナーが有効化されます。
   // `url: null` のままの項目は「準備中」として無効表示（タップ不可）になります。
   // 架空のURLは入力しないでください。
+  //
+  // memberCount は参加人数表示の設定です。将来リアルタイム取得に切り替えやすいよう、
+  // 表示モードごとに分離しています。
+  //   - { mode: 'fixed', text: '...' }  … 固定文言をそのまま表示
+  //   - { mode: 'api', endpoint: '...' } … server-side API から取得した人数を表示
+  //     （ブラウザから直接LINE APIは呼ばない。失敗時は人数を捏造せず
+  //      「人数取得中」「取得できませんでした」等にフォールバックする）
   // ===========================================================================
+  const SPOT_MEMBER_COUNT = { mode: 'fixed', text: '10人以下' };
+  const FRIENDS_MEMBER_COUNT = { mode: 'fixed', text: '10人以下' };
+
   const LINE_LINKS = {
     mainOpenChat: {
       title: '関西サーファー オープンチャット',
       desc: '波情報・雑談・お知らせが集まるメインコミュニティ',
-      url: null
+      url: null,
+      memberCount: { mode: 'fixed', text: '300人以上' }
     },
     spots: [
       { id: 'isonoura', name: '磯ノ浦', area: 'WAKAYAMA', url: null },
@@ -24,16 +35,59 @@
       { id: 'hakuto', name: '白兎', area: 'TOTTORI', url: null }
     ],
     community: [
-      { id: 'buddy', title: 'サーフィン仲間探し', desc: '一緒に入る仲間、初心者のサポートを探す', url: null },
-      { id: 'carpool', title: '相乗り', desc: '現地までの移動をシェアする', url: null },
-      { id: 'offlineMeetup', title: 'オフ会', desc: '現地開催のイベント・交流会の案内', url: null },
-      { id: 'groupChat', title: '普通のグループチャット', desc: '雑談中心の、ゆるい交流の場', url: null }
+      { id: 'buddy', title: 'サーフィン仲間探し', desc: '一緒に入る仲間、初心者のサポートを探す', url: null, memberCount: FRIENDS_MEMBER_COUNT },
+      { id: 'carpool', title: '相乗り', desc: '現地までの移動をシェアする', url: null, memberCount: FRIENDS_MEMBER_COUNT },
+      { id: 'offlineMeetup', title: 'オフ会', desc: '現地開催のイベント・交流会の案内', url: null, memberCount: FRIENDS_MEMBER_COUNT },
+      {
+        id: 'groupChat',
+        title: '普通のグループチャット',
+        desc: '雑談中心の、ゆるい交流の場',
+        url: null,
+        // 固定人数は表示しない。LINE Messaging API (group members count) を
+        // server-side 経由で取得する。トークン等の秘密値は api/config.secret.php
+        // （gitignore対象、未コミット）に設定する。詳細は api/README.md 参照。
+        memberCount: { mode: 'api', endpoint: 'api/line-group-count.php' }
+      }
     ]
   };
 
   const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
 
-  function buildBanner({ title, desc, url }, extraClass) {
+  function buildMemberCountEl(memberCount) {
+    if (!memberCount) return null;
+    const el = document.createElement('span');
+    el.className = 'line-banner-count';
+
+    if (memberCount.mode === 'fixed') {
+      el.textContent = `参加 ${memberCount.text}`;
+      el.dataset.countState = 'fixed';
+    } else if (memberCount.mode === 'api') {
+      el.textContent = '参加 人数取得中…';
+      el.dataset.countState = 'loading';
+      fetchApiMemberCount(el, memberCount.endpoint);
+    }
+    return el;
+  }
+
+  function fetchApiMemberCount(el, endpoint) {
+    fetch(endpoint, { cache: 'no-store', headers: { Accept: 'application/json' } })
+      .then(res => (res.ok ? res.json() : Promise.reject(new Error(`http ${res.status}`))))
+      .then(data => {
+        if (data && data.status === 'ok' && Number.isInteger(data.count)) {
+          el.textContent = `参加 現在${data.count}人`;
+          el.dataset.countState = 'ok';
+        } else {
+          el.textContent = '参加 取得できませんでした';
+          el.dataset.countState = 'error';
+        }
+      })
+      .catch(() => {
+        el.textContent = '参加 取得できませんでした';
+        el.dataset.countState = 'error';
+      });
+  }
+
+  function buildBanner({ title, desc, url, memberCount }, extraClass) {
     const enabled = typeof url === 'string' && url.trim() !== '';
     const el = document.createElement(enabled ? 'a' : 'div');
     el.className = ['line-banner', extraClass, enabled ? '' : 'is-disabled'].filter(Boolean).join(' ');
@@ -60,6 +114,10 @@
           : '<span class="line-banner-badge">準備中</span>'
       }</span>
     `;
+
+    const countEl = buildMemberCountEl(memberCount);
+    if (countEl) el.querySelector('.line-banner-body').appendChild(countEl);
+
     return el;
   }
 
@@ -69,7 +127,7 @@
   const spotSlot = document.querySelector('[data-spot-banner-slot]');
   if (spotSlot) {
     LINE_LINKS.spots.forEach(spot => {
-      spotSlot.appendChild(buildBanner({ title: spot.name, desc: spot.area, url: spot.url }, 'line-banner--spot'));
+      spotSlot.appendChild(buildBanner({ title: spot.name, desc: spot.area, url: spot.url, memberCount: SPOT_MEMBER_COUNT }, 'line-banner--spot'));
     });
   }
 

@@ -25,6 +25,11 @@ a.line-banner:active{transform:translateY(0) scale(.99)}
 .line-banner-desc{font-size:12px;color:var(--muted);line-height:1.5}
 .line-banner.is-disabled .line-banner-desc{color:#5f6a72}
 
+.line-banner-count{font-size:11px;font-weight:700;letter-spacing:.03em;color:#06c755}
+.line-banner.is-disabled .line-banner-count{color:var(--muted)}
+.line-banner-count[data-count-state="loading"]{color:var(--muted);font-weight:500}
+.line-banner-count[data-count-state="error"]{color:var(--muted);font-weight:500}
+
 .line-banner-status{flex:0 0 auto;display:flex;align-items:center}
 .line-banner-arrow{font-size:18px;color:#06c755}
 .line-banner-badge{font-size:10px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border:1px solid var(--line);border-radius:999px;color:var(--muted);white-space:nowrap}
