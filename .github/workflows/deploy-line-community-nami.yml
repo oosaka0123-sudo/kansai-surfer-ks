@@ -1,0 +1,114 @@
+name: Deploy LINE community preview to nami
+
+on:
+  push:
+    branches:
+      - claude/issue-35-20261002-2018
+    paths:
+      - .github/workflows/deploy-line-community-nami.yml
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DEPLOY_HOST: ftp.lolipop.jp
+      DEPLOY_SCHEME: ftp
+      DEPLOY_PORT: "21"
+      DEPLOY_ROOT: /nami
+      DEPLOY_SUBDIR: ks-redesign
+      SOURCE_DIR: prototype/ks-redesign
+      SITE_URL: https://nami.rss7.net/ks-redesign/
+
+    steps:
+      - name: Checkout this Claude branch
+        uses: actions/checkout@v4
+
+      - name: Validate source and target
+        shell: bash
+        env:
+          DEPLOY_USER: ${{ secrets.KS_NAMI_FTP_USER }}
+          DEPLOY_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          [[ -n "$DEPLOY_USER" && -n "$DEPLOY_PASSWORD" ]]
+          [[ "$DEPLOY_ROOT" == "/nami" ]]
+          [[ "$DEPLOY_SUBDIR" == "ks-redesign" ]]
+          test -f "$SOURCE_DIR/index.html"
+          test -f "$SOURCE_DIR/isonoura.html"
+          test -f "$SOURCE_DIR/line-community.html"
+          test -f "$SOURCE_DIR/line-community.js"
+          test -f "$SOURCE_DIR/api/line-group-count.php"
+
+      - name: Install lftp
+        run: sudo apt-get update && sudo apt-get install -y lftp
+
+      - name: Ensure preview directory exists
+        shell: bash
+        env:
+          DEPLOY_USER: ${{ secrets.KS_NAMI_FTP_USER }}
+          DEPLOY_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          if lftp <<LFTP
+          set cmd:fail-exit yes
+          set net:max-retries 2
+          set net:timeout 20
+          set ssl:verify-certificate yes
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          open -u "$DEPLOY_USER","$DEPLOY_PASSWORD" "$DEPLOY_SCHEME://$DEPLOY_HOST:$DEPLOY_PORT"
+          cd "$DEPLOY_ROOT/$DEPLOY_SUBDIR"
+          bye
+          LFTP
+          then
+            echo "Preview directory exists."
+          else
+            lftp <<LFTP
+          set cmd:fail-exit yes
+          set net:max-retries 2
+          set net:timeout 20
+          set ssl:verify-certificate yes
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          open -u "$DEPLOY_USER","$DEPLOY_PASSWORD" "$DEPLOY_SCHEME://$DEPLOY_HOST:$DEPLOY_PORT"
+          cd "$DEPLOY_ROOT"
+          mkdir "$DEPLOY_SUBDIR"
+          bye
+          LFTP
+          fi
+
+      - name: Upload branch preview without remote deletion
+        shell: bash
+        env:
+          DEPLOY_USER: ${{ secrets.KS_NAMI_FTP_USER }}
+          DEPLOY_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          lftp <<LFTP
+          set cmd:fail-exit yes
+          set net:max-retries 2
+          set net:timeout 20
+          set ssl:verify-certificate yes
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          open -u "$DEPLOY_USER","$DEPLOY_PASSWORD" "$DEPLOY_SCHEME://$DEPLOY_HOST:$DEPLOY_PORT"
+          mirror --reverse --verbose --parallel=2 --no-perms --exclude-glob README.md "$SOURCE_DIR" "$DEPLOY_ROOT/$DEPLOY_SUBDIR"
+          bye
+          LFTP
+
+      - name: Verify public preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "${SITE_URL}line-community.html" > /tmp/line-community.html
+          grep -qi 'LINE' /tmp/line-community.html
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "${SITE_URL}api/line-group-count.php" > /tmp/line-count.json
+          cat /tmp/line-count.json
+          echo "LINE community nami preview verified."
