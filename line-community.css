@@ -1,0 +1,136 @@
+/* ==========================================================
+   LINE COMMUNITY ページ専用スタイル
+   nami_common.css のデザイントークン（色・フォント）を継承し、
+   このファイルではリンクバナー固有のスタイルのみを追加する。
+   ========================================================== */
+
+.lc-intro {
+  color: var(--cream-soft);
+  font-size: 0.92rem;
+  line-height: 1.9;
+  margin-bottom: 24px;
+  max-width: 680px;
+}
+
+.lc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.lc-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 72px;
+  padding: 16px 18px;
+  background: var(--ink);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--line-green);
+  text-decoration: none;
+  color: var(--cream);
+  transition: transform 0.2s, border-color 0.2s, background 0.2s;
+  cursor: pointer;
+}
+.lc-banner:hover {
+  border-color: var(--line-green);
+  background: rgba(6, 199, 85, 0.06);
+  transform: translateY(-2px);
+}
+.lc-banner.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  border-left-color: var(--teal-pale);
+}
+.lc-banner.is-disabled:hover {
+  transform: none;
+  background: var(--ink);
+  border-color: var(--line);
+}
+
+.lc-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--line-green);
+  color: #fff;
+  border-radius: 50%;
+  font-size: 1.1rem;
+}
+.lc-banner.is-disabled .lc-icon { background: var(--teal-pale); }
+
+.lc-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.lc-title {
+  font-family: "Shippori Mincho B1", serif;
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--cream);
+}
+.lc-desc {
+  font-size: 0.8rem;
+  color: var(--cream-soft);
+  line-height: 1.5;
+}
+.lc-badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+.lc-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-family: "Noto Sans JP", "JetBrains Mono", monospace;
+  padding: 2px 9px;
+  border-radius: 999px;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+.lc-badge-count {
+  background: rgba(6, 199, 85, 0.16);
+  color: var(--line-green);
+  border: 1px solid rgba(6, 199, 85, 0.4);
+}
+.lc-badge-pending {
+  background: rgba(136, 177, 182, 0.12);
+  color: var(--teal-pale);
+  border: 1px solid var(--teal-pale);
+}
+
+.lc-arrow {
+  flex-shrink: 0;
+  font-family: "Fraunces", serif;
+  font-size: 1.3rem;
+  color: var(--teal-pale);
+  transition: color 0.2s, transform 0.2s;
+}
+.lc-banner:hover .lc-arrow { color: var(--line-green); transform: translateX(4px); }
+.lc-banner.is-disabled .lc-arrow { opacity: 0.4; }
+
+/* メインCTA（既存の .line-banner / .join-btn を流用し、未確定時の表現だけ追加） */
+.line-banner.is-disabled {
+  background: linear-gradient(135deg, rgba(136, 177, 182, 0.35), rgba(45, 100, 112, 0.3));
+  box-shadow: none;
+}
+.join-btn.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.85;
+}
+.lc-main-note {
+  margin-top: 10px;
+  font-size: 0.78rem;
+}
+
+@media (max-width: 600px) {
+  .lc-grid { grid-template-columns: 1fr; }
+  .lc-banner { min-height: 64px; padding: 14px 16px; }
+}

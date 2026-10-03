@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>関西サーファー LINE COMMUNITY｜スポット別オープンチャット案内</title>
+<meta name="description" content="関西サーファーのLINEコミュニティ案内。メインのオープンチャットに加え、磯ノ浦・国府の浜・生見など9スポット別オープンチャット、仲間探し・相乗り・オフ会・グループチャットへのリンクをまとめました。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@400;600;800&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,300&family=Noto+Sans+JP:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="icon" href="img/favicon.png" type="image/png">
+<link rel="stylesheet" href="nami_common.css?v=1018">
+<link rel="stylesheet" href="line-community.css?v=1">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0a1520">
+<link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "ホーム",
+      "item": "https://kansai.rss7.net/index.html"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "LINE COMMUNITY",
+      "item": "https://kansai.rss7.net/line-community.html"
+    }
+  ]
+}
+</script>
+</head>
+<body>
+
+<header class="top-bar">
+  <a href="index.html" class="logo" style="text-decoration:none;">
+    <img src="img/logo-ks-white.png" alt="KS" style="height:36px;width:auto;margin-right:8px;vertical-align:middle;">
+    <span class="en">Kansai Surf</span>
+  </a>
+  <nav class="nav-pc">
+    <a href="isonoura.html"><i class="fa-solid fa-water"></i>磯ノ浦</a>
+    <a href="kounohama.html"><i class="fa-solid fa-water"></i>国府の浜</a>
+    <a href="ikumi.html"><i class="fa-solid fa-water"></i>生見</a>
+    <a href="komatsu.html"><i class="fa-solid fa-water"></i>小松海岸</a>
+    <a href="irago.html"><i class="fa-solid fa-water"></i>伊良湖</a>
+    <a href="shizunami.html"><i class="fa-solid fa-water"></i>静波</a>
+    <a href="hamadutu.html"><i class="fa-solid fa-water"></i>浜詰</a>
+    <a href="takahama.html"><i class="fa-solid fa-water"></i>高浜</a>
+    <a href="hakuto.html"><i class="fa-solid fa-water"></i>白兎</a>
+    <a href="contact.html"><i class="fa-solid fa-envelope"></i>お問い合わせ</a>
+    <a href="line-community.html" class="active"><i class="fa-brands fa-line"></i>LINE</a>
+  </nav>
+  <div class="sns-buttons">
+    <a href="https://www.instagram.com/kansaisurfer.ks/" target="_blank" rel="noopener" aria-label="Instagram">
+      <i class="fa-brands fa-instagram"></i>
+    </a>
+    <a href="https://facebook.com/kansaisurfer" target="_blank" rel="noopener" aria-label="Facebook">
+      <i class="fa-brands fa-facebook"></i>
+    </a>
+  </div>
+  <button class="hamburger" id="hamburger" aria-label="メニュー">
+    <span></span><span></span><span></span>
+  </button>
+  <span class="tag-live" id="clockTag"><span class="dot"></span>LIVE --:--</span>
+</header>
+
+<div class="mobile-menu" id="mobileMenu">
+  <div class="mm-section">メインメニュー</div>
+  <a href="index.html"><span class="mm-left"><i class="fa-solid fa-house"></i>ホーム</span></a>
+  <a href="blog/index.php"><span class="mm-left"><i class="fa-solid fa-newspaper"></i>ブログ</span></a>
+  <a href="https://suzuri.jp/kansaisurfer" target="_blank" rel="noopener"><span class="mm-left"><i class="fa-solid fa-shirt"></i>ショップ</span></a>
+  <a href="line-community.html" class="active"><span class="mm-left"><i class="fa-brands fa-line"></i>LINE COMMUNITY</span></a>
+
+  <div class="mm-section">サーフポイント</div>
+  <a href="isonoura.html"><span class="mm-left"><i class="fa-solid fa-water"></i>磯ノ浦（和歌山）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='isonoura_guide.html';">GUIDE</span></a>
+  <a href="kounohama.html"><span class="mm-left"><i class="fa-solid fa-water"></i>伊勢・国府の浜（三重）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='kounohama_guide.html';">GUIDE</span></a>
+  <a href="ikumi.html"><span class="mm-left"><i class="fa-solid fa-water"></i>四国・生見（高知）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='ikumi_guide.html';">GUIDE</span></a>
+  <a href="komatsu.html"><span class="mm-left"><i class="fa-solid fa-water"></i>四国・小松海岸（徳島）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='komatsu_guide.html';">GUIDE</span></a>
+  <a href="irago.html"><span class="mm-left"><i class="fa-solid fa-water"></i>伊良湖（愛知）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='irago_guide.html';">GUIDE</span></a>
+  <a href="shizunami.html"><span class="mm-left"><i class="fa-solid fa-water"></i>静波（静岡）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='shizunami_guide.html';">GUIDE</span></a>
+  <a href="hamadutu.html"><span class="mm-left"><i class="fa-solid fa-water"></i>浜詰（京都・日本海）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='hamadutu_guide.html';">GUIDE</span></a>
+  <a href="takahama.html"><span class="mm-left"><i class="fa-solid fa-water"></i>高浜（福井・日本海）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='takahama_guide.html';">GUIDE</span></a>
+  <a href="hakuto.html"><span class="mm-left"><i class="fa-solid fa-water"></i>白兎（鳥取・日本海）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='hakuto_guide.html';">GUIDE</span></a>
+
+  <div class="mm-section">その他</div>
+  <a href="about.html"><span class="mm-left"><i class="fa-solid fa-circle-info"></i>当サイトについて</span></a>
+  <a href="contact.html"><span class="mm-left"><i class="fa-solid fa-envelope"></i>お問い合わせ</span></a>
+  <a href="https://kansai.rss7.net/secret/test.php"><span class="mm-left"><i class="fa-solid fa-lock"></i>SECRET MODE</span></a>
+</div>
+
+<div class="top-strip">
+  <div class="crumbs">
+    <a href="index.html"><i class="fa-solid fa-house"></i> ホーム</a>
+    <span class="sep">/</span><span class="now">LINE COMMUNITY</span>
+  </div>
+</div>
+
+<section class="top-hero">
+  <h1>関西サーファー <span class="accent">LINE COMMUNITY</span></h1>
+  <div class="subtitle">波情報だけじゃない、現地サーファーとつながる窓口</div>
+  <p class="lead">
+    関西サーファーのLINEコミュニティ案内ページです。波情報の共有はもちろん、現地での交流、
+    仲間探し、遠征の相乗り、オフ会まで。まずはメインのオープンチャット、気になるスポットの
+    オープンチャットから参加してみてください。
+  </p>
+</section>
+
+<section class="section" style="padding-top:40px;padding-bottom:20px;border-bottom:none;">
+  <div id="lcMainCta"></div>
+</section>
+
+<section class="section">
+  <h2 class="section-title">
+    <i class="fa-solid fa-water ico"></i>
+    スポット別 LINEオープンチャット
+  </h2>
+  <p class="lc-intro">
+    磯ノ浦・国府の浜・生見・小松海岸・伊良湖・静波・浜詰・高浜・白兎、全9スポットのオープンチャット一覧です。
+    気になるエリアのオープンチャットに参加して、現地の波情報や交流を楽しんでください。
+  </p>
+  <div id="lcSpotGrid" class="lc-grid"></div>
+</section>
+
+<section class="section" style="border-bottom:none;">
+  <h2 class="section-title">
+    <i class="fa-solid fa-people-group ico"></i>
+    仲間・交流
+  </h2>
+  <p class="lc-intro">
+    サーフィン仲間探し・相乗り・オフ会・普通のグループチャットなど、交流目的別のLINE導線です。
+  </p>
+  <div id="lcCommunityGrid" class="lc-grid"></div>
+</section>
+
+<footer>
+  <a href="index.html" class="logo" style="text-decoration:none;justify-content:center;">
+    <img src="img/logo-ks-white.png" alt="KS" style="height:24px;width:auto;margin-right:6px;vertical-align:middle;">
+    <span class="en" style="font-size:0.75rem;">Kansai Surf</span>
+  </a>
+  <div class="footer-sns" style="display:flex;align-items:center;justify-content:center;gap:24px;margin:22px 0;padding:8px 0;">
+    <a id="sns-ig" href="#" style="color:var(--cream-soft);font-size:1.7rem;line-height:1;padding:6px;"><i class="fa-brands fa-instagram"></i></a>
+    <a id="sns-fb" href="#" style="color:var(--cream-soft);font-size:1.7rem;line-height:1;padding:6px;"><i class="fa-brands fa-facebook"></i></a>
+    <a id="sns-tt" href="#" style="color:var(--cream-soft);font-size:1.7rem;line-height:1;padding:6px;"><i class="fa-brands fa-tiktok"></i></a>
+    <a id="sns-x" href="#" style="color:var(--cream-soft);font-size:1.7rem;line-height:1;padding:6px;"><i class="fa-brands fa-x-twitter"></i></a>
+    <a id="sns-yt" href="#" style="color:var(--cream-soft);font-size:1.7rem;line-height:1;padding:6px;"><i class="fa-brands fa-youtube"></i></a>
+  </div>
+  <div class="footer-links">
+    <a href="index.html">ホーム</a>
+    <a href="blog/index.php">ブログ</a>
+    <a href="https://suzuri.jp/kansaisurfer" target="_blank" rel="noopener">ショップ</a>
+    <a href="line-community.html">LINE COMMUNITY</a>
+  </div>
+  <div class="footer-links">
+    <a href="isonoura.html">磯ノ浦</a>
+    <a href="kounohama.html">伊勢</a>
+    <a href="ikumi.html">生見</a>
+    <a href="komatsu.html">小松</a>
+    <a href="irago.html">伊良湖</a>
+    <a href="shizunami.html">静波</a>
+    <a href="hamadutu.html">浜詰</a>
+    <a href="takahama.html">高浜</a>
+    <a href="hakuto.html">白兎</a>
+  </div>
+  <div class="footer-links">
+    <a href="contact.html">お問い合わせ</a>
+    <a href="about.html">当サイトについて</a>
+  </div>
+  <div class="attr"><i class="fa-solid fa-cloud"></i> Weather data by <a href="https://open-meteo.com" target="_blank">Open-Meteo.com</a></div>
+  <div class="attr" style="margin-top:14px;">
+    <a href="https://kiseki.rss7.net/" target="_blank">映像工房 軌跡</a> ·
+    <a href="https://bitframe.rss7.net/" target="_blank">AI動画CM制作.bitframe</a> ·
+    <a href="https://rss7.net/" target="_blank">RSS7 AI Works 総合制作</a>
+  </div>
+  <div class="attr">© 2026 関西サーファー.ks · MADE IN OSAKA</div>
+</footer>
+
+<script src="nami_common.js?v=1018"></script>
+<script src="line-community.js?v=1"></script>
+<script>
+// SNSアプリ起動（スマホ対応）
+function snsOpen(appUrl, webUrl){ var t=Date.now(); location.href=appUrl; setTimeout(function(){ if(Date.now()-t<2000) location.href=webUrl; },500); }
+document.getElementById('sns-ig').addEventListener('click',function(e){ e.preventDefault(); snsOpen('instagram://user?username=kansaisurfer.ks','https://www.instagram.com/kansaisurfer.ks/'); });
+document.getElementById('sns-fb').addEventListener('click',function(e){ e.preventDefault(); snsOpen('fb://profile/kansaisurfer','https://facebook.com/kansaisurfer'); });
+document.getElementById('sns-tt').addEventListener('click',function(e){ e.preventDefault(); snsOpen('snssdk1233://user/profile?uniqueId=ks295223','https://www.tiktok.com/@ks295223'); });
+document.getElementById('sns-x').addEventListener('click',function(e){ e.preventDefault(); snsOpen('twitter://user?screen_name=kansaisurfer','https://x.com/kansaisurfer'); });
+document.getElementById('sns-yt').addEventListener('click',function(e){ e.preventDefault(); snsOpen('vnd.youtube://www.youtube.com/@kansaisurfers','https://www.youtube.com/@kansaisurfers'); });
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/sw.js').catch(function(err) {
+      console.log('SW登録失敗:', err);
+    });
+  });
+}
+</script>
+</body>
+</html>
