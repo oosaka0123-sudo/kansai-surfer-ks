@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 const KS_LINE_BOT_BOOTSTRAP = true;
 const KS_ADMIN_SETUP_CODE_HASH = '378e269f0f958bd62609f5b35f567a95db2d9a0138f3bf147e35dcff595400d9';
-const KS_CRON_TOKEN_HASH = '0567aadb4be9081b7d1581e9173f6c0d201b7f3ca336a81456bb808ff2dad73e';
 const KS_NOTE_BATCH_SIZE = 20;
 const KS_NOTE_MAX_AGE_DAYS = 30;
 const KS_STATE_FILE = __DIR__ . '/state.php';
@@ -345,8 +344,19 @@ function handleDirectCommand(
 
 function handleCronRequest(string $channelId, string $channelSecret): void
 {
+    $cronKeyPath = __DIR__ . '/cron_key.php';
+    if (!is_file($cronKeyPath)) {
+        http_response_code(503);
+        echo "cron key missing\n";
+        return;
+    }
+
+    $cronKey = require $cronKeyPath;
+    $expectedHash = is_array($cronKey) ? (string)($cronKey['token_hash'] ?? '') : '';
     $provided = (string)($_SERVER['HTTP_X_KS_CRON_TOKEN'] ?? '');
-    if ($provided === '' || !hash_equals(KS_CRON_TOKEN_HASH, hash('sha256', $provided))) {
+
+    if ($expectedHash === '' || $provided === ''
+        || !hash_equals($expectedHash, hash('sha256', $provided))) {
         http_response_code(401);
         echo "unauthorized\n";
         return;
@@ -501,7 +511,7 @@ function buildMissingIntroText(array $state): string
         if ($ts !== false) {
             $days = max(0, (int)floor((time() - $ts) / 86400));
         }
-        $missing[] = "・{$name}（参加から{$days}日）";
+        $missing[] = "・{$name}（BOT確認から{$days}日）";
     }
 
     if ($missing === []) {
