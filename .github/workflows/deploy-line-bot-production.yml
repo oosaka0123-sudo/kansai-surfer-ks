@@ -1,0 +1,101 @@
+name: Deploy LINE group bot to production
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ks-line-bot-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      FTP_SERVER: ftp.lolipop.jp
+      WEBHOOK_URL: https://kansai.rss7.net/line-bot/webhook.php
+      POLL_URL: https://kansai.rss7.net/line-bot/weekly_poll.php
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+
+      - name: Lint LINE bot PHP
+        run: |
+          php -l line-bot/common.php
+          php -l line-bot/webhook.php
+          php -l line-bot/weekly_poll.php
+
+      - name: Check production credentials
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_PROD_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_PROD_FTP_PASSWORD }}
+          LINE_CHANNEL_ID: ${{ secrets.KS_LINE_BOT_CHANNEL_ID }}
+          LINE_CHANNEL_SECRET: ${{ secrets.KS_LINE_BOT_CHANNEL_SECRET }}
+        run: |
+          set -euo pipefail
+          set +x
+          test -n "$FTP_USERNAME" || { echo '::error::KS_PROD_FTP_USER is not configured.'; exit 1; }
+          test -n "$FTP_PASSWORD" || { echo '::error::KS_PROD_FTP_PASSWORD is not configured.'; exit 1; }
+          test -n "$LINE_CHANNEL_ID" || { echo '::error::KS_LINE_BOT_CHANNEL_ID is not configured.'; exit 1; }
+          test -n "$LINE_CHANNEL_SECRET" || { echo '::error::KS_LINE_BOT_CHANNEL_SECRET is not configured.'; exit 1; }
+
+      - name: Prepare isolated production bundle
+        shell: bash
+        env:
+          LINE_CHANNEL_ID: ${{ secrets.KS_LINE_BOT_CHANNEL_ID }}
+          LINE_CHANNEL_SECRET: ${{ secrets.KS_LINE_BOT_CHANNEL_SECRET }}
+        run: |
+          set -euo pipefail
+          set +x
+          STAGE="$RUNNER_TEMP/ks-line-bot"
+          rm -rf "$STAGE"
+          mkdir -p "$STAGE"
+          cp line-bot/common.php "$STAGE/common.php"
+          cp line-bot/webhook.php "$STAGE/webhook.php"
+          cp line-bot/weekly_poll.php "$STAGE/weekly_poll.php"
+          php -r '$cfg=["channel_id"=>getenv("LINE_CHANNEL_ID"),"channel_secret"=>getenv("LINE_CHANNEL_SECRET")]; file_put_contents($argv[1],"<?php\nreturn ".var_export($cfg,true).";\n");' "$STAGE/config.php"
+
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y lftp
+
+      - name: Upload isolated LINE bot files
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_PROD_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_PROD_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          STAGE="$RUNNER_TEMP/ks-line-bot"
+
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 20
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER"
+          cd /kansai
+          mkdir -f line-bot
+          cd line-bot
+          mkdir -f data
+          put "$STAGE/common.php" -o common.php
+          put "$STAGE/webhook.php" -o webhook.php
+          put "$STAGE/weekly_poll.php" -o weekly_poll.php
+          put "$STAGE/config.php" -o config.php
+          bye
+          LFTP_EOF
+
+      - name: Verify production endpoints
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(curl --fail --silent --show-error --location --retry 5 --retry-delay 2 "$WEBHOOK_URL")" = 'ok'
+          test "$(curl --fail --silent --show-error --location --retry 5 --retry-delay 2 "$POLL_URL")" = 'ok'
+          echo "Production LINE bot endpoints are healthy."
