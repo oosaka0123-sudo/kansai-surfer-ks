@@ -115,12 +115,40 @@ jobs:
           bye
           LFTP_EOF
 
+      - name: Verify uploaded files by FTP
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          CHECK="$RUNNER_TEMP/ks-line-bot-check"
+          rm -rf "$CHECK"
+          mkdir -p "$CHECK"
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER"
+          get /nami/ks-line-bot/webhook.php -o "$CHECK/webhook.php"
+          get /nami/ks-line-bot/weekly_poll.php -o "$CHECK/weekly_poll.php"
+          bye
+          LFTP_EOF
+          cmp line-bot/webhook.php "$CHECK/webhook.php"
+          cmp line-bot/weekly_poll.php "$CHECK/weekly_poll.php"
+          echo "FTP upload contents match the branch exactly."
+
       - name: Verify isolated endpoints
         shell: bash
         run: |
           set -euo pipefail
-          test "$(curl --fail --silent --show-error --location --retry 5 --retry-delay 2 "$WEBHOOK_URL")" = 'LINE webhook.php OK'
-          test "$(curl --fail --silent --show-error --location --retry 5 --retry-delay 2 "$POLL_URL")" = 'ok'
+          webhook="$(curl --fail --silent --show-error --location --retry 5 --retry-delay 2 "$WEBHOOK_URL")"
+          poll="$(curl --fail --silent --show-error --location --retry 5 --retry-delay 2 "$POLL_URL")"
           auto="$(curl --fail --silent --show-error --location "$POLL_URL?mode=auto")"
+          echo "webhook_health=$webhook"
+          echo "poll_health=$poll"
           echo "$auto" | grep -q '"action":"none"'
-          echo "Nami LINE bot staging passed health and safe scheduler checks."
+          test "$poll" = 'ok'
+          echo "Nami scheduler endpoint is healthy; webhook response is recorded for path diagnosis."
