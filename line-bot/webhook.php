@@ -393,6 +393,12 @@ function handleCronRequest(): void
         return;
     }
 
+    if (!validateLineAccessToken($accessToken)) {
+        http_response_code(503);
+        echo "line token invalid\n";
+        return;
+    }
+
     maybeNotifyAdmin($accessToken, true);
 
     [$lock, $state] = lockAndLoadState();
@@ -860,6 +866,29 @@ function getGroupMemberProfile(
 
     $decoded = json_decode($response, true);
     return is_array($decoded) ? $decoded : [];
+}
+
+function validateLineAccessToken(string $accessToken): bool
+{
+    $ch = curl_init('https://api.line.me/v2/bot/info');
+    if ($ch === false) {
+        return false;
+    }
+
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_CONNECTTIMEOUT => 3,
+        CURLOPT_TIMEOUT => 8,
+        CURLOPT_HTTPHEADER => [
+            'Authorization: Bearer ' . $accessToken,
+        ],
+    ]);
+
+    $response = curl_exec($ch);
+    $httpCode = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    curl_close($ch);
+
+    return $response !== false && $httpCode >= 200 && $httpCode < 300;
 }
 
 function getConfiguredAccessToken(array $config): ?string
