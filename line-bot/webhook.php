@@ -31,14 +31,13 @@ if (!is_file($configPath)) {
     exit;
 }
 
-/** @var array{channel_id?:string,channel_secret?:string} $config */
+/** @var array{channel_id?:string,channel_secret?:string,channel_access_token?:string} $config */
 $config = require $configPath;
-$channelId = (string)($config['channel_id'] ?? '');
 $channelSecret = (string)($config['channel_secret'] ?? '');
 
-if ($channelId === '' || $channelSecret === '') {
+if ($channelSecret === '') {
     http_response_code(503);
-    error_log('KS LINE bot: required credentials are not configured.');
+    error_log('KS LINE bot: channel secret is not configured.');
     exit;
 }
 
@@ -66,7 +65,7 @@ try {
     exit;
 }
 
-$accessToken = issueStatelessToken($channelId, $channelSecret);
+$accessToken = getConfiguredAccessToken($config);
 
 foreach (($payload['events'] ?? []) as $event) {
     handleLineEvent($event, $accessToken);
@@ -370,20 +369,27 @@ function handleCronRequest(): void
     }
 
     $config = require $configPath;
-    $channelId = is_array($config) ? (string)($config['channel_id'] ?? '') : '';
-    $channelSecret = is_array($config) ? (string)($config['channel_secret'] ?? '') : '';
-
-    if ($channelId === '' || $channelSecret === '') {
+    if (!is_array($config)) {
         http_response_code(503);
-        $keys = is_array($config) ? implode(',', array_map('strval', array_keys($config))) : 'not-array';
+        echo "line config invalid\n";
+        return;
+    }
+
+    $channelSecret = (string)($config['channel_secret'] ?? '');
+    $directToken = (string)($config['channel_access_token'] ?? '');
+    $channelId = (string)($config['channel_id'] ?? '');
+
+    if ($channelSecret === '' || ($directToken === '' && $channelId === '')) {
+        http_response_code(503);
+        $keys = implode(',', array_map('strval', array_keys($config)));
         echo "line credentials missing; keys=" . $keys . "\n";
         return;
     }
 
-    $accessToken = issueStatelessToken($channelId, $channelSecret);
+    $accessToken = getConfiguredAccessToken($config);
     if ($accessToken === null) {
         http_response_code(503);
-        echo "line token issue failed\n";
+        echo "line token unavailable\n";
         return;
     }
 
@@ -854,6 +860,22 @@ function getGroupMemberProfile(
 
     $decoded = json_decode($response, true);
     return is_array($decoded) ? $decoded : [];
+}
+
+function getConfiguredAccessToken(array $config): ?string
+{
+    $directToken = trim((string)($config['channel_access_token'] ?? ''));
+    if ($directToken !== '') {
+        return $directToken;
+    }
+
+    $channelId = trim((string)($config['channel_id'] ?? ''));
+    $channelSecret = trim((string)($config['channel_secret'] ?? ''));
+    if ($channelId === '' || $channelSecret === '') {
+        return null;
+    }
+
+    return issueStatelessToken($channelId, $channelSecret);
 }
 
 function issueStatelessToken(string $channelId, string $channelSecret): ?string
