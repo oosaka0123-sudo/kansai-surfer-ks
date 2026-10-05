@@ -24,7 +24,7 @@ jobs:
           test -n "$FTP_PASSWORD"
           CRON_TOKEN="$(printf '%s' "$FTP_PASSWORD" | sha256sum | awk '{print $1}')"
           RESPONSE_FILE="$RUNNER_TEMP/line-bot-cron-response.txt"
-          HTTP_CODE="$(curl --silent --show-error --retry 1 \
+          HTTP_CODE="$(curl --http1.1 --silent --show-error --retry 1 \
             --output "$RESPONSE_FILE" \
             --write-out '%{http_code}' \
             --request POST \
