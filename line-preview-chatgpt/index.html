@@ -1,93 +1,67 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>関西サーファー LINEコミュニティ｜波情報・仲間探し・9ポイント</title>
-<meta name="description" content="関西サーファーKSのLINEコミュニティ入口。メインオープンチャット、仲間探しLINE、9ポイント別LINEをまとめています。">
-<meta name="robots" content="noindex,nofollow">
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<!--
+  関西サーファーKS LINEコミュニティ特設ページ（line-preview/index.html）
+  ・1ファイル完結（nami_common.css 不要）。リンクは本番の絶対URLなので、プレビュー環境でもリンク切れしません。
+  ・仮の値はすべて「仮」バッジ付き。LINEのURLは href="#TODO-LINE-URL-○○" を検索して差し替え。
+  ・人数を差し替えたら、その行の <span class="ln-temp">仮</span> を削除。
+-->
+<link rel="canonical" href="https://kansai.rss7.net/line/">
+<meta name="robots" content="noindex,follow">
+<title>関西サーファーKS LINE一覧｜波情報・現地情報・仲間探し</title>
+<meta name="description" content="関西サーファーKSのLINE一覧。波情報のメインオープンチャット、仲間探しLINE、磯ノ浦・国府の浜・生見など9ポイント別の波情報LINEに参加できます。">
+<meta property="og:title" content="関西サーファーKS LINE一覧">
+<meta property="og:description" content="波情報・現地情報・仲間探し。目的に合ったLINEへ参加できます。">
+<meta property="og:url" content="https://kansai.rss7.net/line/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="関西サーファー">
+<meta property="og:locale" content="ja_JP">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@600;800&family=Noto+Sans+JP:wght@400;500;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@400;600;800&family=Fraunces:ital,opsz,wght@0,9..144,300;1,9..144,300&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <style>
-:root{--bg:#0b1d2a;--deep:#061220;--cream:#f2ead9;--soft:#dfd6c3;--muted:#88b1b6;--line:rgba(242,234,217,.14);--coral:#e55234;--green:#06c755}
-*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--cream);font-family:"Noto Sans JP",sans-serif;line-height:1.7}a{text-decoration:none}
-.topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:rgba(6,18,32,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
-.brand{color:#fff;font-family:"Shippori Mincho B1",serif;font-weight:800;display:flex;align-items:center;gap:10px}.ks{width:34px;height:34px;border:1px solid rgba(255,255,255,.28);display:grid;place-items:center;font-family:"JetBrains Mono",monospace;font-size:.72rem}
-.brand small{display:block;color:var(--muted);font-size:.62rem;letter-spacing:.16em;font-family:"JetBrains Mono",monospace;font-weight:400}.hamb{width:40px;height:40px;border:1px solid var(--line);display:grid;place-items:center;color:#fff}
-.hero{padding:58px 20px 44px;background:radial-gradient(circle at 90% 5%,rgba(6,199,85,.16),transparent 34%),linear-gradient(180deg,var(--deep),var(--bg));border-bottom:1px solid var(--line)}
-.wrap{max-width:1080px;margin:auto}.eyebrow{font:600 .68rem "JetBrains Mono",monospace;letter-spacing:.18em;color:var(--green)}.hero h1{font-family:"Shippori Mincho B1",serif;font-size:clamp(2.2rem,8vw,4.4rem);line-height:1.08;margin:14px 0 16px}.hero h1 span{color:var(--green)}.hero p{max-width:680px;color:var(--soft);font-size:.96rem}
-.hero-stats{display:flex;gap:10px;flex-wrap:wrap;margin-top:24px}.stat{border:1px solid var(--line);padding:12px 15px;min-width:145px;background:rgba(255,255,255,.02)}.stat small{display:block;color:var(--muted);font:400 .6rem "JetBrains Mono",monospace;letter-spacing:.12em}.stat strong{font-family:"Shippori Mincho B1",serif;font-size:1.25rem}.cta{display:inline-flex;align-items:center;gap:8px;margin-top:22px;background:var(--green);color:#fff;padding:13px 18px;font-weight:800}
-.section{padding:42px 20px;border-bottom:1px solid var(--line)}.section.dark{background:var(--deep)}.sec-head{display:flex;align-items:baseline;gap:12px;padding-bottom:14px;margin-bottom:22px;border-bottom:1px solid var(--line)}.num{color:var(--coral);font:400 .72rem "JetBrains Mono",monospace}.sec-head h2{margin:0;font-family:"Shippori Mincho B1",serif;font-size:1.4rem}.sec-en{margin-left:auto;color:var(--muted);font:400 .6rem "JetBrains Mono",monospace;letter-spacing:.13em}
-.feature-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.feature{padding:24px;border:1px solid var(--line);background:linear-gradient(135deg,rgba(45,100,112,.12),rgba(255,255,255,.01))}.feature.main{border-color:rgba(6,199,85,.55);background:linear-gradient(135deg,rgba(6,199,85,.13),rgba(45,100,112,.08))}.label{display:inline-block;padding:3px 7px;border:1px solid rgba(6,199,85,.4);color:var(--green);font:600 .58rem "JetBrains Mono",monospace;letter-spacing:.1em}.feature h3{font-family:"Shippori Mincho B1",serif;font-size:1.25rem;margin:12px 0 6px}.feature p{color:var(--soft);font-size:.87rem}.member{margin:14px 0 18px;font-weight:700}.member strong{font-size:1.45rem}.line-btn{display:inline-block;background:var(--green);color:#fff;padding:11px 15px;font-size:.86rem;font-weight:800}.notice{margin-top:13px;padding:11px 13px;border-left:3px solid var(--coral);background:rgba(229,82,52,.08);color:var(--soft);font-size:.78rem}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}.card{padding:17px;border:1px solid var(--line);background:rgba(255,255,255,.015)}.card-head{display:flex;justify-content:space-between;gap:8px}.point{font-family:"Shippori Mincho B1",serif;font-weight:800}.area{color:var(--muted);font:400 .58rem "JetBrains Mono",monospace;letter-spacing:.1em}.badge{color:var(--green);border:1px solid rgba(6,199,85,.4);padding:3px 6px;font:600 .62rem "JetBrains Mono",monospace;height:max-content}.actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:13px}.actions a{padding:9px 7px;text-align:center;font-size:.76rem;font-weight:800}.join{background:var(--green);color:#fff}.wave{border:1px solid var(--muted);color:var(--cream)}
-.rules{display:grid;grid-template-columns:1fr 1fr;gap:9px}.rule{padding:15px 16px;border:1px solid var(--line);color:var(--soft);font-size:.83rem}.footer{padding:36px 20px 54px;text-align:center;background:var(--deep);color:var(--muted);font-size:.75rem}.footer a{color:var(--soft);margin:0 7px}
-@media(max-width:760px){.feature-grid{grid-template-columns:1fr}.grid{grid-template-columns:repeat(2,1fr)}.sec-en{display:none}}@media(max-width:430px){.hero{padding-top:44px}.section{padding:34px 16px}.card{padding:13px}.actions{grid-template-columns:1fr}.hero p{font-size:.9rem}}
+:root{--ink:#0b1d2a;--ink-deep:#061220;--cream:#f2ead9;--cream-soft:#e8dcc4;--coral:#e55234;--coral-soft:#f28060;--teal:#2d6470;--teal-pale:#88b1b6;--line:rgba(242,234,217,0.13);--ok:#6bc178;--line-green:#06C755;--line-green-dark:#05a648;}
+*{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{font-family:"Noto Sans JP",sans-serif;background:var(--ink);color:var(--cream);line-height:1.7;overflow-x:hidden;padding-bottom:env(safe-area-inset-bottom,0px)}a{color:inherit}
+.top-bar{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:100;background:rgba(11,29,42,.95);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}.logo{display:flex;align-items:center;gap:8px;text-decoration:none;color:#fff;font-family:"Shippori Mincho B1",serif;font-weight:800;font-size:1.2rem}.logo img{height:32px;width:auto}.logo .en{font-family:"Fraunces",serif;font-style:italic;font-weight:300;font-size:.8rem;color:#fff;letter-spacing:.2em}
+.hamburger{width:40px;height:40px;background:none;border:1px solid var(--line);cursor:pointer;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:5px}.hamburger span{display:block;width:20px;height:2px;background:var(--cream);transition:transform .25s,opacity .25s}.hamburger.active span:nth-child(1){transform:translateY(7px) rotate(45deg)}.hamburger.active span:nth-child(2){opacity:0}.hamburger.active span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}.hamburger:focus-visible{outline:2px solid var(--coral);outline-offset:2px}
+.mobile-menu{display:none;position:fixed;top:73px;left:0;right:0;bottom:0;z-index:99;background:var(--ink-deep);overflow-y:auto;padding:8px 0 40px;border-top:1px solid var(--line)}.mobile-menu.open{display:block}.mm-section{padding:18px 24px 8px;font-family:"JetBrains Mono",monospace;font-size:.68rem;letter-spacing:.15em;color:var(--teal-pale)}.mobile-menu a{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 24px;color:var(--cream);text-decoration:none;font-family:"Shippori Mincho B1",serif;font-size:.95rem;border-bottom:1px solid var(--line)}.mobile-menu a:hover{background:rgba(229,82,52,.08)}.mm-left{display:flex;align-items:center;gap:12px}.mm-left i{width:18px;text-align:center;color:var(--coral);font-size:.9rem}.mm-guide-badge{flex-shrink:0;padding:3px 9px;border:1px solid var(--teal-pale);color:var(--teal-pale);font-family:"JetBrains Mono",monospace;font-size:.62rem;letter-spacing:.1em}
+.crumb{padding:10px 24px;font-size:.78rem;color:var(--teal-pale);border-bottom:1px solid var(--line);background:var(--ink-deep)}.crumb a{color:var(--teal-pale);text-decoration:none}.page-head{padding:32px 24px 26px}.page-head h1{font-family:"Shippori Mincho B1",serif;font-size:1.8rem;font-weight:800;line-height:1.35;margin-bottom:10px}.page-head p{font-size:.92rem;color:var(--cream-soft);line-height:1.9}.sec-nav{display:flex;overflow-x:auto;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--ink-deep);-webkit-overflow-scrolling:touch}.sec-nav a{display:flex;align-items:center;gap:6px;padding:14px 18px;font-family:"Shippori Mincho B1",serif;font-size:.82rem;color:var(--teal-pale);text-decoration:none;white-space:nowrap;border-bottom:2px solid transparent}.sec-nav a:hover{color:var(--coral);border-bottom-color:var(--coral)}.sec{padding:44px 24px;border-bottom:1px solid var(--line);scroll-margin-top:72px}.sec.dark{background:var(--ink-deep)}.sec-head{display:flex;align-items:baseline;gap:12px;margin-bottom:24px;padding-bottom:14px;border-bottom:1px solid var(--line)}.sec-num{font-family:"Fraunces",serif;font-style:italic;font-weight:300;font-size:.9rem;color:var(--coral)}.sec-title{font-family:"Shippori Mincho B1",serif;font-weight:700;font-size:1.4rem}.sec-title i{color:var(--coral);margin-right:8px}.sec-en{font-family:"JetBrains Mono",monospace;font-size:.65rem;color:var(--teal-pale);letter-spacing:.15em;margin-left:auto}.wrap{max-width:960px;margin:0 auto}
+.ln-temp{display:inline-block;margin-left:8px;padding:1px 7px;border:1px dashed var(--coral-soft);color:var(--coral-soft);font-size:.68rem;font-weight:700;vertical-align:middle}.ln-pair{display:grid;gap:12px}.ln-big{padding:22px 20px;border:1px solid var(--line);background:rgba(11,29,42,.6)}.ln-big.main{background:linear-gradient(135deg,rgba(229,82,52,.15),rgba(45,100,112,.08));border-color:var(--coral);border-top:3px solid var(--coral)}.ln-big h3{font-family:"Shippori Mincho B1",serif;font-weight:800;font-size:1.3rem;line-height:1.4}.ln-big .ln-desc{font-size:.9rem;color:var(--cream-soft);line-height:1.85;margin-top:6px}.ln-count{margin-top:12px;font-size:.8rem;color:var(--teal-pale)}.ln-count b{font-family:"Shippori Mincho B1",serif;font-size:1.35rem;font-weight:800;color:var(--cream);margin-left:6px}.ln-warn{margin-top:14px;padding:12px 14px;background:rgba(229,82,52,.08);border-left:3px solid var(--coral);font-size:.85rem;color:var(--cream-soft);line-height:1.8}.ln-warn strong{color:var(--cream)}.ln-join{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px;padding:13px 12px;background:var(--line-green);color:#fff;text-decoration:none;font-family:"Shippori Mincho B1",serif;font-weight:800;font-size:1rem;border-radius:4px}.ln-join i{font-size:1.2rem}.ln-join:hover{background:var(--line-green-dark)}.ln-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.ln-card{display:flex;flex-direction:column;padding:14px 12px;border:1px solid var(--line);border-left:3px solid var(--teal-pale);background:rgba(11,29,42,.5)}.ln-area{font-size:.7rem;color:var(--teal-pale)}.ln-name{font-family:"Shippori Mincho B1",serif;font-weight:800;font-size:1.05rem;line-height:1.4}.ln-card .ln-count{margin-top:6px;font-size:.72rem}.ln-card .ln-count b{font-size:1.1rem;margin-left:4px}.ln-card .ln-temp{margin-left:4px;padding:0 5px}.ln-actions{display:flex;flex-direction:column;gap:7px;margin-top:auto;padding-top:12px}.ln-card .ln-join{margin-top:0;padding:10px 8px;font-size:.9rem}.ln-wave{display:block;text-align:center;padding:8px;border:1px solid var(--teal-pale);color:var(--teal-pale);text-decoration:none;font-size:.8rem;font-family:"Shippori Mincho B1",serif;font-weight:600}.ln-updated{margin-top:16px;font-size:.75rem;color:var(--teal-pale);text-align:right}.ln-rules{list-style:none;display:grid;gap:8px}.ln-rules li{display:flex;gap:12px;align-items:flex-start;padding:13px 14px;border:1px solid var(--line);background:rgba(11,29,42,.5);font-size:.88rem;color:var(--cream-soft);line-height:1.75}.ln-rules i{color:var(--coral);margin-top:5px;width:16px;text-align:center;flex-shrink:0}
+@media(min-width:600px){.ln-pair{grid-template-columns:1fr 1fr;gap:14px;align-items:stretch}.ln-big{display:flex;flex-direction:column}.ln-big .ln-join{margin-top:auto}.ln-big .ln-count{margin-bottom:14px}.ln-rules{grid-template-columns:1fr 1fr}}
+@media(min-width:860px){.ln-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.ln-card{padding:18px 16px}.ln-actions{flex-direction:row}.ln-actions a{flex:1}}
+@media(max-width:600px){.sec{padding:34px 16px}.page-head{padding:26px 18px 22px}.page-head h1{font-size:1.55rem}.top-bar{padding:14px 18px}.crumb{padding:10px 18px}.sec-en{display:none}.mobile-menu{top:69px}}
+footer{padding:40px 24px;background:var(--ink-deep);text-align:center}footer .logo{justify-content:center}.footer-links{display:flex;justify-content:center;gap:8px 16px;flex-wrap:wrap;margin-bottom:12px}.footer-links a{color:var(--cream-soft);text-decoration:none;font-family:"Shippori Mincho B1",serif;font-size:.82rem}.attr{font-size:.72rem;color:var(--teal-pale);margin-top:8px}.attr a{color:var(--teal-pale)}
 </style>
 </head>
 <body>
-<header class="topbar">
-  <a class="brand" href="../index.html"><span class="ks">KS</span><span>関西サーファーKS<small>KANSAI SURF</small></span></a>
-  <div class="hamb">☰</div>
-</header>
-
-<section class="hero">
-  <div class="wrap">
-    <div class="eyebrow">KANSAI SURFER · LINE COMMUNITY</div>
-    <h1>海でつながる。<br><span>関西サーファーLINE</span></h1>
-    <p>波情報、現地情報、仲間探し。メインコミュニティと9つのサーフポイント別LINEをまとめた入口ページです。</p>
-    <div class="hero-stats">
-      <div class="stat"><small>TOTAL MEMBERS</small><strong>約 320+ 人</strong></div>
-      <div class="stat"><small>UPDATED</small><strong>2026/10/06</strong></div>
-    </div>
-    <a class="cta" href="#communities">LINEコミュニティを見る ↓</a>
-  </div>
-</section>
-
-<main class="wrap" id="communities">
-<section class="section">
-  <div class="sec-head"><span class="num">01</span><h2>メインコミュニティ</h2><span class="sec-en">MAIN COMMUNITY</span></div>
-  <div class="feature-grid">
-    <article class="feature main">
-      <span class="label">MAIN OPENCHAT</span>
-      <h3>関西サーファー 波情報</h3>
-      <p>関西エリアの波情報・台風情報・現地コンディションを共有するメインオープンチャットです。</p>
-      <div class="member">参加者 <strong>約320人</strong></div>
-      <a class="line-btn" href="#">LINEで参加する</a>
-    </article>
-    <article class="feature">
-      <span class="label" style="color:#f28060;border-color:rgba(229,82,52,.4)">SURF MATES</span>
-      <h3>サーフィン仲間探し</h3>
-      <p>「今日○○います」「同じ海にいる人いたら一緒に入りましょう」など、現地集合・相乗り・オフ会向け。</p>
-      <div class="member">参加者 <strong>—人</strong></div>
-      <a class="line-btn" href="#">LINEグループに参加</a>
-      <div class="notice">通常のLINEグループです。プロフィール名・アイコンが参加メンバーに表示されます。</div>
-    </article>
-  </div>
-</section>
-
-<section class="section dark">
-  <div class="sec-head"><span class="num">02</span><h2>9ポイント別LINE</h2><span class="sec-en">SURF POINTS</span></div>
-  <div class="grid">
-    <article class="card"><div class="card-head"><div><div class="point">磯ノ浦</div><div class="area">WAKAYAMA</div></div><span class="badge">—人</span></div><div class="actions"><a class="join" href="#">参加する</a><a class="wave" href="../isonoura.html">波情報を見る</a></div></article><article class="card"><div class="card-head"><div><div class="point">国府の浜</div><div class="area">MIE</div></div><span class="badge">—人</span></div><div class="actions"><a class="join" href="#">参加する</a><a class="wave" href="../kounohama.html">波情報を見る</a></div></article><article class="card"><div class="card-head"><div><div class="point">生見</div><div class="area">KOCHI</div></div><span class="badge">—人</span></div><div class="actions"><a class="join" href="#">参加する</a><a class="wave" href="../ikumi.html">波情報を見る</a></div></article><article class="card"><div class="card-head"><div><div class="point">小松海岸</div><div class="area">TOKUSHIMA</div></div><span class="badge">—人</span></div><div class="actions"><a class="join" href="#">参加する</a><a class="wave" href="../komatsu.html">波情報を見る</a></div></article><article class="card"><div class="card-head"><div><div class="point">伊良湖</div><div class="area">AICHI</div></div><span class="badge">—人</span></div><div class="actions"><a class="join" href="#">参加する</a><a class="wave" href="../irago.html">波情報を見る</a></div></article><article class="card"><div class="card-head"><div><div class="point">静波</div><div class="area">SHIZUOKA</div></div><span class="badge">—人</span></div><div class="actions"><a class="join" href="#">参加する</a><a class="wave" href="../shizunami.html">波情報を見る</a></div></article><article class="card"><div class="card-head"><div><div class="point">浜詰</div><div class="area">KYOTO</div></div><span class="badge">—人</span></div><div class="actions"><a class="join" href="#">参加する</a><a class="wave" href="../hamadutu.html">波情報を見る</a></div></article><article class="card"><div class="card-head"><div><div class="point">高浜</div><div class="area">FUKUI</div></div><span class="badge">—人</span></div><div class="actions"><a class="join" href="#">参加する</a><a class="wave" href="../takahama.html">波情報を見る</a></div></article><article class="card"><div class="card-head"><div><div class="point">白兎</div><div class="area">TOTTORI</div></div><span class="badge">—人</span></div><div class="actions"><a class="join" href="#">参加する</a><a class="wave" href="../hakuto.html">波情報を見る</a></div></article>
-  </div>
-</section>
-
-<section class="section">
-  <div class="sec-head"><span class="num">03</span><h2>参加ルール</h2><span class="sec-en">RULES</span></div>
-  <div class="rules">
-    <div class="rule">荒らし・営業・勧誘・迷惑行為は禁止</div>
-    <div class="rule">個人情報の投稿・共有には十分注意</div>
-    <div class="rule">海ではローカルルール・マナーを優先</div>
-    <div class="rule">事故・移動・相乗り等は各自の責任で安全第一</div>
-  </div>
-</section>
+<header class="top-bar"><a href="https://kansai.rss7.net/index.html" class="logo"><img src="https://kansai.rss7.net/img/logo-ks-white.png" alt="KS"><span class="en">Kansai Surf</span></a><div style="display:flex;align-items:center;gap:14px"><div style="display:flex;gap:12px;align-items:center"><a href="https://www.instagram.com/kansaisurfer.ks/" target="_blank" rel="noopener" aria-label="Instagram" style="color:#fff;font-size:20px;opacity:.85;text-decoration:none"><i class="fa-brands fa-instagram"></i></a><a href="https://facebook.com/kansaisurfer" target="_blank" rel="noopener" aria-label="Facebook" style="color:#fff;font-size:20px;opacity:.85;text-decoration:none"><i class="fa-brands fa-facebook"></i></a></div><button class="hamburger" id="hamburger" aria-label="メニュー" aria-controls="mobileMenu" aria-expanded="false"><span></span><span></span><span></span></button></div></header>
+<div class="mobile-menu" id="mobileMenu">
+<div class="mm-section">メインメニュー</div><a href="https://kansai.rss7.net/index.html"><span class="mm-left"><i class="fa-solid fa-house"></i>ホーム</span></a><a href="https://kansai.rss7.net/blog/index.php"><span class="mm-left"><i class="fa-solid fa-newspaper"></i>ブログ</span></a><a href="https://suzuri.jp/kansaisurfer" target="_blank" rel="noopener"><span class="mm-left"><i class="fa-solid fa-shirt"></i>ショップ</span></a>
+<div class="mm-section">サーフポイント</div>
+<a href="https://kansai.rss7.net/isonoura.html"><span class="mm-left"><i class="fa-solid fa-water"></i>磯ノ浦（和歌山）</span></a><a href="https://kansai.rss7.net/kounohama.html"><span class="mm-left"><i class="fa-solid fa-water"></i>伊勢・国府の浜（三重）</span></a><a href="https://kansai.rss7.net/ikumi.html"><span class="mm-left"><i class="fa-solid fa-water"></i>四国・生見（高知）</span></a><a href="https://kansai.rss7.net/komatsu.html"><span class="mm-left"><i class="fa-solid fa-water"></i>四国・小松海岸（徳島）</span></a><a href="https://kansai.rss7.net/irago.html"><span class="mm-left"><i class="fa-solid fa-water"></i>伊良湖（愛知）</span></a><a href="https://kansai.rss7.net/shizunami.html"><span class="mm-left"><i class="fa-solid fa-water"></i>静波（静岡）</span></a><a href="https://kansai.rss7.net/hamadutu.html"><span class="mm-left"><i class="fa-solid fa-water"></i>浜詰（京都・日本海）</span></a><a href="https://kansai.rss7.net/takahama.html"><span class="mm-left"><i class="fa-solid fa-water"></i>高浜（福井・日本海）</span></a><a href="https://kansai.rss7.net/hakuto.html"><span class="mm-left"><i class="fa-solid fa-water"></i>白兎（鳥取・日本海）</span></a>
+<div class="mm-section">その他</div><a href="https://kansai.rss7.net/about.html"><span class="mm-left"><i class="fa-solid fa-circle-info"></i>当サイトについて</span></a><a href="https://kansai.rss7.net/contact.html"><span class="mm-left"><i class="fa-solid fa-envelope"></i>お問い合わせ</span></a>
+</div>
+<div class="crumb"><a href="https://kansai.rss7.net/index.html"><i class="fa-solid fa-house" style="font-size:.72rem"></i> ホーム</a><span style="margin:0 6px">/</span><span style="color:var(--cream-soft)">LINE一覧</span></div>
+<div class="wrap page-head"><h1>関西サーファーKS LINE一覧</h1><p>波情報・現地情報・仲間探し。目的に合ったLINEへ参加できます。</p></div>
+<nav class="sec-nav"><a href="#main"><i class="fa-brands fa-line"></i> メイン</a><a href="#buddy"><i class="fa-solid fa-user-group"></i> 仲間探し</a><a href="#spots"><i class="fa-solid fa-water"></i> 9ポイント</a><a href="#rules"><i class="fa-solid fa-scale-balanced"></i> 参加ルール</a></nav>
+<main>
+<section class="sec" id="main"><div class="wrap"><div class="sec-head"><span class="sec-num">01</span><h2 class="sec-title"><i class="fa-brands fa-line"></i>メイン・仲間探し</h2><span class="sec-en">COMMUNITY</span></div><div class="ln-pair">
+<article class="ln-big main"><h3>関西サーファー波情報</h3><p class="ln-desc">LINEオープンチャット。関西エリアの波情報と現地の様子を共有するメインの場所です。</p><p class="ln-count">参加者<b>約320人</b><span class="ln-temp">仮</span></p><a class="ln-join" href="#TODO-LINE-URL-main"><i class="fa-brands fa-line"></i>参加する</a></article>
+<article class="ln-big" id="buddy"><h3>関西サーファー仲間探し</h3><p class="ln-desc">現地集合・相乗り・オフ会向けのLINEグループです。</p><p class="ln-count">参加者<b>約—人</b><span class="ln-temp">仮</span></p><p class="ln-warn"><strong>匿名ではありません。</strong>通常のLINEグループのため、LINEの名前とアイコンがメンバーに表示されます。</p><a class="ln-join" href="#TODO-LINE-URL-buddy"><i class="fa-brands fa-line"></i>参加する</a></article>
+</div></div></section>
+<section class="sec dark" id="spots"><div class="wrap"><div class="sec-head"><span class="sec-num">02</span><h2 class="sec-title"><i class="fa-solid fa-water"></i>9ポイント別LINE</h2><span class="sec-en">SURF POINTS</span></div><div class="ln-grid">
+<article class="ln-card"><p class="ln-area">和歌山</p><h3 class="ln-name">磯ノ浦</h3><p class="ln-count">参加者<b>約—人</b><span class="ln-temp">仮</span></p><div class="ln-actions"><a class="ln-join" href="#TODO-LINE-URL-isonoura"><i class="fa-brands fa-line"></i>参加する</a><a class="ln-wave" href="https://kansai.rss7.net/isonoura.html">波情報を見る</a></div></article><article class="ln-card"><p class="ln-area">三重・伊勢</p><h3 class="ln-name">国府の浜</h3><p class="ln-count">参加者<b>約—人</b><span class="ln-temp">仮</span></p><div class="ln-actions"><a class="ln-join" href="#TODO-LINE-URL-kounohama"><i class="fa-brands fa-line"></i>参加する</a><a class="ln-wave" href="https://kansai.rss7.net/kounohama.html">波情報を見る</a></div></article><article class="ln-card"><p class="ln-area">高知</p><h3 class="ln-name">生見</h3><p class="ln-count">参加者<b>約—人</b><span class="ln-temp">仮</span></p><div class="ln-actions"><a class="ln-join" href="#TODO-LINE-URL-ikumi"><i class="fa-brands fa-line"></i>参加する</a><a class="ln-wave" href="https://kansai.rss7.net/ikumi.html">波情報を見る</a></div></article><article class="ln-card"><p class="ln-area">徳島</p><h3 class="ln-name">小松海岸</h3><p class="ln-count">参加者<b>約—人</b><span class="ln-temp">仮</span></p><div class="ln-actions"><a class="ln-join" href="#TODO-LINE-URL-komatsu"><i class="fa-brands fa-line"></i>参加する</a><a class="ln-wave" href="https://kansai.rss7.net/komatsu.html">波情報を見る</a></div></article><article class="ln-card"><p class="ln-area">愛知</p><h3 class="ln-name">伊良湖</h3><p class="ln-count">参加者<b>約—人</b><span class="ln-temp">仮</span></p><div class="ln-actions"><a class="ln-join" href="#TODO-LINE-URL-irago"><i class="fa-brands fa-line"></i>参加する</a><a class="ln-wave" href="https://kansai.rss7.net/irago.html">波情報を見る</a></div></article><article class="ln-card"><p class="ln-area">静岡</p><h3 class="ln-name">静波</h3><p class="ln-count">参加者<b>約—人</b><span class="ln-temp">仮</span></p><div class="ln-actions"><a class="ln-join" href="#TODO-LINE-URL-shizunami"><i class="fa-brands fa-line"></i>参加する</a><a class="ln-wave" href="https://kansai.rss7.net/shizunami.html">波情報を見る</a></div></article><article class="ln-card"><p class="ln-area">京都・日本海</p><h3 class="ln-name">浜詰</h3><p class="ln-count">参加者<b>約—人</b><span class="ln-temp">仮</span></p><div class="ln-actions"><a class="ln-join" href="#TODO-LINE-URL-hamadutu"><i class="fa-brands fa-line"></i>参加する</a><a class="ln-wave" href="https://kansai.rss7.net/hamadutu.html">波情報を見る</a></div></article><article class="ln-card"><p class="ln-area">福井・日本海</p><h3 class="ln-name">高浜</h3><p class="ln-count">参加者<b>約—人</b><span class="ln-temp">仮</span></p><div class="ln-actions"><a class="ln-join" href="#TODO-LINE-URL-takahama"><i class="fa-brands fa-line"></i>参加する</a><a class="ln-wave" href="https://kansai.rss7.net/takahama.html">波情報を見る</a></div></article><article class="ln-card"><p class="ln-area">鳥取・日本海</p><h3 class="ln-name">白兎</h3><p class="ln-count">参加者<b>約—人</b><span class="ln-temp">仮</span></p><div class="ln-actions"><a class="ln-join" href="#TODO-LINE-URL-hakuto"><i class="fa-brands fa-line"></i>参加する</a><a class="ln-wave" href="https://kansai.rss7.net/hakuto.html">波情報を見る</a></div></article>
+</div><p class="ln-updated">参加人数は2026年10月6日時点<span class="ln-temp">仮</span></p></div></section>
+<section class="sec" id="rules"><div class="wrap"><div class="sec-head"><span class="sec-num">03</span><h2 class="sec-title"><i class="fa-solid fa-scale-balanced"></i>参加ルール</h2><span class="sec-en">RULES</span></div><ul class="ln-rules"><li><i class="fa-solid fa-ban"></i>荒らし・営業・勧誘・迷惑行為は禁止です。</li><li><i class="fa-solid fa-user-shield"></i>住所・電話番号など個人情報の投稿は控えてください。</li><li><i class="fa-solid fa-water"></i>海ではローカルルールとマナーを優先してください。</li><li><i class="fa-solid fa-triangle-exclamation"></i>現地集合・相乗りは各自の責任で、安全を第一にしてください。</li></ul></div></section>
 </main>
-
-<footer class="footer">
-  <div style="margin-bottom:12px;font-weight:700;color:var(--cream)">関西サーファーKS</div>
-  <div><a href="../index.html">ホーム</a><a href="../blog/index.php">ブログ</a><a href="../contact.html">お問い合わせ</a></div>
-  <div style="margin-top:14px">ChatGPT rough preview · LINE URL / 人数は仮表示</div>
-</footer>
+<footer><a href="https://kansai.rss7.net/index.html" class="logo" style="text-decoration:none;justify-content:center"><img src="https://kansai.rss7.net/img/logo-ks-white.png" alt="KS" style="height:24px;width:auto;margin-right:6px;vertical-align:middle"><span class="en" style="font-size:.75rem">Kansai Surf</span></a><div class="footer-links" style="margin-top:20px"><a href="https://kansai.rss7.net/index.html">ホーム</a><a href="https://kansai.rss7.net/blog/index.php">ブログ</a><a href="https://kansai.rss7.net/contact.html">お問い合わせ</a><a href="https://kansai.rss7.net/about.html">当サイトについて</a></div><div class="attr">© 2026 関西サーファー.ks · MADE IN OSAKA</div></footer>
+<script>
+const hamburger=document.getElementById('hamburger'),mobileMenu=document.getElementById('mobileMenu');if(hamburger&&mobileMenu){hamburger.addEventListener('click',()=>{hamburger.classList.toggle('active');mobileMenu.classList.toggle('open');hamburger.setAttribute('aria-expanded',mobileMenu.classList.contains('open')?'true':'false')})}
+document.querySelectorAll('a[href^="#TODO-LINE-URL"]').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();alert('このLINEは準備中です。もうしばらくお待ちください。')}))
+</script>
 </body>
 </html>
