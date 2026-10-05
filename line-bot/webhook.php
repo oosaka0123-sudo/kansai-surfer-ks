@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-const KS_LINE_BOT_BOOTSTRAP = true;
+require_once __DIR__ . '/common.php';
 
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
     header('Content-Type: text/plain; charset=utf-8');
@@ -14,21 +14,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
     exit;
 }
 
-$configPath = __DIR__ . '/config.php';
-if (!is_file($configPath)) {
+try {
+    $config = ksConfig();
+} catch (Throwable $e) {
     http_response_code(503);
-    error_log('KS LINE bot: config.php is missing.');
-    exit;
-}
-
-/** @var array{channel_id?:string,channel_secret?:string} $config */
-$config = require $configPath;
-$channelId = (string)($config['channel_id'] ?? '');
-$channelSecret = (string)($config['channel_secret'] ?? '');
-
-if ($channelId === '' || $channelSecret === '') {
-    http_response_code(503);
-    error_log('KS LINE bot: required credentials are not configured.');
+    error_log('KS LINE bot: ' . $e->getMessage());
     exit;
 }
 
@@ -40,7 +30,7 @@ if ($rawBody === false) {
 
 $receivedSignature = (string)($_SERVER['HTTP_X_LINE_SIGNATURE'] ?? '');
 $expectedSignature = base64_encode(
-    hash_hmac('sha256', $rawBody, $channelSecret, true)
+    hash_hmac('sha256', $rawBody, $config['channel_secret'], true)
 );
 
 if ($receivedSignature === '' || !hash_equals($expectedSignature, $receivedSignature)) {
@@ -50,7 +40,6 @@ if ($receivedSignature === '' || !hash_equals($expectedSignature, $receivedSigna
 }
 
 try {
-    /** @var array{events?:array<int,array<string,mixed>>} $payload */
     $payload = json_decode($rawBody, true, 512, JSON_THROW_ON_ERROR);
 } catch (JsonException $e) {
     http_response_code(400);
@@ -87,126 +76,75 @@ $welcomeText = <<<'TEXT'
 TEXT;
 
 foreach (($payload['events'] ?? []) as $event) {
-    if (($event['type'] ?? '') !== 'memberJoined') {
+    if (!is_array($event)) {
         continue;
     }
 
-    if (($event['source']['type'] ?? '') !== 'group') {
+    $source = is_array($event['source'] ?? null) ? $event['source'] : [];
+    if (($source['type'] ?? '') !== 'group') {
         continue;
     }
 
-    $replyToken = (string)($event['replyToken'] ?? '');
-    if ($replyToken === '') {
+    $groupId = (string)($source['groupId'] ?? '');
+    if ($groupId === '') {
         continue;
     }
 
-    $channelAccessToken = issueStatelessToken($channelId, $channelSecret);
-    if ($channelAccessToken === null) {
+    $type = (string)($event['type'] ?? '');
+
+    if ($type === 'leave') {
+        ksForgetGroup($groupId);
         continue;
     }
 
-    replyText($channelAccessToken, $replyToken, $welcomeText);
+    ksRememberGroup($groupId);
+
+    if ($type === 'memberJoined') {
+        $replyToken = (string)($event['replyToken'] ?? '');
+        if ($replyToken !== '') {
+            ksReply($replyToken, [[
+                'type' => 'text',
+                'text' => $welcomeText,
+            ]]);
+        }
+        continue;
+    }
+
+    if ($type !== 'postback') {
+        continue;
+    }
+
+    $userId = (string)($source['userId'] ?? '');
+    $data = (string)($event['postback']['data'] ?? '');
+    if ($userId === '' || $data === '') {
+        continue;
+    }
+
+    parse_str($data, $params);
+    if (($params['ks_poll'] ?? '') !== 'destination') {
+        continue;
+    }
+
+    $date = (string)($params['date'] ?? '');
+    $spot = (string)($params['spot'] ?? '');
+
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) || !isset(ksSpots()[$spot])) {
+        continue;
+    }
+
+    $today = new DateTimeImmutable('today', new DateTimeZone('Asia/Tokyo'));
+    $voteDate = DateTimeImmutable::createFromFormat('!Y-m-d', $date, new DateTimeZone('Asia/Tokyo'));
+    if (!$voteDate instanceof DateTimeImmutable) {
+        continue;
+    }
+
+    if ($voteDate < $today || $voteDate > $today->modify('+7 days')) {
+        continue;
+    }
+
+    ksRegisterVote($groupId, $date, $userId, $spot);
 }
 
 http_response_code(200);
 header('Content-Type: text/plain; charset=utf-8');
 echo "ok\n";
-
-
-function issueStatelessToken(string $channelId, string $channelSecret): ?string
-{
-    $ch = curl_init('https://api.line.me/oauth2/v3/token');
-    if ($ch === false) {
-        error_log('KS LINE bot: failed to initialize token cURL.');
-        return null;
-    }
-
-    curl_setopt_array($ch, [
-        CURLOPT_POST => true,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_CONNECTTIMEOUT => 3,
-        CURLOPT_TIMEOUT => 8,
-        CURLOPT_HTTPHEADER => [
-            'Content-Type: application/x-www-form-urlencoded',
-        ],
-        CURLOPT_POSTFIELDS => http_build_query([
-            'grant_type' => 'client_credentials',
-            'client_id' => $channelId,
-            'client_secret' => $channelSecret,
-        ], '', '&', PHP_QUERY_RFC3986),
-    ]);
-
-    $response = curl_exec($ch);
-    $httpCode = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
-    $curlError = curl_error($ch);
-    curl_close($ch);
-
-    if ($response === false || $httpCode < 200 || $httpCode >= 300) {
-        error_log(
-            'KS LINE bot: token issue failed. http=' . $httpCode .
-            ($curlError !== '' ? ' curl_error=' . $curlError : '')
-        );
-        return null;
-    }
-
-    try {
-        $decoded = json_decode($response, true, 512, JSON_THROW_ON_ERROR);
-    } catch (JsonException $e) {
-        error_log('KS LINE bot: invalid token response JSON.');
-        return null;
-    }
-
-    $accessToken = (string)($decoded['access_token'] ?? '');
-    if ($accessToken === '') {
-        error_log('KS LINE bot: token response did not contain access_token.');
-        return null;
-    }
-
-    return $accessToken;
-}
-
-function replyText(string $channelAccessToken, string $replyToken, string $text): void
-{
-    $body = json_encode(
-        [
-            'replyToken' => $replyToken,
-            'messages' => [
-                [
-                    'type' => 'text',
-                    'text' => $text,
-                ],
-            ],
-        ],
-        JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
-    );
-
-    $ch = curl_init('https://api.line.me/v2/bot/message/reply');
-    if ($ch === false) {
-        error_log('KS LINE bot: failed to initialize cURL.');
-        return;
-    }
-
-    curl_setopt_array($ch, [
-        CURLOPT_POST => true,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_CONNECTTIMEOUT => 3,
-        CURLOPT_TIMEOUT => 8,
-        CURLOPT_HTTPHEADER => [
-            'Authorization: Bearer ' . $channelAccessToken,
-            'Content-Type: application/json',
-        ],
-        CURLOPT_POSTFIELDS => $body,
-    ]);
-
-    $response = curl_exec($ch);
-    $httpCode = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
-    $curlError = curl_error($ch);
-    curl_close($ch);
-
-    if ($response === false || $httpCode < 200 || $httpCode >= 300) {
-        error_log(
-            'KS LINE bot: reply failed. http=' . $httpCode .
-            ($curlError !== '' ? ' curl_error=' . $curlError : '')
-        );
-    }
-}
