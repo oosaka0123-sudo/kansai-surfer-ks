@@ -27,6 +27,7 @@ jobs:
         run: |
           php -l line-bot/webhook.php
           php -l line-bot/relay.php
+          php -l line-bot/activate_relay.php
 
       - name: Check staging credentials
         id: secrets
@@ -58,6 +59,7 @@ jobs:
           mkdir -p "$STAGE"
           cp line-bot/webhook.php "$STAGE/webhook.php"
           cp line-bot/relay.php "$STAGE/relay.php"
+          cp line-bot/activate_relay.php "$STAGE/activate_relay.php"
 
           CRON_TOKEN="$(printf '%s' "$FTP_PASSWORD" | sha256sum | awk '{print $1}')"
           CRON_TOKEN_HASH="$(printf '%s' "$CRON_TOKEN" | sha256sum | awk '{print $1}')"
@@ -65,6 +67,7 @@ jobs:
 
           php -l "$STAGE/webhook.php"
           php -l "$STAGE/relay.php"
+          php -l "$STAGE/activate_relay.php"
           php -l "$STAGE/cron_key.php"
 
       - name: Install lftp
@@ -103,6 +106,7 @@ jobs:
           mkdir -f "$FTP_SERVER_DIR"
           put "$STAGE/webhook.php" -o "$FTP_SERVER_DIR/webhook.php"
           put "$STAGE/relay.php" -o "$FTP_SERVER_DIR/relay.php"
+          put "$STAGE/activate_relay.php" -o "$FTP_SERVER_DIR/activate_relay.php"
           put "$STAGE/cron_key.php" -o "$FTP_SERVER_DIR/cron_key.php"
           rm -f "$FTP_SERVER_DIR/setup.php"
           bye
