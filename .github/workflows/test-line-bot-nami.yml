@@ -1,6 +1,7 @@
 name: Test LINE group welcome bot on nami
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - chore/line-group-welcome-bot
