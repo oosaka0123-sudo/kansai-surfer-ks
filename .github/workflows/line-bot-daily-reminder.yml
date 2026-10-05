@@ -23,16 +23,7 @@ jobs:
           set +x
           test -n "$FTP_PASSWORD"
           CRON_TOKEN="$(printf '%s' "$FTP_PASSWORD" | sha256sum | awk '{print $1}')"
-          RESPONSE_FILE="$RUNNER_TEMP/line-bot-cron-response.txt"
-          HEADER_FILE="$RUNNER_TEMP/line-bot-cron-headers.txt"
-          HTTP_CODE="$(curl --http1.1 --silent --show-error --retry 1 \
-            --dump-header "$HEADER_FILE" \
-            --output "$RESPONSE_FILE" \
-            --write-out '%{http_code}' \
+          curl --http1.1 --fail --silent --show-error --retry 3 \
             --request POST \
             --data-urlencode "cron_token=$CRON_TOKEN" \
-            "$WEBHOOK_URL")"
-          cat "$HEADER_FILE"
-          cat "$RESPONSE_FILE"
-          echo "HTTP $HTTP_CODE"
-          test "$HTTP_CODE" = "200"
+            "$WEBHOOK_URL"
