@@ -30,8 +30,7 @@ jobs:
             --output "$RESPONSE_FILE" \
             --write-out '%{http_code}' \
             --request POST \
-            --header "X-KS-Cron-Token: $CRON_TOKEN" \
-            --data 'cron=1' \
+            --data-urlencode "cron_token=$CRON_TOKEN" \
             "$WEBHOOK_URL")"
           cat "$HEADER_FILE"
           cat "$RESPONSE_FILE"
