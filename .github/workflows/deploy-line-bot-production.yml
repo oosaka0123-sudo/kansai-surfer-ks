@@ -18,6 +18,7 @@ jobs:
       FTP_SERVER: ftp.lolipop.jp
       WEBHOOK_URL: https://kansai.rss7.net/line-bot/webhook.php
       POLL_URL: https://kansai.rss7.net/line-bot/weekly_poll.php
+      COUNT_URL: https://kansai.rss7.net/line-bot/member_counts.php
 
     steps:
       - name: Checkout main
@@ -28,6 +29,7 @@ jobs:
           php -l line-bot/common.php
           php -l line-bot/webhook.php
           php -l line-bot/weekly_poll.php
+          php -l line-bot/member_counts.php
 
       - name: Check production credentials
         shell: bash
@@ -58,6 +60,7 @@ jobs:
           cp line-bot/common.php "$STAGE/common.php"
           cp line-bot/webhook.php "$STAGE/webhook.php"
           cp line-bot/weekly_poll.php "$STAGE/weekly_poll.php"
+          cp line-bot/member_counts.php "$STAGE/member_counts.php"
           cp line-bot/data/.htaccess "$STAGE/data.htaccess"
           php -r '$cfg=["channel_access_token"=>getenv("LINE_CHANNEL_ACCESS_TOKEN"),"channel_secret"=>getenv("LINE_CHANNEL_SECRET")]; file_put_contents($argv[1],"<?php\nreturn ".var_export($cfg,true).";\n");' "$STAGE/config.php"
 
@@ -89,6 +92,7 @@ jobs:
           put "$STAGE/common.php" -o common.php
           put "$STAGE/webhook.php" -o webhook.php
           put "$STAGE/weekly_poll.php" -o weekly_poll.php
+          put "$STAGE/member_counts.php" -o member_counts.php
           put "$STAGE/config.php" -o config.php
           put "$STAGE/data.htaccess" -o data/.htaccess
           bye
@@ -100,4 +104,7 @@ jobs:
           set -euo pipefail
           test "$(curl --fail --silent --show-error --location --retry 5 --retry-delay 2 "$WEBHOOK_URL")" = 'ok'
           test "$(curl --fail --silent --show-error --location --retry 5 --retry-delay 2 "$POLL_URL")" = 'ok'
+          counts="$(curl --fail --silent --show-error --location --retry 5 --retry-delay 2 "$COUNT_URL")"
+          echo "$counts" | grep -q '"ok":true'
+          echo "$counts" | grep -q '"counts"'
           echo "Production LINE bot endpoints are healthy."
