@@ -152,3 +152,61 @@ jobs:
           echo "$auto" | grep -q '"action":"none"'
           test "$poll" = 'ok'
           echo "Nami scheduler endpoint is healthy; webhook response is recorded for path diagnosis."
+
+      - name: Exercise signed anonymous vote end-to-end
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          STAGE="$RUNNER_TEMP/ks-line-bot"
+          TARGET_DATE="$(TZ=Asia/Tokyo date -d 'tomorrow' +%F)"
+          SECRET="$(php -r '$c=require $argv[1]; echo $c["channel_secret"];' "$STAGE/config.php")"
+          test -n "$SECRET"
+
+          send_vote() {
+            spot="$1"
+            body="$(printf '{"events":[{"type":"postback","source":{"type":"group","groupId":"Cksstagingtest","userId":"Uksstagingtest"},"postback":{"data":"ks_poll=destination&date=%s&spot=%s"}}]}' "$TARGET_DATE" "$spot")"
+            signature="$(printf '%s' "$body" | openssl dgst -sha256 -hmac "$SECRET" -binary | base64 -w0)"
+            response="$(curl --fail --silent --show-error               -H "Content-Type: application/json"               -H "X-Line-Signature: $signature"               --data "$body"               "$WEBHOOK_URL")"
+            test "$response" = 'OK'
+          }
+
+          send_vote ikumi
+          send_vote isonoura
+          unset SECRET
+
+          CHECK="$RUNNER_TEMP/ks-line-vote-check"
+          rm -rf "$CHECK"
+          mkdir -p "$CHECK"
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER"
+          get /nami/ks-line-bot/data/votes.json -o "$CHECK/votes.json"
+          bye
+          LFTP_EOF
+
+          php -r '
+            $d=json_decode(file_get_contents($argv[1]),true);
+            $votes=$d["votes"][$argv[2]]["Cksstagingtest"] ?? [];
+            if(count($votes)!==1){fwrite(STDERR,"Expected exactly one anonymous voter.\n"); exit(1);}
+            $vote=array_values($votes)[0] ?? [];
+            if(($vote["spot"] ?? "")!=="isonoura"){fwrite(STDERR,"Vote replacement failed.\n"); exit(1);}
+            echo "Anonymous one-person-one-vote replacement passed.\n";
+          ' "$CHECK/votes.json" "$TARGET_DATE"
+
+          lftp <<LFTP_EOF
+          set cmd:fail-exit false
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER"
+          rm /nami/ks-line-bot/data/votes.json
+          rm /nami/ks-line-bot/data/groups.json
+          rm /nami/ks-line-bot/data/sent.json
+          bye
+          LFTP_EOF
