@@ -25,9 +25,9 @@ jobs:
       DEPLOY_SCHEME: ftp
       DEPLOY_PORT: "21"
       DEPLOY_ROOT: /nami
-      DEPLOY_SUBDIR: line-preview-chatgpt
+      DEPLOY_SUBDIR: line-preview-chatgpt-v2
       SOURCE_DIR: line-preview-chatgpt
-      SITE_URL: https://nami.rss7.net/line-preview-chatgpt/
+      SITE_URL: https://nami.rss7.net/line-preview-chatgpt-v2/
 
     steps:
       - uses: actions/checkout@v4
@@ -42,7 +42,7 @@ jobs:
           test -f "$SOURCE_DIR/index.html"
           [[ -n "$DEPLOY_USER" && -n "$DEPLOY_PASSWORD" ]]
           [[ "$DEPLOY_ROOT" == "/nami" ]]
-          [[ "$DEPLOY_SUBDIR" == "line-preview-chatgpt" ]]
+          [[ "$DEPLOY_SUBDIR" == "line-preview-chatgpt-v2" ]]
 
       - name: Install lftp
         run: sudo apt-get update && sudo apt-get install -y lftp
