@@ -57,6 +57,7 @@ jobs:
           cp line-bot/common.php "$STAGE/common.php"
           cp line-bot/webhook.php "$STAGE/webhook.php"
           cp line-bot/weekly_poll.php "$STAGE/weekly_poll.php"
+          cp line-bot/data/.htaccess "$STAGE/data.htaccess"
           php -r '$cfg=["channel_id"=>getenv("LINE_CHANNEL_ID"),"channel_secret"=>getenv("LINE_CHANNEL_SECRET")]; file_put_contents($argv[1],"<?php\nreturn ".var_export($cfg,true).";\n");' "$STAGE/config.php"
           php -l "$STAGE/common.php"
           php -l "$STAGE/webhook.php"
@@ -92,6 +93,7 @@ jobs:
           put "$STAGE/webhook.php" -o webhook.php
           put "$STAGE/weekly_poll.php" -o weekly_poll.php
           put "$STAGE/config.php" -o config.php
+          put "$STAGE/data.htaccess" -o data/.htaccess
           bye
           LFTP_EOF
 
