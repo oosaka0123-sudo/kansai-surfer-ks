@@ -353,7 +353,7 @@ function handleCronRequest(string $channelId, string $channelSecret): void
 
     $cronKey = require $cronKeyPath;
     $expectedHash = is_array($cronKey) ? (string)($cronKey['token_hash'] ?? '') : '';
-    $provided = (string)($_SERVER['HTTP_X_KS_CRON_TOKEN'] ?? '');
+    $provided = (string)($_POST['cron_token'] ?? '');
 
     if ($expectedHash === '' || $provided === ''
         || !hash_equals($expectedHash, hash('sha256', $provided))) {
