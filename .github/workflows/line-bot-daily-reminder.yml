@@ -29,6 +29,7 @@ jobs:
             --write-out '%{http_code}' \
             --request POST \
             --header "X-KS-Cron-Token: $CRON_TOKEN" \
+            --data 'cron=1' \
             "$WEBHOOK_URL")"
           cat "$RESPONSE_FILE"
           echo "HTTP $HTTP_CODE"
