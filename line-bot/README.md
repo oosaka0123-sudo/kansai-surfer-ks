@@ -34,10 +34,10 @@ Production FTP:
 - `KS_PROD_FTP_PASSWORD`
 
 LINE Messaging API:
-- `KS_LINE_BOT_CHANNEL_ID`
+- `KS_LINE_BOT_CHANNEL_ACCESS_TOKEN`
 - `KS_LINE_BOT_CHANNEL_SECRET`
 
-The LINE credentials are used only by GitHub Actions to generate an untracked `config.php` during deployment. They are never committed.
+The LINE channel secret and existing channel access token are used only by GitHub Actions to generate an untracked `config.php` during deployment. They are never committed.
 
 ## Endpoints
 
