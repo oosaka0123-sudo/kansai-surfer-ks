@@ -1,0 +1,112 @@
+name: Deploy LINE ChatGPT preview to nami
+
+on:
+  push:
+    branches:
+      - feat/line-community-chatgpt
+    paths:
+      - 'line-preview-chatgpt/**'
+      - '.github/workflows/deploy-line-chatgpt-preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kansai-surfer-line-chatgpt-preview
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DEPLOY_HOST: ftp.lolipop.jp
+      DEPLOY_SCHEME: ftp
+      DEPLOY_PORT: "21"
+      DEPLOY_ROOT: /nami
+      DEPLOY_SUBDIR: line-preview-chatgpt
+      SOURCE_DIR: line-preview-chatgpt
+      SITE_URL: https://nami.rss7.net/line-preview-chatgpt/
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate source and credentials
+        shell: bash
+        env:
+          DEPLOY_USER: ${{ secrets.KS_NAMI_FTP_USER }}
+          DEPLOY_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -f "$SOURCE_DIR/index.html"
+          [[ -n "$DEPLOY_USER" && -n "$DEPLOY_PASSWORD" ]]
+          [[ "$DEPLOY_ROOT" == "/nami" ]]
+          [[ "$DEPLOY_SUBDIR" == "line-preview-chatgpt" ]]
+
+      - name: Install lftp
+        run: sudo apt-get update && sudo apt-get install -y lftp
+
+      - name: Ensure isolated preview directory exists
+        shell: bash
+        env:
+          DEPLOY_USER: ${{ secrets.KS_NAMI_FTP_USER }}
+          DEPLOY_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          if lftp <<LFTP
+          set cmd:fail-exit yes
+          set net:max-retries 2
+          set net:timeout 20
+          set ssl:verify-certificate yes
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          open -u "$DEPLOY_USER","$DEPLOY_PASSWORD" "$DEPLOY_SCHEME://$DEPLOY_HOST:$DEPLOY_PORT"
+          cd "$DEPLOY_ROOT/$DEPLOY_SUBDIR"
+          bye
+          LFTP
+          then
+            echo "Preview directory already exists."
+          else
+            lftp <<LFTP
+          set cmd:fail-exit yes
+          set net:max-retries 2
+          set net:timeout 20
+          set ssl:verify-certificate yes
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          open -u "$DEPLOY_USER","$DEPLOY_PASSWORD" "$DEPLOY_SCHEME://$DEPLOY_HOST:$DEPLOY_PORT"
+          cd "$DEPLOY_ROOT"
+          mkdir "$DEPLOY_SUBDIR"
+          bye
+          LFTP
+          fi
+
+      - name: Upload preview
+        shell: bash
+        env:
+          DEPLOY_USER: ${{ secrets.KS_NAMI_FTP_USER }}
+          DEPLOY_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          lftp <<LFTP
+          set cmd:fail-exit yes
+          set net:max-retries 2
+          set net:timeout 20
+          set ssl:verify-certificate yes
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          open -u "$DEPLOY_USER","$DEPLOY_PASSWORD" "$DEPLOY_SCHEME://$DEPLOY_HOST:$DEPLOY_PORT"
+          mirror --reverse --verbose --parallel=2 --no-perms "$SOURCE_DIR" "$DEPLOY_ROOT/$DEPLOY_SUBDIR"
+          bye
+          LFTP
+
+      - name: Verify public preview
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "$SITE_URL" > /tmp/line-preview.html
+          grep -qi '<html' /tmp/line-preview.html
+          grep -q '関西サーファーLINE' /tmp/line-preview.html
+          echo "Preview verified: $SITE_URL"
