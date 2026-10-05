@@ -15,70 +15,69 @@ if ($mode === '') {
     exit;
 }
 
-if (!in_array($mode, ['poll', 'summary'], true)) {
+if ($mode !== 'auto') {
     http_response_code(400);
+    header('Content-Type: text/plain; charset=utf-8');
     echo "invalid mode\n";
-    exit;
-}
-
-try {
-    $expectedKey = ksSchedulerKey();
-} catch (Throwable $e) {
-    http_response_code(503);
-    error_log('KS LINE bot scheduler: ' . $e->getMessage());
-    exit;
-}
-
-$receivedKey = (string)($_SERVER['HTTP_X_KS_SCHEDULER_KEY'] ?? '');
-if ($receivedKey === '' || !hash_equals($expectedKey, $receivedKey)) {
-    http_response_code(401);
-    echo "unauthorized\n";
     exit;
 }
 
 $timezone = new DateTimeZone('Asia/Tokyo');
 $now = new DateTimeImmutable('now', $timezone);
-$requestedDate = trim((string)($_GET['date'] ?? ''));
 
-if ($requestedDate !== '') {
-    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $requestedDate)) {
-        http_response_code(400);
-        echo "invalid date\n";
-        exit;
-    }
-    $targetDate = $requestedDate;
-} else {
-    $targetDate = $now->modify('+1 day')->format('Y-m-d');
-}
-
-$groups = ksActiveGroups();
 $result = [
     'ok' => true,
-    'mode' => $mode,
-    'date' => $targetDate,
-    'active_groups' => count($groups),
+    'now' => $now->format(DATE_ATOM),
+    'mode' => 'auto',
+    'action' => 'none',
+    'date' => null,
+    'active_groups' => 0,
     'sent' => 0,
     'skipped' => 0,
     'failed' => 0,
 ];
 
+if ($now->format('N') !== '6') {
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n";
+    exit;
+}
+
+$hour = (int)$now->format('G');
+$action = match ($hour) {
+    19 => 'poll',
+    21 => 'summary',
+    default => null,
+};
+
+if ($action === null) {
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n";
+    exit;
+}
+
+$targetDate = $now->modify('+1 day')->format('Y-m-d');
+$groups = ksActiveGroups();
+
+$result['action'] = $action;
+$result['date'] = $targetDate;
+$result['active_groups'] = count($groups);
+
 foreach ($groups as $groupId) {
-    if (ksWasSent($groupId, $targetDate, $mode)) {
+    if (ksWasSent($groupId, $targetDate, $action)) {
         $result['skipped']++;
         continue;
     }
 
-    if ($mode === 'poll') {
-        $messages = [ksPollMessage($targetDate)];
-    } else {
-        $messages = [[
+    $messages = $action === 'poll'
+        ? [ksPollMessage($targetDate)]
+        : [[
             'type' => 'text',
             'text' => ksSummaryText($groupId, $targetDate),
         ]];
-    }
 
     if (ksPush($groupId, $messages)) {
-        ksMarkSent($groupId, $targetDate, $mode);
+        ksMarkSent($groupId, $targetDate, $action);
         $result['sent']++;
     } else {
         $result['failed']++;
@@ -86,4 +85,7 @@ foreach ($groups as $groupId) {
 }
 
 header('Content-Type: application/json; charset=utf-8');
-echo json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) . "\n";
+echo json_encode(
+    $result,
+    JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT
+) . "\n";
