@@ -31,48 +31,30 @@ jobs:
         env:
           FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
           FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
-          LINE_CHANNEL_ID: ${{ secrets.KS_LINE_BOT_CHANNEL_ID }}
-          LINE_CHANNEL_SECRET: ${{ secrets.KS_LINE_BOT_CHANNEL_SECRET }}
         run: |
           set -euo pipefail
           set +x
-          if [ -n "$FTP_USERNAME" ] && [ -n "$FTP_PASSWORD" ] && [ -n "$LINE_CHANNEL_SECRET" ] && [ -n "$LINE_CHANNEL_ID" ]; then
+          if [ -n "$FTP_USERNAME" ] && [ -n "$FTP_PASSWORD" ]; then
             echo "ready=true" >> "$GITHUB_OUTPUT"
-            echo "All staging credentials are configured."
+            echo "Existing nami FTP credentials are configured."
           else
             echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "LINE bot staging credentials are not complete; upload is intentionally skipped."
+            echo "Nami FTP credentials are not configured; upload is intentionally skipped."
           fi
 
       - name: Prepare isolated staging bundle
         if: steps.secrets.outputs.ready == 'true'
         shell: bash
-        env:
-          LINE_CHANNEL_ID: ${{ secrets.KS_LINE_BOT_CHANNEL_ID }}
-          LINE_CHANNEL_SECRET: ${{ secrets.KS_LINE_BOT_CHANNEL_SECRET }}
         run: |
           set -euo pipefail
-          set +x
           STAGE="$RUNNER_TEMP/ks-line-bot"
           rm -rf "$STAGE"
           mkdir -p "$STAGE"
           cp line-bot/webhook.php "$STAGE/webhook.php"
-
-          php -r '
-            $config = [
-              "channel_id" => getenv("LINE_CHANNEL_ID"),
-              "channel_secret" => getenv("LINE_CHANNEL_SECRET"),
-            ];
-            file_put_contents(
-              $argv[1],
-              "<?php\nif (!defined(\"KS_LINE_BOT_BOOTSTRAP\")) { http_response_code(404); exit; }\nreturn " .
-              var_export($config, true) .
-              ";\n"
-            );
-          ' "$STAGE/config.php"
+          cp line-bot/setup.php "$STAGE/setup.php"
 
           php -l "$STAGE/webhook.php"
-          php -l "$STAGE/config.php"
+          php -l "$STAGE/setup.php"
 
       - name: Install lftp
         if: steps.secrets.outputs.ready == 'true'
@@ -108,7 +90,7 @@ jobs:
           open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER"
           mkdir -p "$FTP_SERVER_DIR"
           put "$STAGE/webhook.php" -o "$FTP_SERVER_DIR/webhook.php"
-          put "$STAGE/config.php" -o "$FTP_SERVER_DIR/config.php"
+          put "$STAGE/setup.php" -o "$FTP_SERVER_DIR/setup.php"
           bye
           LFTP_EOF
 
@@ -119,4 +101,6 @@ jobs:
           set -euo pipefail
           body="$(curl --fail --silent --show-error --location --retry 5 --retry-delay 2 "$WEBHOOK_URL")"
           [ "$body" = 'ok' ]
-          echo "Isolated nami LINE bot endpoint is healthy."
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 2 "https://nami.rss7.net/ks-line-bot/setup.php" >/tmp/ks-line-bot-setup.html
+          grep -Fq 'KS LINE Bot 初回設定' /tmp/ks-line-bot-setup.html
+          echo "Isolated nami LINE bot endpoint and one-time setup page are healthy."
