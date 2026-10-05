@@ -131,7 +131,7 @@ footer{padding:40px 24px;background:var(--ink-deep);text-align:center}footer .lo
 </footer>
 <script>
 const hamburger=document.getElementById('hamburger'),mobileMenu=document.getElementById('mobileMenu');if(hamburger&&mobileMenu){hamburger.addEventListener('click',()=>{hamburger.classList.toggle('active');mobileMenu.classList.toggle('open');hamburger.setAttribute('aria-expanded',mobileMenu.classList.contains('open')?'true':'false')})}
-fetch('https://kansai.rss7.net/line-bot/member_counts.php',{cache:'no-store'})
+fetch('https://nami.rss7.net/ks-line-bot/member_counts.php',{cache:'no-store'})
 .then(r=>r.ok?r.json():Promise.reject())
 .then(d=>{
   const counts=d&&d.counts?d.counts:{};
