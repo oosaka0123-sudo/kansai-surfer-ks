@@ -210,7 +210,7 @@ jobs:
             echo "Anonymous one-person-one-vote replacement passed.\n";
           ' "$CHECK/votes.json" "$TARGET_DATE"
 
-          lftp <<LFTP_EOF
+          lftp <<LFTP_EOF || true
           set cmd:fail-exit false
           set ftp:ssl-force true
           set ftp:ssl-protect-data true
