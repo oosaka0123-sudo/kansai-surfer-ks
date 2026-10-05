@@ -1,4 +1,4 @@
-name: Test LINE group welcome bot on nami
+name: Test LINE group bot on nami
 
 on:
   workflow_dispatch:
@@ -15,60 +15,58 @@ jobs:
     runs-on: ubuntu-latest
     env:
       FTP_SERVER: ftp.lolipop.jp
-      FTP_SERVER_DIR: /nami/ks-line-bot
       WEBHOOK_URL: https://nami.rss7.net/ks-line-bot/webhook.php
+      POLL_URL: https://nami.rss7.net/ks-line-bot/weekly_poll.php
 
     steps:
       - name: Checkout branch
         uses: actions/checkout@v4
 
-      - name: Lint webhook
-        run: php -l line-bot/webhook.php
+      - name: Lint LINE bot PHP
+        run: |
+          php -l line-bot/common.php
+          php -l line-bot/webhook.php
+          php -l line-bot/weekly_poll.php
 
       - name: Check staging credentials
-        id: secrets
         shell: bash
         env:
           FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
           FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+          LINE_CHANNEL_ID: ${{ secrets.KS_LINE_BOT_CHANNEL_ID }}
+          LINE_CHANNEL_SECRET: ${{ secrets.KS_LINE_BOT_CHANNEL_SECRET }}
         run: |
           set -euo pipefail
           set +x
-          if [ -n "$FTP_USERNAME" ] && [ -n "$FTP_PASSWORD" ]; then
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-            echo "Existing nami FTP credentials are configured."
-          else
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "Nami FTP credentials are not configured; upload is intentionally skipped."
-          fi
+          test -n "$FTP_USERNAME" || { echo '::error::KS_NAMI_FTP_USER is not configured.'; exit 1; }
+          test -n "$FTP_PASSWORD" || { echo '::error::KS_NAMI_FTP_PASSWORD is not configured.'; exit 1; }
+          test -n "$LINE_CHANNEL_ID" || { echo '::error::KS_LINE_BOT_CHANNEL_ID is not configured.'; exit 1; }
+          test -n "$LINE_CHANNEL_SECRET" || { echo '::error::KS_LINE_BOT_CHANNEL_SECRET is not configured.'; exit 1; }
 
       - name: Prepare isolated staging bundle
-        if: steps.secrets.outputs.ready == 'true'
         shell: bash
+        env:
+          LINE_CHANNEL_ID: ${{ secrets.KS_LINE_BOT_CHANNEL_ID }}
+          LINE_CHANNEL_SECRET: ${{ secrets.KS_LINE_BOT_CHANNEL_SECRET }}
         run: |
           set -euo pipefail
+          set +x
           STAGE="$RUNNER_TEMP/ks-line-bot"
           rm -rf "$STAGE"
           mkdir -p "$STAGE"
+          cp line-bot/common.php "$STAGE/common.php"
           cp line-bot/webhook.php "$STAGE/webhook.php"
-
+          cp line-bot/weekly_poll.php "$STAGE/weekly_poll.php"
+          php -r '$cfg=["channel_id"=>getenv("LINE_CHANNEL_ID"),"channel_secret"=>getenv("LINE_CHANNEL_SECRET")]; file_put_contents($argv[1],"<?php\nreturn ".var_export($cfg,true).";\n");' "$STAGE/config.php"
+          php -l "$STAGE/common.php"
           php -l "$STAGE/webhook.php"
+          php -l "$STAGE/weekly_poll.php"
+          php -l "$STAGE/config.php"
 
       - name: Install lftp
-        if: steps.secrets.outputs.ready == 'true'
         run: sudo apt-get update -qq && sudo apt-get install -y lftp
 
-      - name: Validate isolated target
-        if: steps.secrets.outputs.ready == 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          [ "$FTP_SERVER" = 'ftp.lolipop.jp' ]
-          [ "$FTP_SERVER_DIR" = '/nami/ks-line-bot' ]
-          [ "$WEBHOOK_URL" = 'https://nami.rss7.net/ks-line-bot/webhook.php' ]
-
       - name: Upload only LINE bot files to nami
-        if: steps.secrets.outputs.ready == 'true'
         shell: bash
         env:
           FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
@@ -86,17 +84,21 @@ jobs:
           set net:timeout 20
           set net:max-retries 3
           open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER"
-          mkdir -f "$FTP_SERVER_DIR"
-          put "$STAGE/webhook.php" -o "$FTP_SERVER_DIR/webhook.php"
-          rm -f "$FTP_SERVER_DIR/setup.php"
+          cd /nami
+          mkdir -f ks-line-bot
+          cd ks-line-bot
+          mkdir -f data
+          put "$STAGE/common.php" -o common.php
+          put "$STAGE/webhook.php" -o webhook.php
+          put "$STAGE/weekly_poll.php" -o weekly_poll.php
+          put "$STAGE/config.php" -o config.php
           bye
           LFTP_EOF
 
-      - name: Verify isolated webhook health endpoint
-        if: steps.secrets.outputs.ready == 'true'
+      - name: Verify isolated endpoints
         shell: bash
         run: |
           set -euo pipefail
-          body="$(curl --fail --silent --show-error --location --retry 5 --retry-delay 2 "$WEBHOOK_URL")"
-          [ "$body" = 'ok' ]
-          echo "Isolated nami LINE bot endpoint is healthy."
+          test "$(curl --fail --silent --show-error --location --retry 5 --retry-delay 2 "$WEBHOOK_URL")" = 'ok'
+          test "$(curl --fail --silent --show-error --location --retry 5 --retry-delay 2 "$POLL_URL")" = 'ok'
+          echo "Nami LINE bot endpoints are healthy."
