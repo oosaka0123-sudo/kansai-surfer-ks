@@ -5,15 +5,6 @@ on:
     - cron: '0 10 * * 6'
     - cron: '0 12 * * 6'
   workflow_dispatch:
-    inputs:
-      mode:
-        description: poll or summary
-        required: true
-        default: poll
-        type: choice
-        options:
-          - poll
-          - summary
 
 permissions:
   contents: read
@@ -25,35 +16,10 @@ concurrency:
 jobs:
   trigger:
     runs-on: ubuntu-latest
-    env:
-      ENDPOINT: https://kansai.rss7.net/line-bot/weekly_poll.php
-      LINE_CHANNEL_SECRET: ${{ secrets.KS_LINE_BOT_CHANNEL_SECRET }}
-      SCHEDULE_VALUE: ${{ github.event.schedule }}
-      MANUAL_MODE: ${{ inputs.mode }}
-
     steps:
-      - name: Select action
-        id: action
+      - name: Trigger time-gated LINE poll endpoint
         shell: bash
         run: |
           set -euo pipefail
-          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
-            mode="$MANUAL_MODE"
-          elif [ "$SCHEDULE_VALUE" = "0 10 * * 6" ]; then
-            mode="poll"
-          else
-            mode="summary"
-          fi
-          echo "mode=$mode" >> "$GITHUB_OUTPUT"
-
-      - name: Trigger LINE bot
-        shell: bash
-        env:
-          MODE: ${{ steps.action.outputs.mode }}
-        run: |
-          set -euo pipefail
-          set +x
-          test -n "$LINE_CHANNEL_SECRET" || { echo '::error::KS_LINE_BOT_CHANNEL_SECRET is not configured.'; exit 1; }
-          key="$(php -r 'echo hash_hmac("sha256","ks-scheduler-v1",getenv("LINE_CHANNEL_SECRET"));')"
-          response="$(curl --fail --silent --show-error --location             -H "X-KS-Scheduler-Key: $key"             "$ENDPOINT?mode=$MODE")"
+          response="$(curl --fail --silent --show-error --location             --retry 3 --retry-delay 5             'https://kansai.rss7.net/line/weekly_poll.php?mode=auto')"
           echo "$response"
