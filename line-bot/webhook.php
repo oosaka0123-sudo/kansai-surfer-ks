@@ -21,12 +21,12 @@ if (!is_file($configPath)) {
     exit;
 }
 
-/** @var array{channel_secret?:string,channel_access_token?:string} $config */
+/** @var array{channel_id?:string,channel_secret?:string} $config */
 $config = require $configPath;
+$channelId = (string)($config['channel_id'] ?? '');
 $channelSecret = (string)($config['channel_secret'] ?? '');
-$channelAccessToken = (string)($config['channel_access_token'] ?? '');
 
-if ($channelSecret === '' || $channelAccessToken === '') {
+if ($channelId === '' || $channelSecret === '') {
     http_response_code(503);
     error_log('KS LINE bot: required credentials are not configured.');
     exit;
@@ -99,12 +99,70 @@ foreach (($payload['events'] ?? []) as $event) {
         continue;
     }
 
+    $channelAccessToken = issueStatelessToken($channelId, $channelSecret);
+    if ($channelAccessToken === null) {
+        continue;
+    }
+
     replyText($channelAccessToken, $replyToken, $welcomeText);
 }
 
 http_response_code(200);
 header('Content-Type: text/plain; charset=utf-8');
 echo "ok\n";
+
+
+function issueStatelessToken(string $channelId, string $channelSecret): ?string
+{
+    $ch = curl_init('https://api.line.me/oauth2/v3/token');
+    if ($ch === false) {
+        error_log('KS LINE bot: failed to initialize token cURL.');
+        return null;
+    }
+
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_CONNECTTIMEOUT => 3,
+        CURLOPT_TIMEOUT => 8,
+        CURLOPT_HTTPHEADER => [
+            'Content-Type: application/x-www-form-urlencoded',
+        ],
+        CURLOPT_POSTFIELDS => http_build_query([
+            'grant_type' => 'client_credentials',
+            'client_id' => $channelId,
+            'client_secret' => $channelSecret,
+        ], '', '&', PHP_QUERY_RFC3986),
+    ]);
+
+    $response = curl_exec($ch);
+    $httpCode = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    $curlError = curl_error($ch);
+    curl_close($ch);
+
+    if ($response === false || $httpCode < 200 || $httpCode >= 300) {
+        error_log(
+            'KS LINE bot: token issue failed. http=' . $httpCode .
+            ($curlError !== '' ? ' curl_error=' . $curlError : '')
+        );
+        return null;
+    }
+
+    try {
+        $decoded = json_decode($response, true, 512, JSON_THROW_ON_ERROR);
+    } catch (JsonException $e) {
+        error_log('KS LINE bot: invalid token response JSON.');
+        return null;
+    }
+
+    $accessToken = (string)($decoded['access_token'] ?? '');
+    if ($accessToken === '') {
+        error_log('KS LINE bot: token response did not contain access_token.');
+        return null;
+    }
+
+    return $accessToken;
+}
 
 function replyText(string $channelAccessToken, string $replyToken, string $text): void
 {
