@@ -27,47 +27,65 @@ jobs:
           php -l line-bot/common.php
           php -l line-bot/webhook.php
           php -l line-bot/weekly_poll.php
+          php -l .github/scripts/extract-line-runtime-config.php
 
-      - name: Check staging credentials
+      - name: Check FTP credentials
         shell: bash
         env:
           FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
           FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
-          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.KS_LINE_BOT_CHANNEL_ACCESS_TOKEN }}
-          LINE_CHANNEL_SECRET: ${{ secrets.KS_LINE_BOT_CHANNEL_SECRET }}
         run: |
           set -euo pipefail
           set +x
           test -n "$FTP_USERNAME" || { echo '::error::KS_NAMI_FTP_USER is not configured.'; exit 1; }
           test -n "$FTP_PASSWORD" || { echo '::error::KS_NAMI_FTP_PASSWORD is not configured.'; exit 1; }
-          test -n "$LINE_CHANNEL_ACCESS_TOKEN" || { echo '::error::KS_LINE_BOT_CHANNEL_ACCESS_TOKEN is not configured.'; exit 1; }
-          test -n "$LINE_CHANNEL_SECRET" || { echo '::error::KS_LINE_BOT_CHANNEL_SECRET is not configured.'; exit 1; }
 
-      - name: Prepare isolated staging bundle
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y lftp
+
+      - name: Prepare staging bundle from current production credentials
         shell: bash
         env:
-          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.KS_LINE_BOT_CHANNEL_ACCESS_TOKEN }}
-          LINE_CHANNEL_SECRET: ${{ secrets.KS_LINE_BOT_CHANNEL_SECRET }}
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
         run: |
           set -euo pipefail
           set +x
           STAGE="$RUNNER_TEMP/ks-line-bot"
           rm -rf "$STAGE"
           mkdir -p "$STAGE"
+
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 20
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER"
+          get /kansai/line/webhook.php -o "$STAGE/current-webhook.php"
+          bye
+          LFTP_EOF
+
           cp line-bot/common.php "$STAGE/common.php"
           cp line-bot/webhook.php "$STAGE/webhook.php"
           cp line-bot/weekly_poll.php "$STAGE/weekly_poll.php"
           cp line-bot/data/.htaccess "$STAGE/data.htaccess"
-          php -r '$cfg=["channel_access_token"=>getenv("LINE_CHANNEL_ACCESS_TOKEN"),"channel_secret"=>getenv("LINE_CHANNEL_SECRET")]; file_put_contents($argv[1],"<?php\nreturn ".var_export($cfg,true).";\n");' "$STAGE/config.php"
+
+          php .github/scripts/extract-line-runtime-config.php             "$STAGE/current-webhook.php"             "$STAGE/config.php"
+
           php -l "$STAGE/common.php"
           php -l "$STAGE/webhook.php"
           php -l "$STAGE/weekly_poll.php"
           php -l "$STAGE/config.php"
 
-      - name: Install lftp
-        run: sudo apt-get update -qq && sudo apt-get install -y lftp
+          ACCESS_TOKEN="$(php -r '$c=require $argv[1]; echo $c["channel_access_token"];' "$STAGE/config.php")"
+          test -n "$ACCESS_TOKEN"
+          curl --fail --silent --show-error             -H "Authorization: Bearer $ACCESS_TOKEN"             https://api.line.me/v2/bot/info >/dev/null
+          unset ACCESS_TOKEN
+          echo "Existing LINE credentials validated without printing them."
 
-      - name: Upload only LINE bot files to nami
+      - name: Upload isolated staging bot
         shell: bash
         env:
           FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
@@ -101,6 +119,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(curl --fail --silent --show-error --location --retry 5 --retry-delay 2 "$WEBHOOK_URL")" = 'ok'
+          test "$(curl --fail --silent --show-error --location --retry 5 --retry-delay 2 "$WEBHOOK_URL")" = 'LINE webhook.php OK'
           test "$(curl --fail --silent --show-error --location --retry 5 --retry-delay 2 "$POLL_URL")" = 'ok'
-          echo "Nami LINE bot endpoints are healthy."
+          auto="$(curl --fail --silent --show-error --location "$POLL_URL?mode=auto")"
+          echo "$auto" | grep -q '"action":"none"'
+          echo "Nami LINE bot staging passed health and safe scheduler checks."
