@@ -375,7 +375,8 @@ function handleCronRequest(): void
 
     if ($channelId === '' || $channelSecret === '') {
         http_response_code(503);
-        echo "line credentials missing\n";
+        $keys = is_array($config) ? implode(',', array_map('strval', array_keys($config))) : 'not-array';
+        echo "line credentials missing; keys=" . $keys . "\n";
         return;
     }
 
