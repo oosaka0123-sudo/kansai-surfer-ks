@@ -160,9 +160,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          body="$(curl --fail --silent --show-error --location --retry 5 --retry-delay 2 "$WEBHOOK_URL")"
-          relay="$(curl --fail --silent --show-error --location --retry 5 --retry-delay 2 "$RELAY_URL")"
-          member_counts="$(curl --fail --silent --show-error --location --retry 5 --retry-delay 2 "$MEMBER_COUNTS_URL")"
+          body="$(curl --fail --silent --show-error --location --retry 5 --retry-delay 2 "$WEBHOOK_URL?v=$GITHUB_RUN_ID")"
+          relay="$(curl --fail --silent --show-error --location --retry 5 --retry-delay 2 "$RELAY_URL?v=$GITHUB_RUN_ID")"
+          member_counts="$(curl --fail --silent --show-error --location --retry 5 --retry-delay 2 "$MEMBER_COUNTS_URL?v=$GITHUB_RUN_ID")"
           [ "$body" = 'ok' ]
           [ "$relay" = 'ok' ]
           echo "$member_counts" | grep -q '"ok":true'
