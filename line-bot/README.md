@@ -6,7 +6,7 @@ Purpose:
 - receive LINE Messaging API webhooks;
 - verify the raw request with HMAC-SHA256;
 - react only to `memberJoined` events from a normal LINE group;
-- reply once with the fixed rules / self-introduction guidance.
+- issue a short-lived stateless channel access token only when needed, then reply once with the fixed rules / self-introduction guidance.
 
 ## Safety
 
@@ -24,8 +24,8 @@ Existing:
 - `KS_NAMI_FTP_PASSWORD`
 
 New:
+- `KS_LINE_BOT_CHANNEL_ID`
 - `KS_LINE_BOT_CHANNEL_SECRET`
-- `KS_LINE_BOT_CHANNEL_ACCESS_TOKEN`
 
 After staging is verified, the intended test webhook URL is:
 
