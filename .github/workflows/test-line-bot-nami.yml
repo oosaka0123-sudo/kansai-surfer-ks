@@ -51,10 +51,8 @@ jobs:
           rm -rf "$STAGE"
           mkdir -p "$STAGE"
           cp line-bot/webhook.php "$STAGE/webhook.php"
-          cp line-bot/setup.php "$STAGE/setup.php"
 
           php -l "$STAGE/webhook.php"
-          php -l "$STAGE/setup.php"
 
       - name: Install lftp
         if: steps.secrets.outputs.ready == 'true'
@@ -90,7 +88,7 @@ jobs:
           open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER"
           mkdir -f "$FTP_SERVER_DIR"
           put "$STAGE/webhook.php" -o "$FTP_SERVER_DIR/webhook.php"
-          put "$STAGE/setup.php" -o "$FTP_SERVER_DIR/setup.php"
+          rm -f "$FTP_SERVER_DIR/setup.php"
           bye
           LFTP_EOF
 
@@ -101,6 +99,4 @@ jobs:
           set -euo pipefail
           body="$(curl --fail --silent --show-error --location --retry 5 --retry-delay 2 "$WEBHOOK_URL")"
           [ "$body" = 'ok' ]
-          curl --fail --silent --show-error --location --retry 5 --retry-delay 2 "https://nami.rss7.net/ks-line-bot/setup.php" >/tmp/ks-line-bot-setup.html
-          grep -Fq 'KS LINE Bot 初回設定' /tmp/ks-line-bot-setup.html
-          echo "Isolated nami LINE bot endpoint and one-time setup page are healthy."
+          echo "Isolated nami LINE bot endpoint is healthy."
