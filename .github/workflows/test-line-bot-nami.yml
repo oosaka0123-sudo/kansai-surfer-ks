@@ -113,6 +113,32 @@ jobs:
           echo "cron_key.php HTTP $cron_code"
           echo "state.php HTTP $state_code"
 
+      - name: Inspect private LINE state summary
+        if: steps.secrets.outputs.ready == 'true'
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          LOCAL_STATE="$RUNNER_TEMP/ks-line-state.php"
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER"
+          get "$FTP_SERVER_DIR/state.php" -o "$LOCAL_STATE"
+          bye
+          LFTP_EOF
+          STATE_FILE="$LOCAL_STATE" php -r '
+            $s = require getenv("STATE_FILE");
+            $admin = !empty($s["admin_user_id"]);
+            $members = isset($s["members"]) && is_array($s["members"]) ? count($s["members"]) : 0;
+            echo "admin_registered=" . ($admin ? "yes" : "no") . PHP_EOL;
+            echo "observed_members=" . $members . PHP_EOL;
+          '
+
       - name: Verify isolated webhook health endpoint
         if: steps.secrets.outputs.ready == 'true'
         shell: bash
