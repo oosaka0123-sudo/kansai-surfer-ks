@@ -71,3 +71,24 @@ jobs:
           LFTP
 
           echo "nami FTP connection and write/delete probe succeeded."
+
+      - name: Probe existing production LINE directory read-only
+        shell: bash
+        env:
+          DEPLOY_USER: ${{ secrets.KS_NAMI_FTP_USER }}
+          DEPLOY_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          lftp <<LFTP
+          set cmd:fail-exit yes
+          set net:max-retries 2
+          set net:timeout 20
+          set ssl:verify-certificate yes
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          open -u "$DEPLOY_USER","$DEPLOY_PASSWORD" "ftp://$DEPLOY_HOST:$DEPLOY_PORT"
+          cd /kansai/line
+          cls -1
+          bye
+          LFTP
