@@ -18,6 +18,7 @@ jobs:
       FTP_SERVER_DIR: /nami/ks-line-bot
       WEBHOOK_URL: https://nami.rss7.net/ks-line-bot/webhook.php
       RELAY_URL: https://nami.rss7.net/ks-line-bot/relay.php
+      MEMBER_COUNTS_URL: https://nami.rss7.net/ks-line-bot/member_counts.php
 
     steps:
       - name: Checkout branch
@@ -28,6 +29,7 @@ jobs:
           php -l line-bot/webhook.php
           php -l line-bot/relay.php
           php -l line-bot/activate_relay.php
+          php -l line-bot/member_counts.php
 
       - name: Check staging credentials
         id: secrets
@@ -60,6 +62,7 @@ jobs:
           cp line-bot/webhook.php "$STAGE/webhook.php"
           cp line-bot/relay.php "$STAGE/relay.php"
           cp line-bot/activate_relay.php "$STAGE/activate_relay.php"
+          cp line-bot/member_counts.php "$STAGE/member_counts.php"
 
           CRON_TOKEN="$(printf '%s' "$FTP_PASSWORD" | sha256sum | awk '{print $1}')"
           CRON_TOKEN_HASH="$(printf '%s' "$CRON_TOKEN" | sha256sum | awk '{print $1}')"
@@ -68,6 +71,7 @@ jobs:
           php -l "$STAGE/webhook.php"
           php -l "$STAGE/relay.php"
           php -l "$STAGE/activate_relay.php"
+          php -l "$STAGE/member_counts.php"
           php -l "$STAGE/cron_key.php"
 
       - name: Install lftp
@@ -107,6 +111,7 @@ jobs:
           put "$STAGE/webhook.php" -o "$FTP_SERVER_DIR/webhook.php"
           put "$STAGE/relay.php" -o "$FTP_SERVER_DIR/relay.php"
           put "$STAGE/activate_relay.php" -o "$FTP_SERVER_DIR/activate_relay.php"
+          put "$STAGE/member_counts.php" -o "$FTP_SERVER_DIR/member_counts.php"
           put "$STAGE/cron_key.php" -o "$FTP_SERVER_DIR/cron_key.php"
           rm -f "$FTP_SERVER_DIR/setup.php"
           bye
@@ -157,8 +162,11 @@ jobs:
           set -euo pipefail
           body="$(curl --fail --silent --show-error --location --retry 5 --retry-delay 2 "$WEBHOOK_URL")"
           relay="$(curl --fail --silent --show-error --location --retry 5 --retry-delay 2 "$RELAY_URL")"
+          member_counts="$(curl --fail --silent --show-error --location --retry 5 --retry-delay 2 "$MEMBER_COUNTS_URL")"
           [ "$body" = 'ok' ]
           [ "$relay" = 'ok' ]
+          echo "$member_counts" | grep -q '"ok":true'
+          echo "$member_counts" | grep -q '"counts"'
           echo "Isolated nami LINE bot endpoints are healthy."
 
       - name: Verify isolated relay self-test
