@@ -1,0 +1,29 @@
+name: Daily LINE self-intro reminder
+
+on:
+  schedule:
+    - cron: '17 9 * * *'
+      timezone: 'Asia/Tokyo'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check-line-intro-age:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger isolated nami reminder check
+        shell: bash
+        env:
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+          WEBHOOK_URL: https://nami.rss7.net/ks-line-bot/webhook.php?cron=1
+        run: |
+          set -euo pipefail
+          set +x
+          test -n "$FTP_PASSWORD"
+          CRON_TOKEN="$(printf '%s' "$FTP_PASSWORD" | sha256sum | awk '{print $1}')"
+          curl --fail --silent --show-error --retry 3 \
+            --request POST \
+            --header "X-KS-Cron-Token: $CRON_TOKEN" \
+            "$WEBHOOK_URL"
