@@ -1,0 +1,34 @@
+name: Activate LINE relay safely
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  activate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      ACTIVATE_URL: https://nami.rss7.net/ks-line-bot/activate_relay.php
+      RELAY_URL: https://nami.rss7.net/ks-line-bot/relay.php
+
+    steps:
+      - name: Check relay health
+        run: |
+          set -euo pipefail
+          test "$(curl --fail --silent --show-error --location "$RELAY_URL?v=$GITHUB_RUN_ID")" = 'ok'
+
+      - name: Activate relay
+        shell: bash
+        env:
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          test -n "$FTP_PASSWORD"
+          CRON_TOKEN="$(printf '%s' "$FTP_PASSWORD" | sha256sum | awk '{print $1}')"
+          response="$(curl --fail --silent --show-error --http1.1             --request POST             --data-urlencode "cron_token=$CRON_TOKEN"             "$ACTIVATE_URL")"
+          test "$response" = 'ok'
+          echo "LINE relay activated and endpoint verified."
