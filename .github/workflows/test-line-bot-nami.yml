@@ -17,6 +17,7 @@ jobs:
       FTP_SERVER: ftp.lolipop.jp
       WEBHOOK_URL: https://nami.rss7.net/ks-line-bot/webhook.php
       POLL_URL: https://nami.rss7.net/ks-line-bot/weekly_poll.php
+      COUNT_URL: https://nami.rss7.net/ks-line-bot/member_counts.php
 
     steps:
       - name: Checkout branch
@@ -27,6 +28,7 @@ jobs:
           php -l line-bot/common.php
           php -l line-bot/webhook.php
           php -l line-bot/weekly_poll.php
+          php -l line-bot/member_counts.php
           php -l .github/scripts/extract-line-runtime-config.php
 
       - name: Check FTP credentials
@@ -70,6 +72,7 @@ jobs:
           cp line-bot/common.php "$STAGE/common.php"
           cp line-bot/webhook.php "$STAGE/webhook.php"
           cp line-bot/weekly_poll.php "$STAGE/weekly_poll.php"
+          cp line-bot/member_counts.php "$STAGE/member_counts.php"
           cp line-bot/data/.htaccess "$STAGE/data.htaccess"
 
           php .github/scripts/extract-line-runtime-config.php             "$STAGE/current-webhook.php"             "$STAGE/config.php"
@@ -77,6 +80,7 @@ jobs:
           php -l "$STAGE/common.php"
           php -l "$STAGE/webhook.php"
           php -l "$STAGE/weekly_poll.php"
+          php -l "$STAGE/member_counts.php"
           php -l "$STAGE/config.php"
 
           ACCESS_TOKEN="$(php -r '$c=require $argv[1]; echo $c["channel_access_token"];' "$STAGE/config.php")"
@@ -110,6 +114,7 @@ jobs:
           put "$STAGE/common.php" -o common.php
           put "$STAGE/webhook.php" -o webhook.php
           put "$STAGE/weekly_poll.php" -o weekly_poll.php
+          put "$STAGE/member_counts.php" -o member_counts.php
           put "$STAGE/config.php" -o config.php
           put "$STAGE/data.htaccess" -o data/.htaccess
           bye
@@ -134,10 +139,12 @@ jobs:
           open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER"
           get /nami/ks-line-bot/webhook.php -o "$CHECK/webhook.php"
           get /nami/ks-line-bot/weekly_poll.php -o "$CHECK/weekly_poll.php"
+          get /nami/ks-line-bot/member_counts.php -o "$CHECK/member_counts.php"
           bye
           LFTP_EOF
           cmp line-bot/webhook.php "$CHECK/webhook.php"
           cmp line-bot/weekly_poll.php "$CHECK/weekly_poll.php"
+          cmp line-bot/member_counts.php "$CHECK/member_counts.php"
           echo "FTP upload contents match the branch exactly."
 
       - name: Verify isolated endpoints
@@ -150,6 +157,9 @@ jobs:
           echo "webhook_health=$webhook"
           echo "poll_health=$poll"
           echo "$auto" | grep -q '"action":"none"'
+          counts="$(curl --fail --silent --show-error --location "$COUNT_URL")"
+          echo "$counts" | grep -q '"ok":true'
+          echo "$counts" | grep -q '"counts"'
           test "$poll" = 'ok'
           echo "Nami scheduler endpoint is healthy; webhook response is recorded for path diagnosis."
 
