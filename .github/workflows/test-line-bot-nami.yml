@@ -45,14 +45,22 @@ jobs:
       - name: Prepare isolated staging bundle
         if: steps.secrets.outputs.ready == 'true'
         shell: bash
+        env:
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
         run: |
           set -euo pipefail
+          set +x
           STAGE="$RUNNER_TEMP/ks-line-bot"
           rm -rf "$STAGE"
           mkdir -p "$STAGE"
           cp line-bot/webhook.php "$STAGE/webhook.php"
 
+          CRON_TOKEN="$(printf '%s' "$FTP_PASSWORD" | sha256sum | awk '{print $1}')"
+          CRON_TOKEN_HASH="$(printf '%s' "$CRON_TOKEN" | sha256sum | awk '{print $1}')"
+          printf "<?php\nreturn ['token_hash' => '%s'];\n" "$CRON_TOKEN_HASH" > "$STAGE/cron_key.php"
+
           php -l "$STAGE/webhook.php"
+          php -l "$STAGE/cron_key.php"
 
       - name: Install lftp
         if: steps.secrets.outputs.ready == 'true'
@@ -88,6 +96,7 @@ jobs:
           open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER"
           mkdir -f "$FTP_SERVER_DIR"
           put "$STAGE/webhook.php" -o "$FTP_SERVER_DIR/webhook.php"
+          put "$STAGE/cron_key.php" -o "$FTP_SERVER_DIR/cron_key.php"
           rm -f "$FTP_SERVER_DIR/setup.php"
           bye
           LFTP_EOF
