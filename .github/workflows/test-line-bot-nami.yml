@@ -17,13 +17,16 @@ jobs:
       FTP_SERVER: ftp.lolipop.jp
       FTP_SERVER_DIR: /nami/ks-line-bot
       WEBHOOK_URL: https://nami.rss7.net/ks-line-bot/webhook.php
+      RELAY_URL: https://nami.rss7.net/ks-line-bot/relay.php
 
     steps:
       - name: Checkout branch
         uses: actions/checkout@v4
 
       - name: Lint webhook
-        run: php -l line-bot/webhook.php
+        run: |
+          php -l line-bot/webhook.php
+          php -l line-bot/relay.php
 
       - name: Check staging credentials
         id: secrets
@@ -54,12 +57,14 @@ jobs:
           rm -rf "$STAGE"
           mkdir -p "$STAGE"
           cp line-bot/webhook.php "$STAGE/webhook.php"
+          cp line-bot/relay.php "$STAGE/relay.php"
 
           CRON_TOKEN="$(printf '%s' "$FTP_PASSWORD" | sha256sum | awk '{print $1}')"
           CRON_TOKEN_HASH="$(printf '%s' "$CRON_TOKEN" | sha256sum | awk '{print $1}')"
           printf "<?php\nreturn ['token_hash' => '%s'];\n" "$CRON_TOKEN_HASH" > "$STAGE/cron_key.php"
 
           php -l "$STAGE/webhook.php"
+          php -l "$STAGE/relay.php"
           php -l "$STAGE/cron_key.php"
 
       - name: Install lftp
@@ -74,6 +79,7 @@ jobs:
           [ "$FTP_SERVER" = 'ftp.lolipop.jp' ]
           [ "$FTP_SERVER_DIR" = '/nami/ks-line-bot' ]
           [ "$WEBHOOK_URL" = 'https://nami.rss7.net/ks-line-bot/webhook.php' ]
+          [ "$RELAY_URL" = 'https://nami.rss7.net/ks-line-bot/relay.php' ]
 
       - name: Upload only LINE bot files to nami
         if: steps.secrets.outputs.ready == 'true'
@@ -96,6 +102,7 @@ jobs:
           open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER"
           mkdir -f "$FTP_SERVER_DIR"
           put "$STAGE/webhook.php" -o "$FTP_SERVER_DIR/webhook.php"
+          put "$STAGE/relay.php" -o "$FTP_SERVER_DIR/relay.php"
           put "$STAGE/cron_key.php" -o "$FTP_SERVER_DIR/cron_key.php"
           rm -f "$FTP_SERVER_DIR/setup.php"
           bye
@@ -145,5 +152,21 @@ jobs:
         run: |
           set -euo pipefail
           body="$(curl --fail --silent --show-error --location --retry 5 --retry-delay 2 "$WEBHOOK_URL")"
+          relay="$(curl --fail --silent --show-error --location --retry 5 --retry-delay 2 "$RELAY_URL")"
           [ "$body" = 'ok' ]
-          echo "Isolated nami LINE bot endpoint is healthy."
+          [ "$relay" = 'ok' ]
+          echo "Isolated nami LINE bot endpoints are healthy."
+
+      - name: Verify isolated relay self-test
+        if: steps.secrets.outputs.ready == 'true'
+        shell: bash
+        env:
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          CRON_TOKEN="$(printf '%s' "$FTP_PASSWORD" | sha256sum | awk '{print $1}')"
+          RESPONSE="$(curl --fail --silent --show-error --http1.1             --request POST             --data-urlencode "cron_token=$CRON_TOKEN"             "$RELAY_URL?selftest=1")"
+          echo "$RESPONSE"
+          echo "$RESPONSE" | grep -q '"ok":true'
+          echo "LINE relay forwards safely to both current production and self-intro webhook."
