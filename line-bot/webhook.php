@@ -19,6 +19,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
     exit;
 }
 
+if (isset($_GET['cron'])) {
+    handleCronRequest();
+    exit;
+}
+
 $configPath = __DIR__ . '/config.php';
 if (!is_file($configPath)) {
     http_response_code(503);
@@ -34,11 +39,6 @@ $channelSecret = (string)($config['channel_secret'] ?? '');
 if ($channelId === '' || $channelSecret === '') {
     http_response_code(503);
     error_log('KS LINE bot: required credentials are not configured.');
-    exit;
-}
-
-if (isset($_GET['cron'])) {
-    handleCronRequest($channelId, $channelSecret);
     exit;
 }
 
@@ -342,7 +342,7 @@ function handleDirectCommand(
     );
 }
 
-function handleCronRequest(string $channelId, string $channelSecret): void
+function handleCronRequest(): void
 {
     $cronKeyPath = __DIR__ . '/cron_key.php';
     if (!is_file($cronKeyPath)) {
@@ -362,10 +362,31 @@ function handleCronRequest(string $channelId, string $channelSecret): void
         return;
     }
 
-    $accessToken = issueStatelessToken($channelId, $channelSecret);
-    if ($accessToken !== null) {
-        maybeNotifyAdmin($accessToken, true);
+    $configPath = __DIR__ . '/config.php';
+    if (!is_file($configPath)) {
+        http_response_code(503);
+        echo "line config missing\n";
+        return;
     }
+
+    $config = require $configPath;
+    $channelId = is_array($config) ? (string)($config['channel_id'] ?? '') : '';
+    $channelSecret = is_array($config) ? (string)($config['channel_secret'] ?? '') : '';
+
+    if ($channelId === '' || $channelSecret === '') {
+        http_response_code(503);
+        echo "line credentials missing\n";
+        return;
+    }
+
+    $accessToken = issueStatelessToken($channelId, $channelSecret);
+    if ($accessToken === null) {
+        http_response_code(503);
+        echo "line token issue failed\n";
+        return;
+    }
+
+    maybeNotifyAdmin($accessToken, true);
 
     [$lock, $state] = lockAndLoadState();
     $state['meta']['last_cron_at'] = nowIso();
