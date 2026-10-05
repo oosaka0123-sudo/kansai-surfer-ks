@@ -101,6 +101,16 @@ jobs:
           bye
           LFTP_EOF
 
+      - name: Check isolated runtime files by HTTP status
+        if: steps.secrets.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          config_code="$(curl --silent --output /dev/null --write-out '%{http_code}' https://nami.rss7.net/ks-line-bot/config.php)"
+          cron_code="$(curl --silent --output /dev/null --write-out '%{http_code}' https://nami.rss7.net/ks-line-bot/cron_key.php)"
+          echo "config.php HTTP $config_code"
+          echo "cron_key.php HTTP $cron_code"
+
       - name: Verify isolated webhook health endpoint
         if: steps.secrets.outputs.ready == 'true'
         shell: bash
