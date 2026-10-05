@@ -22,13 +22,19 @@ function ksConfig(): array
 
     $channelId = trim((string)($loaded['channel_id'] ?? ''));
     $channelSecret = trim((string)($loaded['channel_secret'] ?? ''));
-    if ($channelId === '' || $channelSecret === '') {
-        throw new RuntimeException('LINE credentials are incomplete');
+    $channelAccessToken = trim((string)($loaded['channel_access_token'] ?? ''));
+
+    if ($channelSecret === '') {
+        throw new RuntimeException('LINE channel secret is missing');
+    }
+    if ($channelAccessToken === '' && $channelId === '') {
+        throw new RuntimeException('LINE access token or channel ID is required');
     }
 
     $config = [
         'channel_id' => $channelId,
         'channel_secret' => $channelSecret,
+        'channel_access_token' => $channelAccessToken,
     ];
     return $config;
 }
@@ -225,6 +231,11 @@ function ksMarkSent(string $groupId, string $date, string $mode): void
 function ksIssueStatelessToken(): ?string
 {
     $config = ksConfig();
+
+    if ($config['channel_access_token'] !== '') {
+        return $config['channel_access_token'];
+    }
+
     $ch = curl_init('https://api.line.me/oauth2/v3/token');
     if ($ch === false) {
         return null;
