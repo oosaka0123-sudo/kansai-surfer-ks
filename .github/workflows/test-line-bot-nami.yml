@@ -33,20 +33,20 @@ jobs:
         env:
           FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
           FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
-          LINE_CHANNEL_ID: ${{ secrets.KS_LINE_BOT_CHANNEL_ID }}
+          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.KS_LINE_BOT_CHANNEL_ACCESS_TOKEN }}
           LINE_CHANNEL_SECRET: ${{ secrets.KS_LINE_BOT_CHANNEL_SECRET }}
         run: |
           set -euo pipefail
           set +x
           test -n "$FTP_USERNAME" || { echo '::error::KS_NAMI_FTP_USER is not configured.'; exit 1; }
           test -n "$FTP_PASSWORD" || { echo '::error::KS_NAMI_FTP_PASSWORD is not configured.'; exit 1; }
-          test -n "$LINE_CHANNEL_ID" || { echo '::error::KS_LINE_BOT_CHANNEL_ID is not configured.'; exit 1; }
+          test -n "$LINE_CHANNEL_ACCESS_TOKEN" || { echo '::error::KS_LINE_BOT_CHANNEL_ACCESS_TOKEN is not configured.'; exit 1; }
           test -n "$LINE_CHANNEL_SECRET" || { echo '::error::KS_LINE_BOT_CHANNEL_SECRET is not configured.'; exit 1; }
 
       - name: Prepare isolated staging bundle
         shell: bash
         env:
-          LINE_CHANNEL_ID: ${{ secrets.KS_LINE_BOT_CHANNEL_ID }}
+          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.KS_LINE_BOT_CHANNEL_ACCESS_TOKEN }}
           LINE_CHANNEL_SECRET: ${{ secrets.KS_LINE_BOT_CHANNEL_SECRET }}
         run: |
           set -euo pipefail
@@ -58,7 +58,7 @@ jobs:
           cp line-bot/webhook.php "$STAGE/webhook.php"
           cp line-bot/weekly_poll.php "$STAGE/weekly_poll.php"
           cp line-bot/data/.htaccess "$STAGE/data.htaccess"
-          php -r '$cfg=["channel_id"=>getenv("LINE_CHANNEL_ID"),"channel_secret"=>getenv("LINE_CHANNEL_SECRET")]; file_put_contents($argv[1],"<?php\nreturn ".var_export($cfg,true).";\n");' "$STAGE/config.php"
+          php -r '$cfg=["channel_access_token"=>getenv("LINE_CHANNEL_ACCESS_TOKEN"),"channel_secret"=>getenv("LINE_CHANNEL_SECRET")]; file_put_contents($argv[1],"<?php\nreturn ".var_export($cfg,true).";\n");' "$STAGE/config.php"
           php -l "$STAGE/common.php"
           php -l "$STAGE/webhook.php"
           php -l "$STAGE/weekly_poll.php"
