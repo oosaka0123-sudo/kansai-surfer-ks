@@ -88,7 +88,7 @@ jobs:
           set net:timeout 20
           set net:max-retries 3
           open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER"
-          mkdir -p "$FTP_SERVER_DIR"
+          mkdir -f "$FTP_SERVER_DIR"
           put "$STAGE/webhook.php" -o "$FTP_SERVER_DIR/webhook.php"
           put "$STAGE/setup.php" -o "$FTP_SERVER_DIR/setup.php"
           bye
