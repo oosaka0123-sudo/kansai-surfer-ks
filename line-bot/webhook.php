@@ -399,6 +399,18 @@ function handleCronRequest(): void
         return;
     }
 
+    $webhookEndpoint = getLineWebhookEndpoint($accessToken);
+    if ($webhookEndpoint === null) {
+        http_response_code(503);
+        echo "webhook endpoint unavailable\n";
+        return;
+    }
+    if ($webhookEndpoint !== 'https://nami.rss7.net/ks-line-bot/webhook.php') {
+        http_response_code(503);
+        echo "wrong webhook endpoint=" . $webhookEndpoint . "\n";
+        return;
+    }
+
     maybeNotifyAdmin($accessToken, true);
 
     [$lock, $state] = lockAndLoadState();
@@ -866,6 +878,39 @@ function getGroupMemberProfile(
 
     $decoded = json_decode($response, true);
     return is_array($decoded) ? $decoded : [];
+}
+
+function getLineWebhookEndpoint(string $accessToken): ?string
+{
+    $ch = curl_init('https://api.line.me/v2/bot/channel/webhook/endpoint');
+    if ($ch === false) {
+        return null;
+    }
+
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_CONNECTTIMEOUT => 3,
+        CURLOPT_TIMEOUT => 8,
+        CURLOPT_HTTPHEADER => [
+            'Authorization: Bearer ' . $accessToken,
+        ],
+    ]);
+
+    $response = curl_exec($ch);
+    $httpCode = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    curl_close($ch);
+
+    if ($response === false || $httpCode < 200 || $httpCode >= 300) {
+        return null;
+    }
+
+    $decoded = json_decode($response, true);
+    if (!is_array($decoded)) {
+        return null;
+    }
+
+    $endpoint = trim((string)($decoded['endpoint'] ?? ''));
+    return $endpoint !== '' ? $endpoint : null;
 }
 
 function validateLineAccessToken(string $accessToken): bool
