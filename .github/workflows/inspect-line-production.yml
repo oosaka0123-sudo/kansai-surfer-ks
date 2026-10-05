@@ -1,0 +1,42 @@
+name: Inspect production LINE webhook structure
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y lftp
+
+      - name: Download current production webhook privately
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          test -n "$FTP_USERNAME"
+          test -n "$FTP_PASSWORD"
+          TARGET="$RUNNER_TEMP/current-line-webhook.php"
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          get /kansai/line/webhook.php -o "$TARGET"
+          bye
+          LFTP_EOF
+          php -l "$TARGET"
+          echo "sha256=$(sha256sum "$TARGET" | awk '{print $1}')"
+          echo "lines=$(wc -l < "$TARGET")"
+          echo '--- safe structural matches ---'
+          grep -nE 'memberJoined|memberLeft|postback|replyToken|message/reply|message/push|自己紹介|ノート|welcome|Welcome|groupId|sourceType|eventType' "$TARGET" \
+            | grep -vE 'channelSecret|channel_secret|accessToken|access_token|Authorization:' \
+            | head -n 250 || true
