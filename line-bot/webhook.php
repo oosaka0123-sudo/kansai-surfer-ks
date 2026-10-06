@@ -211,6 +211,22 @@ function handleLineEvent(array $event, ?string $accessToken): void
     }
 }
 
+function getAdminSetupCodeHash(): string
+{
+    $path = __DIR__ . '/admin_setup.php';
+    if (is_file($path)) {
+        $value = require $path;
+        $hash = is_array($value)
+            ? strtolower(trim((string)($value['code_hash'] ?? '')))
+            : '';
+        if (preg_match('/^[0-9a-f]{64}$/', $hash) === 1) {
+            return $hash;
+        }
+    }
+
+    return KS_ADMIN_SETUP_CODE_HASH;
+}
+
 function handleDirectCommand(
     string $userId,
     string $text,
@@ -223,7 +239,8 @@ function handleDirectCommand(
 
     if (preg_match('/^管理者登録\s+([0-9A-Fa-f]+)$/u', $text, $matches) === 1) {
         $code = strtoupper((string)$matches[1]);
-        if (!hash_equals(KS_ADMIN_SETUP_CODE_HASH, hash('sha256', $code))) {
+        $expectedAdminHash = getAdminSetupCodeHash();
+        if ($expectedAdminHash === '' || !hash_equals($expectedAdminHash, hash('sha256', $code))) {
             replyMessages($accessToken, $replyToken, ['管理者登録コードが違います。']);
             return;
         }
@@ -238,6 +255,7 @@ function handleDirectCommand(
 
         $state['admin_user_id'] = $userId;
         saveAndUnlockState($lock, $state);
+        @unlink(__DIR__ . '/admin_setup.php');
         replyMessages(
             $accessToken,
             $replyToken,

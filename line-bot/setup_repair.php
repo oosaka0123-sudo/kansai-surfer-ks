@@ -7,7 +7,6 @@ header('X-Robots-Tag: noindex, nofollow, noarchive', true);
 header('Content-Type: text/html; charset=utf-8');
 header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'");
 
-const SETUP_PASSWORD_SHA256 = 'f5d4dca94192512e1c8b8e19b42c7491b2156cd5a7f8b2e6237d8f738c4b0dfb';
 const EXPECTED_CHANNEL_ID = '2011871559';
 const EXPECTED_BASIC_ID = '@051zoffk';
 const TARGET_WEBHOOK = 'https://nami.rss7.net/ks-line-bot/webhook.php';
@@ -71,15 +70,12 @@ function lineRequest(string $method, string $url, string $token, ?array $payload
 $error = '';
 $success = false;
 $confirmedName = '';
+$adminCode = '';
 
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
-    $setupPassword = trim((string)($_POST['setup_password'] ?? ''));
     $channelSecret = trim((string)($_POST['channel_secret'] ?? ''));
 
-    if (!hash_equals(SETUP_PASSWORD_SHA256, hash('sha256', $setupPassword))) {
-        usleep(500000);
-        $error = 'セットアップコードが違います。';
-    } elseif (!preg_match('/^[A-Za-z0-9_-]{20,100}$/', $channelSecret)) {
+    if (!preg_match('/^[A-Za-z0-9_-]{20,100}$/', $channelSecret)) {
         $error = 'Channel secret の形式を確認してください。';
     } else {
         [$tokenCode, $tokenBody, $tokenErr] = postForm(
@@ -141,18 +137,32 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                     } else {
                         @chmod($configPath, 0600);
 
-                        [$testCode, , $testErr] = lineRequest(
-                            'POST',
-                            'https://api.line.me/v2/bot/channel/webhook/test',
-                            $accessToken
-                        );
-                        if ($testCode < 200 || $testCode >= 300) {
-                            error_log('KS LINE repair: webhook test http=' . $testCode . ' err=' . $testErr);
-                        }
+                        $adminCode = strtoupper(bin2hex(random_bytes(4)));
+                        $adminHash = hash('sha256', $adminCode);
+                        $adminSetupPath = __DIR__ . '/admin_setup.php';
+                        $adminSetupText =
+                            "<?php\n" .
+                            "if (!defined('KS_LINE_BOT_BOOTSTRAP')) { http_response_code(404); exit; }\n" .
+                            "return ['code_hash' => '" . $adminHash . "'];\n";
 
-                        $confirmedName = $displayName;
-                        $success = true;
-                        @unlink(__FILE__);
+                        if (file_put_contents($adminSetupPath, $adminSetupText, LOCK_EX) === false) {
+                            $error = '管理者登録コードの作成に失敗しました。';
+                        } else {
+                            @chmod($adminSetupPath, 0600);
+
+                            [$testCode, , $testErr] = lineRequest(
+                                'POST',
+                                'https://api.line.me/v2/bot/channel/webhook/test',
+                                $accessToken
+                            );
+                            if ($testCode < 200 || $testCode >= 300) {
+                                error_log('KS LINE repair: webhook test http=' . $testCode . ' err=' . $testErr);
+                            }
+
+                            $confirmedName = $displayName;
+                            $success = true;
+                            @unlink(__FILE__);
+                        }
                     }
                 }
             }
@@ -185,6 +195,8 @@ button{width:100%;margin-top:20px;padding:14px;border:0;border-radius:12px;backg
   <div class="ok">
     <?= htmlspecialchars($confirmedName, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> を確認しました。<br>
     Webhookも仲間探しBOT用に設定しました。<br><br>
+    管理者登録コード：<strong><?= htmlspecialchars($adminCode, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></strong><br>
+    LINEの1:1トークで「管理者登録 <?= htmlspecialchars($adminCode, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>」と送信してください。<br><br>
     この設定ページは自動削除されました。
   </div>
 <?php else: ?>
@@ -194,9 +206,6 @@ button{width:100%;margin-top:20px;padding:14px;border:0;border-radius:12px;backg
     <div class="error"><?= htmlspecialchars($error, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></div>
   <?php endif; ?>
   <form method="post" autocomplete="off">
-    <label>セットアップコード</label>
-    <input name="setup_password" type="password" required autocomplete="off">
-
     <label>Channel ID</label>
     <input value="<?= EXPECTED_CHANNEL_ID ?>" readonly>
 
