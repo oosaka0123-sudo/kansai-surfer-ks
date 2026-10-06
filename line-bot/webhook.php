@@ -405,7 +405,7 @@ function handleCronRequest(): void
         echo "webhook endpoint unavailable\n";
         return;
     }
-    if ($webhookEndpoint !== 'https://nami.rss7.net/ks-line-bot/relay.php') {
+    if ($webhookEndpoint !== 'https://nami.rss7.net/ks-line-bot/webhook.php') {
         http_response_code(503);
         echo "wrong webhook endpoint=" . $webhookEndpoint . "\n";
         return;
