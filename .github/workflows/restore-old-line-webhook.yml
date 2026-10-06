@@ -1,0 +1,46 @@
+name: Restore old LINE webhook
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y lftp
+
+      - name: Restore original wave-info OA webhook
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          test -n "$FTP_USERNAME"
+          test -n "$FTP_PASSWORD"
+          CFG="$RUNNER_TEMP/line-config.php"
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          get /nami/ks-line-bot/config.php -o "$CFG"
+          bye
+          LFTP_EOF
+          TOKEN="$(CFG="$CFG" php -r '$c=require getenv("CFG"); echo $c["channel_access_token"]??"";')"
+          test -n "$TOKEN"
+          INFO="$(curl --fail --silent --show-error -H "Authorization: Bearer $TOKEN" https://api.line.me/v2/bot/info)"
+          INFO="$INFO" php -r '$d=json_decode(getenv("INFO"),true); if(($d["basicId"]??"")!=="@150vqsgl"){fwrite(STDERR,"Unexpected bot identity\n"); exit(1);} echo "Confirmed old wave-info OA.\n";'
+          curl --fail --silent --show-error -X PUT \
+            -H "Authorization: Bearer $TOKEN" \
+            -H 'Content-Type: application/json' \
+            --data '{"endpoint":"https://kansai.rss7.net/line/webhook.php"}' \
+            https://api.line.me/v2/bot/channel/webhook/endpoint >/dev/null
+          CHECK="$(curl --fail --silent --show-error -H "Authorization: Bearer $TOKEN" https://api.line.me/v2/bot/channel/webhook/endpoint)"
+          unset TOKEN
+          CHECK="$CHECK" php -r '$d=json_decode(getenv("CHECK"),true); $e=$d["endpoint"]??""; if($e!=="https://kansai.rss7.net/line/webhook.php"){fwrite(STDERR,"Endpoint restore failed\n"); exit(1);} echo "Original old-OA webhook restored.\n";'
