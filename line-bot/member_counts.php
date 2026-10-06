@@ -105,7 +105,7 @@ function ksAlias(string $groupName): ?string
     $name = mb_strtolower(trim($groupName), 'UTF-8');
 
     $rules = [
-        'buddy' => ['仲間探し', '仲間', '相乗り'],
+        'buddy' => ['仲間探し', '仲間', '相乗り', '動画共有', '関西サーファーks.動画共有', '関西サーファーKS.動画共有'],
         'isonoura' => ['磯ノ浦', 'いそのうら'],
         'kounohama' => ['国府の浜', '国府浜'],
         'ikumi' => ['生見', 'いくみ'],
