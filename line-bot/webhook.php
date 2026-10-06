@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 const KS_LINE_BOT_BOOTSTRAP = true;
-const KS_ADMIN_SETUP_CODE_HASH = 'eaa5c5409f2a6692fc2b6a73d292da424a755e18ef88ae57b7017f06467608c5';
+const KS_ADMIN_SETUP_CODE_HASH = 'ee7b5c9ddb587a2bddc88a2be7aed57e2ef230c85a661dbc2d79e88a9343549e';
 const KS_NOTE_BATCH_SIZE = 20;
 const KS_NOTE_MAX_AGE_DAYS = 30;
 const KS_STATE_FILE = __DIR__ . '/state.php';
