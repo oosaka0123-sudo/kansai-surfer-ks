@@ -30,6 +30,7 @@ jobs:
           php -l line-bot/relay.php
           php -l line-bot/activate_relay.php
           php -l line-bot/member_counts.php
+          php -l line-bot/setup_repair.php
 
       - name: Check staging credentials
         id: secrets
@@ -63,6 +64,7 @@ jobs:
           cp line-bot/relay.php "$STAGE/relay.php"
           cp line-bot/activate_relay.php "$STAGE/activate_relay.php"
           cp line-bot/member_counts.php "$STAGE/member_counts.php"
+          cp line-bot/setup_repair.php "$STAGE/setup_repair.php"
 
           CRON_TOKEN="$(printf '%s' "$FTP_PASSWORD" | sha256sum | awk '{print $1}')"
           CRON_TOKEN_HASH="$(printf '%s' "$CRON_TOKEN" | sha256sum | awk '{print $1}')"
@@ -72,6 +74,7 @@ jobs:
           php -l "$STAGE/relay.php"
           php -l "$STAGE/activate_relay.php"
           php -l "$STAGE/member_counts.php"
+          php -l "$STAGE/setup_repair.php"
           php -l "$STAGE/cron_key.php"
 
       - name: Install lftp
@@ -112,6 +115,7 @@ jobs:
           put "$STAGE/relay.php" -o "$FTP_SERVER_DIR/relay.php"
           put "$STAGE/activate_relay.php" -o "$FTP_SERVER_DIR/activate_relay.php"
           put "$STAGE/member_counts.php" -o "$FTP_SERVER_DIR/member_counts.php"
+          put "$STAGE/setup_repair.php" -o "$FTP_SERVER_DIR/setup_repair.php"
           put "$STAGE/cron_key.php" -o "$FTP_SERVER_DIR/cron_key.php"
           rm -f "$FTP_SERVER_DIR/setup.php"
           bye
