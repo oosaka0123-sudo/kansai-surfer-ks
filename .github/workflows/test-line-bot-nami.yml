@@ -155,6 +155,25 @@ jobs:
             echo "observed_members=" . $members . PHP_EOL;
           '
 
+          LOCAL_CONFIG="$RUNNER_TEMP/ks-line-config.php"
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER"
+          get "$FTP_SERVER_DIR/config.php" -o "$LOCAL_CONFIG"
+          bye
+          LFTP_EOF
+          TOKEN="$(CONFIG_FILE="$LOCAL_CONFIG" php -r '$c=require getenv("CONFIG_FILE"); echo $c["channel_access_token"] ?? "";')"
+          test -n "$TOKEN"
+          INFO="$(curl --fail --silent --show-error -H "Authorization: Bearer $TOKEN" https://api.line.me/v2/bot/info)"
+          unset TOKEN
+          INFO="$INFO" php -r '
+            $d=json_decode(getenv("INFO"),true);
+            echo "bot_display_name=" . ($d["displayName"] ?? "") . PHP_EOL;
+            echo "bot_basic_id=" . ($d["basicId"] ?? "") . PHP_EOL;
+          '
+
       - name: Verify isolated webhook health endpoint
         if: steps.secrets.outputs.ready == 'true'
         shell: bash
