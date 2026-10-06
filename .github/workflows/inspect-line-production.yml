@@ -36,7 +36,7 @@ jobs:
           php -l "$TARGET"
           echo "sha256=$(sha256sum "$TARGET" | awk '{print $1}')"
           echo "lines=$(wc -l < "$TARGET")"
-          echo '--- safe structural matches ---'
-          grep -nE 'memberJoined|memberLeft|postback|replyToken|message/reply|message/push|自己紹介|ノート|welcome|Welcome|groupId|sourceType|eventType' "$TARGET" \
-            | grep -vE 'channelSecret|channel_secret|accessToken|access_token|Authorization:' \
-            | head -n 250 || true
+          echo '--- sanitized production webhook ---'
+          nl -ba "$TARGET" \
+            | sed -E '/channelSecret|channel_secret|accessToken|access_token|Authorization:|Bearer /c\[REDACTED CREDENTIAL LINE]' \
+            | head -n 220
