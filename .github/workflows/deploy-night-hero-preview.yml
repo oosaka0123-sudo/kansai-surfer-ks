@@ -1,0 +1,130 @@
+name: Deploy KS night Hero preview to nami
+
+on:
+  push:
+    branches:
+      - feat/top-full-overlay-night-hero-20261007
+    paths:
+      - 'img/ks-hero-night-silent.mp4'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ks-night-hero-nami-preview
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DEPLOY_HOST: ftp.lolipop.jp
+      DEPLOY_SCHEME: ftp
+      DEPLOY_PORT: '21'
+      DEPLOY_ROOT: /nami
+      DEPLOY_SUBDIR: ks-night-hero
+      SITE_URL: https://nami.rss7.net/ks-night-hero/
+      PROD_BASE: https://kansai.rss7.net
+
+    steps:
+      - name: Checkout night Hero branch
+        uses: actions/checkout@v4
+
+      - name: Build isolated preview bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          STAGE="$RUNNER_TEMP/ks-night-hero"
+          rm -rf "$STAGE"
+          mkdir -p "$STAGE/data" "$STAGE/blog"
+
+          for f in index.html isonoura.html nami_common.css nami_common.js manifest.json sw.js; do
+            test -f "$f" || { echo "Missing required file: $f"; exit 1; }
+            cp "$f" "$STAGE/$f"
+          done
+          test -d img || { echo 'Missing img directory'; exit 1; }
+          test -f img/ks-hero-night-silent.mp4 || { echo 'Missing night Hero video'; exit 1; }
+          cp -R img "$STAGE/img"
+
+          for spot in isonoura kounohama ikumi komatsu irago shizunami hamadutu takahama hakuto; do
+            curl --fail --silent --show-error --location --retry 3 --retry-delay 2 \
+              "$PROD_BASE/data/spot_${spot}.json" -o "$STAGE/data/spot_${spot}.json"
+          done
+          curl --fail --silent --show-error --location --retry 3 --retry-delay 2 \
+            "$PROD_BASE/data/line_posts.json" -o "$STAGE/data/line_posts.json" || true
+          curl --fail --silent --show-error --location --retry 3 --retry-delay 2 \
+            "$PROD_BASE/blog/articles.json" -o "$STAGE/blog/articles.json" || true
+
+          python - <<'PY'
+          from pathlib import Path
+          import re, os
+          stage = Path(os.environ['RUNNER_TEMP']) / 'ks-night-hero'
+          for name in ('index.html', 'isonoura.html'):
+              p = stage / name
+              s = p.read_text(encoding='utf-8')
+              s = s.replace('href="/manifest.json"', 'href="manifest.json"')
+              s = re.sub(
+                  r"<script>\s*if \('serviceWorker' in navigator\) \{.*?navigator\.serviceWorker\.register\('/sw\.js'\).*?</script>",
+                  '<!-- service worker disabled in isolated nami preview -->',
+                  s,
+                  flags=re.S,
+              )
+              p.write_text(s, encoding='utf-8')
+          PY
+
+          node --check "$STAGE/nami_common.js"
+          grep -q 'ks-full-overlay-hero' "$STAGE/index.html"
+          grep -q 'img/ks-hero-night-silent.mp4' "$STAGE/index.html"
+          test -s "$STAGE/img/ks-hero-night-silent.mp4"
+
+      - name: Validate isolated target
+        shell: bash
+        env:
+          DEPLOY_USER: ${{ secrets.KS_NAMI_FTP_USER }}
+          DEPLOY_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          [[ -n "$DEPLOY_USER" && -n "$DEPLOY_PASSWORD" ]]
+          [[ "$DEPLOY_ROOT" == '/nami' ]]
+          [[ "$DEPLOY_SUBDIR" == 'ks-night-hero' ]]
+          [[ "${SITE_URL%/}" == 'https://nami.rss7.net/ks-night-hero' ]]
+
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y lftp
+
+      - name: Upload isolated preview
+        shell: bash
+        env:
+          DEPLOY_USER: ${{ secrets.KS_NAMI_FTP_USER }}
+          DEPLOY_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          STAGE="$RUNNER_TEMP/ks-night-hero"
+          lftp <<LFTP
+          set cmd:fail-exit yes
+          set net:max-retries 2
+          set net:timeout 20
+          set ssl:verify-certificate yes
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          open -u "$DEPLOY_USER","$DEPLOY_PASSWORD" "$DEPLOY_SCHEME://$DEPLOY_HOST:$DEPLOY_PORT"
+          cd "$DEPLOY_ROOT"
+          mkdir -p "$DEPLOY_SUBDIR"
+          mirror --reverse --verbose --parallel=2 --no-perms "$STAGE" "$DEPLOY_ROOT/$DEPLOY_SUBDIR"
+          bye
+          LFTP
+
+      - name: Verify public preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "$SITE_URL" > /tmp/top.html
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 \
+            "${SITE_URL}img/ks-hero-night-silent.mp4" -o /tmp/hero.mp4
+          grep -qi '<html' /tmp/top.html
+          grep -q 'ks-full-overlay-hero' /tmp/top.html
+          test -s /tmp/hero.mp4
+          echo "Night Hero preview verified: $SITE_URL"
