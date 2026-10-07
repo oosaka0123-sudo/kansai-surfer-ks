@@ -64,26 +64,6 @@ Next implementation milestone:
 - The first site deployment must be non-destructive and must fail closed if the target is anything other than the verified `nami` destination.
 - Verify `https://nami.rss7.net/` after deployment before designing or enabling any production deployment flow.
 
-## 2026-10-07 Top Hero production override
-
-The production Top Hero was explicitly changed by the owner on 2026-10-07. This section overrides older Top Hero instructions below that describe the sunrise/photo-lower composition.
-
-Current Top Hero requirements:
-- full-screen/full-overlay cinematic night surf-camp video;
-- deep navy/dark overlay for text readability;
-- transparent white KS logo at top-left;
-- Instagram, Facebook, and a white hamburger at top-right;
-- transparent/fixed header over the Hero, transitioning to a dark translucent header after scroll;
-- exact SEO H1 and supporting copy stay as real HTML, never baked into video;
-- Hero video must be silent/muted, autoplay, loop, playsinline, with a lightweight dark fallback;
-- current asset: `img/ks-hero-night-silent.mp4` (H.264, 960x540, 24fps, 10s, no audio);
-- the floating NAMI OSAKA LINE CTA must not overlap the Hero copy: hide it during the Hero and restore it after the Hero;
-- preserve existing wave data/API hooks, PWA, SEO, navigation, 9-point functions, reports, and public links;
-- support `prefers-reduced-motion`.
-
-Current implementation source branch: `feat/top-full-overlay-night-hero-20261007`.
-Production: `https://kansai.rss7.net/`.
-
 ## Design redesign pilot — Top + Isonoura only
 
 This pilot establishes the visual and interaction standard before any wider rollout.
