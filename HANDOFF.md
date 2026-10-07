@@ -2,45 +2,6 @@
 
 Updated: 2026-10-07 18:50 JST
 
-## 2026-10-07 Production Hero — current source of truth
-
-This section supersedes the older sunrise/photo-lower Top Hero direction later in this file.
-
-Production:
-- URL: `https://kansai.rss7.net/`
-- Top Hero is now a full-screen/full-overlay night surf-camp video Hero.
-- Source branch: `feat/top-full-overlay-night-hero-20261007`
-- Hero implementation commit: `50dd49d528ae63f12b6f69d40682e6d6632cb6ce`
-- Video: `img/ks-hero-night-silent.mp4`
-- Video contract: H.264 MP4, 960x540, 24fps, 10 seconds, no audio track, 413647 bytes.
-- Production deploy run: GitHub Actions run `37602495179`.
-- Final overlap-fix deploy run: GitHub Actions run `37602956095`.
-- Each production deploy stored the pre-deploy production `index.html` as a rollback artifact for 30 days.
-
-Current Hero behavior:
-- full-viewport background video with deep navy overlay;
-- existing transparent white KS PNG logo at top-left;
-- Instagram + Facebook + white hamburger at top-right;
-- header is fixed/transparent over Hero, then becomes dark translucent after scroll;
-- Hero H1/SEO copy remains real HTML;
-- existing `.floating-line` NAMI OSAKA CTA is hidden while the Hero is visible and returns after scrolling past the Hero;
-- existing wave/API hooks, 9-point functionality, PWA/SEO, and normal mobile menu remain intact.
-
-Verified on production with real headless Chrome at a 390x844 mobile viewport:
-- video `paused=false`, `readyState=4`, `muted=true`, no media error;
-- video currentTime advanced during checks;
-- 960x540 video dimensions were reported;
-- hamburger opens/closes normally;
-- scroll adds the dark-header state;
-- floating LINE CTA is hidden at the top and visible below the Hero.
-
-Deployment hygiene:
-- production upload changed only `index.html` and `img/ks-hero-night-silent.mp4`;
-- no remote-delete/mirror of production was used;
-- temporary main-branch one-time production/bootstrap workflows were removed after deployment;
-- the isolated `nami` preview workflow remains on the feature branch and was made safe for repeat deploys;
-- `KS_PROD_FTP_USER` / `KS_PROD_FTP_PASSWORD` are still not configured as repository secrets. Existing long-term production workflow therefore remains intentionally blocked until those production aliases are configured. Do not silently repurpose staging secrets for normal future production deploys.
-
 ## Restart first
 This handoff is for `oosaka0123-sudo/kansai-surfer-ks` only.
 
