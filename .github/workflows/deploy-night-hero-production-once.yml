@@ -59,8 +59,8 @@ jobs:
       - name: Validate target and credentials
         shell: bash
         env:
-          FTP_USERNAME: ${{ secrets.KS_PROD_FTP_USER }}
-          FTP_PASSWORD: ${{ secrets.KS_PROD_FTP_PASSWORD }}
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
         run: |
           set -euo pipefail
           test -n "$FTP_USERNAME"
@@ -72,8 +72,8 @@ jobs:
       - name: Upload only index and Hero video
         shell: bash
         env:
-          FTP_USERNAME: ${{ secrets.KS_PROD_FTP_USER }}
-          FTP_PASSWORD: ${{ secrets.KS_PROD_FTP_PASSWORD }}
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
         run: |
           set -euo pipefail
           set +x
