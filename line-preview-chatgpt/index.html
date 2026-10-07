@@ -41,6 +41,93 @@
 @media(min-width:860px){.ln-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.ln-card{padding:18px 16px}.ln-actions{flex-direction:row}.ln-actions a{flex:1}}
 @media(max-width:600px){.hero-ks{padding:10px 10px 22px}.hero-title{font-size:clamp(2.6rem,14vw,4.2rem)}.hero-lead{font-size:.92rem}.sec{padding:34px 16px}.page-head{padding:26px 18px 22px}.page-head h1{font-size:1.55rem}.top-bar{padding:14px 18px}.crumb{padding:10px 18px}.sec-en{display:none}.mobile-menu{top:69px}}
 footer{padding:40px 24px;background:var(--ink-deep);text-align:center}footer .logo{justify-content:center}.footer-links{display:flex;justify-content:center;gap:8px 16px;flex-wrap:wrap;margin-bottom:12px}.footer-links a{color:var(--cream-soft);text-decoration:none;font-family:"Shippori Mincho B1",serif;font-size:.82rem}.attr{font-size:.72rem;color:var(--teal-pale);margin-top:8px}.attr a{color:var(--teal-pale)}
+
+/* ===== Full-overlay night video Hero (LINE page only) ===== */
+.top-bar{
+  position:fixed!important;top:0;left:0;right:0;z-index:120;
+  padding:13px 22px!important;
+  border-bottom:1px solid rgba(255,255,255,.10)!important;
+  background:linear-gradient(180deg,rgba(4,13,22,.78) 0%,rgba(4,13,22,.22) 72%,transparent 100%)!important;
+  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+  transition:background .25s ease,backdrop-filter .25s ease,border-color .25s ease;
+}
+.top-bar.scrolled{
+  background:rgba(6,18,32,.94)!important;
+  backdrop-filter:blur(14px)!important;-webkit-backdrop-filter:blur(14px)!important;
+  border-bottom-color:rgba(255,255,255,.13)!important;
+}
+.top-bar .logo img{height:42px!important;filter:drop-shadow(0 2px 10px rgba(0,0,0,.35))}
+.top-bar .logo .en{font-size:.8rem!important;text-shadow:0 2px 10px rgba(0,0,0,.4)}
+.hamburger{border:0!important;background:transparent!important;width:44px!important;height:44px!important}
+.hamburger span{width:26px!important;background:#fff!important}
+.mobile-menu{
+  top:0!important;z-index:110!important;padding-top:72px!important;
+  background:rgba(6,18,32,.985)!important;
+  backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+}
+.hero-video-ks{
+  position:relative;isolation:isolate;width:100%;height:100svh;min-height:100svh;
+  padding:0!important;margin:0!important;overflow:hidden;
+  display:flex;align-items:flex-end;background:#061220!important;
+  border-bottom:1px solid rgba(255,255,255,.10)!important;
+}
+.hero-bg-video,.hero-video-shade{
+  position:absolute;inset:0;width:100%;height:100%;
+}
+.hero-bg-video{
+  z-index:-3;object-fit:cover;object-position:50% 50%;background:#061220;
+}
+.hero-video-shade{
+  z-index:-2;pointer-events:none;
+  background:
+    linear-gradient(180deg,rgba(2,8,14,.46) 0%,rgba(2,8,14,.14) 28%,rgba(2,8,14,.32) 58%,rgba(2,8,14,.88) 100%),
+    linear-gradient(90deg,rgba(2,8,14,.55) 0%,rgba(2,8,14,.18) 58%,rgba(2,8,14,.10) 100%);
+}
+.hero-video-content{
+  position:relative;z-index:2;width:100%;max-width:960px!important;
+  margin:0 auto!important;padding:0 24px clamp(82px,10vh,112px)!important;
+}
+.hero-video-ks .hero-kicker{
+  margin-bottom:12px;color:rgba(255,255,255,.72);
+  text-shadow:0 2px 14px rgba(0,0,0,.5);
+}
+.hero-video-ks .hero-title{
+  max-width:900px;font-size:clamp(2.8rem,7.2vw,5.5rem)!important;
+  line-height:1.04!important;margin-bottom:18px!important;
+  text-shadow:0 3px 24px rgba(0,0,0,.62);
+}
+.hero-video-ks .hero-title .green{color:#08e879!important}
+.hero-video-ks .hero-lead{
+  max-width:680px;color:rgba(255,255,255,.82)!important;font-size:1rem!important;
+  text-shadow:0 2px 16px rgba(0,0,0,.58);
+}
+.hero-scroll{
+  position:absolute;right:24px;bottom:28px;z-index:2;
+  display:flex;align-items:center;gap:12px;
+  font-family:"JetBrains Mono",monospace;font-size:.6rem;letter-spacing:.18em;
+  color:rgba(255,255,255,.62);
+}
+.hero-scroll i{display:block;width:44px;height:1px;background:rgba(255,255,255,.46)}
+@media(max-width:600px){
+  .top-bar{padding:10px 14px!important;min-height:66px}
+  .top-bar .logo img{height:40px!important}
+  .top-bar .logo .en{font-size:.7rem!important}
+  .hero-bg-video{object-position:50% 50%}
+  .hero-video-shade{
+    background:
+      linear-gradient(180deg,rgba(2,8,14,.48) 0%,rgba(2,8,14,.14) 27%,rgba(2,8,14,.36) 56%,rgba(2,8,14,.91) 100%),
+      linear-gradient(90deg,rgba(2,8,14,.38) 0%,rgba(2,8,14,.12) 100%);
+  }
+  .hero-video-content{padding:0 18px 78px!important}
+  .hero-video-ks .hero-title{font-size:clamp(2.35rem,11vw,3.8rem)!important;line-height:1.08!important}
+  .hero-video-ks .hero-lead{font-size:.9rem!important;line-height:1.8}
+  .hero-scroll{right:18px;bottom:24px}
+}
+@media(prefers-reduced-motion:reduce){
+  .top-bar{transition:none!important}
+  .hero-scroll{display:none}
+}
+
 </style>
 </head>
 <body>
@@ -51,12 +138,17 @@ footer{padding:40px 24px;background:var(--ink-deep);text-align:center}footer .lo
 <a href="https://kansai.rss7.net/isonoura.html"><span class="mm-left"><i class="fa-solid fa-water"></i>磯ノ浦（和歌山）</span></a><a href="https://kansai.rss7.net/kounohama.html"><span class="mm-left"><i class="fa-solid fa-water"></i>伊勢・国府の浜（三重）</span></a><a href="https://kansai.rss7.net/ikumi.html"><span class="mm-left"><i class="fa-solid fa-water"></i>四国・生見（高知）</span></a><a href="https://kansai.rss7.net/komatsu.html"><span class="mm-left"><i class="fa-solid fa-water"></i>四国・小松海岸（徳島）</span></a><a href="https://kansai.rss7.net/irago.html"><span class="mm-left"><i class="fa-solid fa-water"></i>伊良湖（愛知）</span></a><a href="https://kansai.rss7.net/shizunami.html"><span class="mm-left"><i class="fa-solid fa-water"></i>静波（静岡）</span></a><a href="https://kansai.rss7.net/hamadutu.html"><span class="mm-left"><i class="fa-solid fa-water"></i>浜詰（京都・日本海）</span></a><a href="https://kansai.rss7.net/takahama.html"><span class="mm-left"><i class="fa-solid fa-water"></i>高浜（福井・日本海）</span></a><a href="https://kansai.rss7.net/hakuto.html"><span class="mm-left"><i class="fa-solid fa-water"></i>白兎（鳥取・日本海）</span></a>
 <div class="mm-section">その他</div><a href="https://kansai.rss7.net/about.html"><span class="mm-left"><i class="fa-solid fa-circle-info"></i>当サイトについて</span></a><a href="https://kansai.rss7.net/contact.html"><span class="mm-left"><i class="fa-solid fa-envelope"></i>お問い合わせ</span></a>
 </div>
-<section class="hero-ks">
-  <div class="wrap">
+<section class="hero-ks hero-video-ks" id="lineHero">
+  <video class="hero-bg-video" id="lineHeroVideo" autoplay muted loop playsinline preload="metadata" aria-hidden="true">
+    <source src="line-preview-chatgpt-hero.mp4" type="video/mp4">
+  </video>
+  <div class="hero-video-shade" aria-hidden="true"></div>
+  <div class="wrap hero-video-content">
     <div class="hero-kicker">KANSAI SURFER · LINE COMMUNITY</div>
     <h1 class="hero-title"><span class="cream">海でつながる。</span><span class="green">関西サーファーLINE</span></h1>
     <p class="hero-lead">波情報、現地情報、仲間探し。メインコミュニティと9つのサーフポイント別LINEをまとめた入口ページです。</p>
   </div>
+  <div class="hero-scroll" aria-hidden="true"><span>SCROLL</span><i></i></div>
 </section>
 <main>
 <section class="sec" id="main"><div class="wrap"><div class="sec-head"><span class="sec-num">01</span><h2 class="sec-title"><i class="fa-brands fa-line"></i>オープンチャット - グループチャット</h2><span class="sec-en">COMMUNITY</span></div><div class="ln-pair">
@@ -130,7 +222,9 @@ footer{padding:40px 24px;background:var(--ink-deep);text-align:center}footer .lo
   <div class="attr">© 2026 関西サーファー.ks · MADE IN OSAKA</div>
 </footer>
 <script>
-const hamburger=document.getElementById('hamburger'),mobileMenu=document.getElementById('mobileMenu');if(hamburger&&mobileMenu){hamburger.addEventListener('click',()=>{hamburger.classList.toggle('active');mobileMenu.classList.toggle('open');hamburger.setAttribute('aria-expanded',mobileMenu.classList.contains('open')?'true':'false')})}
+const hamburger=document.getElementById('hamburger'),mobileMenu=document.getElementById('mobileMenu'),topBar=document.querySelector('.top-bar'),lineHeroVideo=document.getElementById('lineHeroVideo');if(hamburger&&mobileMenu){hamburger.addEventListener('click',()=>{hamburger.classList.toggle('active');mobileMenu.classList.toggle('open');hamburger.setAttribute('aria-expanded',mobileMenu.classList.contains('open')?'true':'false')})}
+function syncLineHeader(){if(topBar)topBar.classList.toggle('scrolled',window.scrollY>28)}syncLineHeader();window.addEventListener('scroll',syncLineHeader,{passive:true});
+if(lineHeroVideo){lineHeroVideo.muted=true;lineHeroVideo.defaultMuted=true;if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches){lineHeroVideo.pause()}else{const p=lineHeroVideo.play();if(p&&typeof p.catch==='function')p.catch(()=>{})}}
 fetch('https://nami.rss7.net/ks-line-bot/member_counts.php',{cache:'no-store'})
 .then(r=>r.ok?r.json():Promise.reject())
 .then(d=>{

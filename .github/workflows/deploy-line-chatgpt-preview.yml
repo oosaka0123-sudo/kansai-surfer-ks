@@ -26,8 +26,11 @@ jobs:
       DEPLOY_PORT: "21"
       DEPLOY_ROOT: /nami
       SOURCE_FILE: line-preview-chatgpt/index.html
+      SOURCE_VIDEO: line-preview-chatgpt/hero-night-silent.mp4
       TARGET_FILE: line-preview-chatgpt-v2.html
+      TARGET_VIDEO: line-preview-chatgpt-hero.mp4
       SITE_URL: https://nami.rss7.net/line-preview-chatgpt-v2.html
+      VIDEO_URL: https://nami.rss7.net/line-preview-chatgpt-hero.mp4
 
     steps:
       - uses: actions/checkout@v4
@@ -40,14 +43,17 @@ jobs:
         run: |
           set -euo pipefail
           test -f "$SOURCE_FILE"
+          test -f "$SOURCE_VIDEO"
           [[ -n "$DEPLOY_USER" && -n "$DEPLOY_PASSWORD" ]]
           [[ "$DEPLOY_ROOT" == "/nami" ]]
           [[ "$TARGET_FILE" == "line-preview-chatgpt-v2.html" ]]
+          [[ "$TARGET_VIDEO" == "line-preview-chatgpt-hero.mp4" ]]
+          test "$(stat -c%s "$SOURCE_VIDEO")" -eq 413647
 
       - name: Install lftp
         run: sudo apt-get update && sudo apt-get install -y lftp
 
-      - name: Upload single preview file
+      - name: Upload preview HTML and video
         shell: bash
         env:
           DEPLOY_USER: ${{ secrets.KS_NAMI_FTP_USER }}
@@ -65,6 +71,7 @@ jobs:
           open -u "$DEPLOY_USER","$DEPLOY_PASSWORD" "$DEPLOY_SCHEME://$DEPLOY_HOST:$DEPLOY_PORT"
           cd "$DEPLOY_ROOT"
           put "$SOURCE_FILE" -o "$TARGET_FILE"
+          put "$SOURCE_VIDEO" -o "$TARGET_VIDEO"
           bye
           LFTP
 
@@ -72,8 +79,11 @@ jobs:
         run: |
           set -euo pipefail
           curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "$SITE_URL" > /tmp/line-preview.html
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "$VIDEO_URL" -o /tmp/line-hero.mp4
           grep -qi '<html' /tmp/line-preview.html
           grep -q '関西サーファーLINE' /tmp/line-preview.html
+          grep -q 'line-preview-chatgpt-hero.mp4' /tmp/line-preview.html
           grep -q '約330名' /tmp/line-preview.html
           grep -q '約10名' /tmp/line-preview.html
+          test "$(stat -c%s /tmp/line-hero.mp4)" -eq 413647
           echo "Preview verified: $SITE_URL"
