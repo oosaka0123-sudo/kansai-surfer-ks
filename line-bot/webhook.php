@@ -535,13 +535,19 @@ function containsIntroTag(string $text): bool
         return true;
     }
 
-    // Also treat the standard self-introduction template as an intro
-    // even when the member omits the #自己紹介 tag.
-    // Require an actual nickname value to avoid matching casual chat.
-    return preg_match(
-        '/(?:^|\R)[\t 　]*ニックネーム[\t 　]*[：:][\t 　]*\S+/u',
-        $text
-    ) === 1;
+    // Standard self-introduction template without the #自己紹介 tag.
+    if (
+        preg_match(
+            '/(?:^|\R)[\t 　]*ニックネーム[\t 　]*[：:][\t 　]*\S+/u',
+            $text
+        ) === 1
+    ) {
+        return true;
+    }
+
+    // Natural introductions such as "はじめまして！ミカンです。..."
+    // are accepted only when the message starts with the greeting.
+    return preg_match('/^[\t 　]*はじめまして/u', $text) === 1;
 }
 
 function cleanIntroText(string $text): string
