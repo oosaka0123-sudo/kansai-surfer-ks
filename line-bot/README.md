@@ -6,7 +6,7 @@ Purpose:
 - receive LINE Messaging API webhooks;
 - verify the raw request with HMAC-SHA256;
 - welcome new members of the normal LINE group;
-- detect `#自己紹介` posts, plus template posts beginning with `ニックネーム：`, and keep a private server-side ledger;
+- detect `#自己紹介` posts, template posts with `ニックネーム：`, and natural introductions beginning with `はじめまして`, then keep a private server-side ledger;
 - track observed members as introduction pending / completed / left;
 - notify the registered operator when 20 introductions are waiting for Note export;
 - notify the operator when the oldest unreflected introduction reaches 30 days;
