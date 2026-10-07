@@ -1,0 +1,65 @@
+name: Restore KS top before night Hero
+
+on:
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  restore:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      FTP_SERVER: ftp.lolipop.jp
+      FTP_SERVER_DIR: /kansai
+      SITE_URL: https://kansai.rss7.net/
+      ARTIFACT_ID: '11472799343'
+
+    steps:
+      - name: Download exact pre-Hero production snapshot
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api -H 'Accept: application/vnd.github+json' \
+            "/repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" > /tmp/restore.zip
+          mkdir -p /tmp/restore
+          unzip -q /tmp/restore.zip -d /tmp/restore
+          test -s /tmp/restore/index-before.html
+          test "$(grep -c 'ks-full-overlay-hero' /tmp/restore/index-before.html || true)" -eq 0
+
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y lftp
+
+      - name: Restore only production index.html
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          lftp <<LFTP
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 20
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER"
+          put /tmp/restore/index-before.html -o "$FTP_SERVER_DIR/index.html"
+          bye
+          LFTP
+
+      - name: Verify KS top restored
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "$SITE_URL" -o /tmp/live.html
+          test "$(grep -c 'ks-full-overlay-hero' /tmp/live.html || true)" -eq 0
+          grep -q '<section class="top-hero">' /tmp/live.html
+          echo 'KS production top restored.'
