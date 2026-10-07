@@ -111,8 +111,42 @@ jobs:
           set ftp:ssl-force true
           set ftp:ssl-protect-data true
           open -u "$DEPLOY_USER","$DEPLOY_PASSWORD" "$DEPLOY_SCHEME://$DEPLOY_HOST:$DEPLOY_PORT"
+          if lftp <<CHECK
+          set cmd:fail-exit yes
+          set net:max-retries 2
+          set net:timeout 20
+          set ssl:verify-certificate yes
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          open -u "$DEPLOY_USER","$DEPLOY_PASSWORD" "$DEPLOY_SCHEME://$DEPLOY_HOST:$DEPLOY_PORT"
+          cd "$DEPLOY_ROOT/$DEPLOY_SUBDIR"
+          bye
+          CHECK
+          then
+            echo 'Preview directory already exists.'
+          else
+            lftp <<MAKE
+          set cmd:fail-exit yes
+          set net:max-retries 2
+          set net:timeout 20
+          set ssl:verify-certificate yes
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          open -u "$DEPLOY_USER","$DEPLOY_PASSWORD" "$DEPLOY_SCHEME://$DEPLOY_HOST:$DEPLOY_PORT"
           cd "$DEPLOY_ROOT"
-          mkdir -p "$DEPLOY_SUBDIR"
+          mkdir "$DEPLOY_SUBDIR"
+          bye
+          MAKE
+          fi
+
+          lftp <<LFTP
+          set cmd:fail-exit yes
+          set net:max-retries 2
+          set net:timeout 20
+          set ssl:verify-certificate yes
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          open -u "$DEPLOY_USER","$DEPLOY_PASSWORD" "$DEPLOY_SCHEME://$DEPLOY_HOST:$DEPLOY_PORT"
           mirror --reverse --verbose --parallel=2 --no-perms "$STAGE" "$DEPLOY_ROOT/$DEPLOY_SUBDIR"
           bye
           LFTP
