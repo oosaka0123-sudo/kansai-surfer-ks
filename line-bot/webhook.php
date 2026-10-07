@@ -528,8 +528,20 @@ TEXT;
 
 function containsIntroTag(string $text): bool
 {
-    return mb_stripos($text, '#自己紹介') !== false
-        || mb_stripos($text, '＃自己紹介') !== false;
+    if (
+        mb_stripos($text, '#自己紹介') !== false
+        || mb_stripos($text, '＃自己紹介') !== false
+    ) {
+        return true;
+    }
+
+    // Also treat the standard self-introduction template as an intro
+    // even when the member omits the #自己紹介 tag.
+    // Require an actual nickname value to avoid matching casual chat.
+    return preg_match(
+        '/(?:^|\R)[\t 　]*ニックネーム[\t 　]*[：:][\t 　]*\S+/u',
+        $text
+    ) === 1;
 }
 
 function cleanIntroText(string $text): string
