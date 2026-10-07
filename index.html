@@ -534,6 +534,17 @@ body { overflow-x: hidden; }
   height: 1px;
   background: rgba(255,255,255,.45);
 }
+
+/* Keep the floating LINE CTA clear of the full-screen Hero. */
+.floating-line {
+  transition: opacity .24s ease, transform .24s ease, visibility .24s ease !important;
+}
+body:not(.ks-hero-passed) .floating-line {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transform: translateY(16px) !important;
+}
 .top-strip {
   position: relative !important;
   z-index: 5;
@@ -1658,15 +1669,17 @@ document.getElementById('sns-yt').addEventListener('click',function(e){ e.preven
 <script id="ks-full-overlay-hero-js">
 (function(){
   var header = document.querySelector('.top-bar');
+  var hero = document.getElementById('topHero');
   var video = document.getElementById('ksHeroVideo');
   var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   function syncHeader(){
-    if (!header) return;
-    header.classList.toggle('ks-scrolled', window.scrollY > 28);
+    if (header) header.classList.toggle('ks-scrolled', window.scrollY > 28);
+    if (hero) document.body.classList.toggle('ks-hero-passed', window.scrollY > Math.max(80, hero.offsetHeight - 120));
   }
   syncHeader();
   window.addEventListener('scroll', syncHeader, { passive: true });
+  window.addEventListener('resize', syncHeader, { passive: true });
 
   if (!video) return;
   video.muted = true;
