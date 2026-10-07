@@ -1,0 +1,102 @@
+name: One-time deploy night Hero production
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kansai-night-hero-one-time-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SOURCE_REF: feat/top-full-overlay-night-hero-20261007
+      FTP_SERVER: ftp.lolipop.jp
+      FTP_SERVER_DIR: /kansai
+      SITE_URL: https://kansai.rss7.net/
+
+    steps:
+      - name: Checkout fixed Hero source branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/top-full-overlay-night-hero-20261007
+
+      - name: Validate exact patch files
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f index.html
+          test -f img/ks-hero-night-silent.mp4
+          grep -q 'ks-full-overlay-hero' index.html
+          grep -q 'img/ks-hero-night-silent.mp4' index.html
+          grep -q 'id="hamburger"' index.html
+          grep -q 'id="mobileMenu"' index.html
+          test "$(stat -c%s img/ks-hero-night-silent.mp4)" -eq 413647
+
+      - name: Snapshot current production index
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 3 "$SITE_URL" -o /tmp/index-before.html
+          test -s /tmp/index-before.html
+
+      - name: Store rollback snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-index-before-night-hero-20261007
+          path: /tmp/index-before.html
+          retention-days: 30
+
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y lftp
+
+      - name: Validate target and credentials
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_PROD_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_PROD_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$FTP_USERNAME"
+          test -n "$FTP_PASSWORD"
+          test "$FTP_SERVER" = 'ftp.lolipop.jp'
+          test "$FTP_SERVER_DIR" = '/kansai'
+          test "$SITE_URL" = 'https://kansai.rss7.net/'
+
+      - name: Upload only index and Hero video
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_PROD_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_PROD_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          lftp <<LFTP
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 20
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER"
+          put index.html -o "$FTP_SERVER_DIR/index.html"
+          put img/ks-hero-night-silent.mp4 -o "$FTP_SERVER_DIR/img/ks-hero-night-silent.mp4"
+          bye
+          LFTP
+
+      - name: Verify production result
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "$SITE_URL" -o /tmp/index-after.html
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "${SITE_URL}img/ks-hero-night-silent.mp4" -o /tmp/hero.mp4
+          grep -q 'ks-full-overlay-hero' /tmp/index-after.html
+          grep -q 'img/ks-hero-night-silent.mp4' /tmp/index-after.html
+          test "$(stat -c%s /tmp/hero.mp4)" -eq 413647
+          echo 'Production Hero deployment verified.'
