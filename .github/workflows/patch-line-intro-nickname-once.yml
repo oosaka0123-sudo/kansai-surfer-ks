@@ -1,7 +1,7 @@
 name: Patch LINE intro nickname detection once
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: {}
 
 permissions:
   contents: read
