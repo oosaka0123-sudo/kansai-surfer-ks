@@ -168,7 +168,15 @@ jobs:
           get "$FTP_SERVER_DIR/config.php" -o "$LOCAL_CONFIG"
           bye
           LFTP_EOF
-          TOKEN="$(CONFIG_FILE="$LOCAL_CONFIG" php -r 'define("KS_LINE_BOT_BOOTSTRAP", true); $c=require getenv("CONFIG_FILE"); echo $c["channel_access_token"] ?? "";')"
+          CREDS="$(CONFIG_FILE="$LOCAL_CONFIG" php -r 'define("KS_LINE_BOT_BOOTSTRAP", true); $c=require getenv("CONFIG_FILE"); echo json_encode(["token"=>$c["channel_access_token"]??"", "id"=>$c["channel_id"]??"", "secret"=>$c["channel_secret"]??""]);')"
+          TOKEN="$(CREDS="$CREDS" php -r '$d=json_decode(getenv("CREDS"),true); echo $d["token"]??"";')"
+          if [ -z "$TOKEN" ]; then
+            CHANNEL_ID="$(CREDS="$CREDS" php -r '$d=json_decode(getenv("CREDS"),true); echo $d["id"]??"";')"
+            CHANNEL_SECRET="$(CREDS="$CREDS" php -r '$d=json_decode(getenv("CREDS"),true); echo $d["secret"]??"";')"
+            TOKEN_RESPONSE="$(curl --fail --silent --show-error --request POST https://api.line.me/oauth2/v3/token --header 'Content-Type: application/x-www-form-urlencoded' --data-urlencode 'grant_type=client_credentials' --data-urlencode "client_id=$CHANNEL_ID" --data-urlencode "client_secret=$CHANNEL_SECRET")"
+            TOKEN="$(TOKEN_RESPONSE="$TOKEN_RESPONSE" php -r '$d=json_decode(getenv("TOKEN_RESPONSE"),true); echo $d["access_token"]??"";')"
+            unset CHANNEL_SECRET TOKEN_RESPONSE
+          fi
           test -n "$TOKEN"
           INFO="$(curl --fail --silent --show-error -H "Authorization: Bearer $TOKEN" https://api.line.me/v2/bot/info)"
           unset TOKEN
