@@ -56,14 +56,17 @@ $results = forwardWebhook($rawBody, $signature);
 $primaryCode = (int)($results[KS_RELAY_PRIMARY]['http_code'] ?? 0);
 $secondaryCode = (int)($results[KS_RELAY_SECONDARY]['http_code'] ?? 0);
 
-if ($secondaryCode < 200 || $secondaryCode >= 300) {
-    error_log('KS LINE relay: secondary failed http=' . $secondaryCode);
+if ($primaryCode < 200 || $primaryCode >= 300) {
+    // Legacy production webhook may belong to a different LINE channel secret.
+    // Keep forwarding there as best-effort only; it must not make the active
+    // welcome-bot webhook fail or trigger LINE retries.
+    error_log('KS LINE relay: legacy primary failed http=' . $primaryCode);
 }
 
-if ($primaryCode < 200 || $primaryCode >= 300) {
-    error_log('KS LINE relay: primary failed http=' . $primaryCode);
+if ($secondaryCode < 200 || $secondaryCode >= 300) {
+    error_log('KS LINE relay: active secondary failed http=' . $secondaryCode);
     http_response_code(502);
-    echo "primary failed\n";
+    echo "active webhook failed\n";
     exit;
 }
 
@@ -113,8 +116,8 @@ function runSelfTest(): void
         [
             'primary' => $primary,
             'secondary' => $secondary,
-            'ok' => $primary >= 200 && $primary < 300
-                && $secondary >= 200 && $secondary < 300,
+            'primary_best_effort' => true,
+            'ok' => $secondary >= 200 && $secondary < 300,
         ],
         JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
     ) . "\n";
