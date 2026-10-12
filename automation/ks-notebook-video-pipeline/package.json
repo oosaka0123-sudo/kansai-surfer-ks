@@ -1,0 +1,25 @@
+{
+  "name": "ks-notebook-video-pipeline",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "preflight": "tsx src/preflight.ts",
+    "youtube:auth": "tsx src/youtube-auth.ts",
+    "youtube:test": "tsx src/test-youtube-upload.ts",
+    "notebook:test": "tsx src/test-notebook.ts",
+    "state:test": "tsx src/test-state.ts",
+    "source:build": "tsx src/build-source.ts",
+    "video:validate": "tsx src/video-validator.ts",
+    "cleanup:check": "tsx src/cleanup.ts",
+    "pipeline": "tsx src/pipeline.ts"
+  },
+  "dependencies": {
+    "googleapis": "^144.0.0",
+    "playwright": "^1.55.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0"
+  }
+}

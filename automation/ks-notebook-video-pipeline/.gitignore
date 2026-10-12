@@ -1,0 +1,9 @@
+node_modules/
+.env
+secrets/
+runs/*/
+!runs/.gitkeep
+*.log
+pipeline.lock
+dummy.mp4
+youtube-capability.json
