@@ -1,0 +1,60 @@
+name: Inspect production Claude model safely
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y lftp
+
+      - name: Fetch production PHP files without secrets
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_PROD_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_PROD_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          test -n "$FTP_USERNAME"
+          test -n "$FTP_PASSWORD"
+          TMP="$RUNNER_TEMP/ks-prod-php"
+          mkdir -p "$TMP"
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          mirror --verbose=0             --include-glob '*.php'             --exclude-glob 'config.php'             --exclude-glob '*secret*'             --exclude-glob '*token*'             --exclude-glob '*credential*'             --exclude-glob 'data/*'             --exclude-glob 'uploads/*'             /kansai "$TMP"
+          bye
+          LFTP_EOF
+
+          PROD_ROOT="$TMP" python - <<'PY'
+          import os, re, pathlib
+          root = pathlib.Path(os.environ['PROD_ROOT'])
+          model_re = re.compile(r'claude-[a-z0-9][a-z0-9._-]*', re.I)
+          hits = []
+          for p in root.rglob('*.php'):
+              try:
+                  text = p.read_text(encoding='utf-8', errors='ignore')
+              except Exception:
+                  continue
+              models = sorted(set(model_re.findall(text)))
+              anthropic = 'api.anthropic.com' in text.lower() or 'anthropic' in text.lower()
+              if models or anthropic:
+                  hits.append((str(p.relative_to(root)), models, anthropic))
+          if not hits:
+              print('NO_CLAUDE_RUNTIME_MATCHES')
+          else:
+              for path, models, anthropic in hits:
+                  print(f'FILE={path}')
+                  print('MODELS=' + (','.join(models) if models else '(none detected)'))
+                  print('ANTHROPIC_REF=' + ('yes' if anthropic else 'no'))
+          PY
