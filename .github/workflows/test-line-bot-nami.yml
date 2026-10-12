@@ -1,0 +1,215 @@
+name: Test LINE group welcome bot on nami
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ks-line-bot-nami
+  cancel-in-progress: false
+
+jobs:
+  lint-and-stage:
+    runs-on: ubuntu-latest
+    env:
+      FTP_SERVER: ftp.lolipop.jp
+      FTP_SERVER_DIR: /nami/ks-line-bot
+      WEBHOOK_URL: https://nami.rss7.net/ks-line-bot/webhook.php
+      RELAY_URL: https://nami.rss7.net/ks-line-bot/relay.php
+      MEMBER_COUNTS_URL: https://nami.rss7.net/ks-line-bot/member_counts.php
+
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+
+      - name: Lint webhook
+        run: |
+          php -l line-bot/webhook.php
+          php -l line-bot/relay.php
+          php -l line-bot/activate_relay.php
+          php -l line-bot/member_counts.php
+          php -l line-bot/setup_repair.php
+
+      - name: Check staging credentials
+        id: secrets
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          if [ -n "$FTP_USERNAME" ] && [ -n "$FTP_PASSWORD" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+            echo "Existing nami FTP credentials are configured."
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "Nami FTP credentials are not configured; upload is intentionally skipped."
+          fi
+
+      - name: Prepare isolated staging bundle
+        if: steps.secrets.outputs.ready == 'true'
+        shell: bash
+        env:
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          STAGE="$RUNNER_TEMP/ks-line-bot"
+          rm -rf "$STAGE"
+          mkdir -p "$STAGE"
+          cp line-bot/webhook.php "$STAGE/webhook.php"
+          cp line-bot/relay.php "$STAGE/relay.php"
+          cp line-bot/activate_relay.php "$STAGE/activate_relay.php"
+          cp line-bot/member_counts.php "$STAGE/member_counts.php"
+          cp line-bot/setup_repair.php "$STAGE/setup_repair.php"
+
+          CRON_TOKEN="$(printf '%s' "$FTP_PASSWORD" | sha256sum | awk '{print $1}')"
+          CRON_TOKEN_HASH="$(printf '%s' "$CRON_TOKEN" | sha256sum | awk '{print $1}')"
+          printf "<?php\nreturn ['token_hash' => '%s'];\n" "$CRON_TOKEN_HASH" > "$STAGE/cron_key.php"
+
+          php -l "$STAGE/webhook.php"
+          php -l "$STAGE/relay.php"
+          php -l "$STAGE/activate_relay.php"
+          php -l "$STAGE/member_counts.php"
+          php -l "$STAGE/setup_repair.php"
+          php -l "$STAGE/cron_key.php"
+
+      - name: Install lftp
+        if: steps.secrets.outputs.ready == 'true'
+        run: sudo apt-get update -qq && sudo apt-get install -y lftp
+
+      - name: Validate isolated target
+        if: steps.secrets.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          [ "$FTP_SERVER" = 'ftp.lolipop.jp' ]
+          [ "$FTP_SERVER_DIR" = '/nami/ks-line-bot' ]
+          [ "$WEBHOOK_URL" = 'https://nami.rss7.net/ks-line-bot/webhook.php' ]
+          [ "$RELAY_URL" = 'https://nami.rss7.net/ks-line-bot/relay.php' ]
+
+      - name: Upload only LINE bot files to nami
+        if: steps.secrets.outputs.ready == 'true'
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          STAGE="$RUNNER_TEMP/ks-line-bot"
+
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 20
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER"
+          mkdir -f "$FTP_SERVER_DIR"
+          put "$STAGE/webhook.php" -o "$FTP_SERVER_DIR/webhook.php"
+          put "$STAGE/relay.php" -o "$FTP_SERVER_DIR/relay.php"
+          put "$STAGE/activate_relay.php" -o "$FTP_SERVER_DIR/activate_relay.php"
+          put "$STAGE/member_counts.php" -o "$FTP_SERVER_DIR/member_counts.php"
+          put "$STAGE/setup_repair.php" -o "$FTP_SERVER_DIR/setup_repair.php"
+          put "$STAGE/cron_key.php" -o "$FTP_SERVER_DIR/cron_key.php"
+          rm -f "$FTP_SERVER_DIR/setup.php"
+          bye
+          LFTP_EOF
+
+      - name: Check isolated runtime files by HTTP status
+        if: steps.secrets.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          config_code="$(curl --silent --output /dev/null --write-out '%{http_code}' https://nami.rss7.net/ks-line-bot/config.php)"
+          cron_code="$(curl --silent --output /dev/null --write-out '%{http_code}' https://nami.rss7.net/ks-line-bot/cron_key.php)"
+          state_code="$(curl --silent --output /dev/null --write-out '%{http_code}' https://nami.rss7.net/ks-line-bot/state.php)"
+          echo "config.php HTTP $config_code (404 is expected because direct access is blocked)"
+          echo "cron_key.php HTTP $cron_code"
+          echo "state.php HTTP $state_code"
+
+      - name: Inspect private LINE state summary
+        if: steps.secrets.outputs.ready == 'true'
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          LOCAL_STATE="$RUNNER_TEMP/ks-line-state.php"
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER"
+          get "$FTP_SERVER_DIR/state.php" -o "$LOCAL_STATE"
+          bye
+          LFTP_EOF
+          STATE_FILE="$LOCAL_STATE" php -r '
+            $s = require getenv("STATE_FILE");
+            $admin = !empty($s["admin_user_id"]);
+            $members = isset($s["members"]) && is_array($s["members"]) ? count($s["members"]) : 0;
+            echo "admin_registered=" . ($admin ? "yes" : "no") . PHP_EOL;
+            echo "observed_members=" . $members . PHP_EOL;
+          '
+
+          LOCAL_CONFIG="$RUNNER_TEMP/ks-line-config.php"
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER"
+          get "$FTP_SERVER_DIR/config.php" -o "$LOCAL_CONFIG"
+          bye
+          LFTP_EOF
+          CREDS="$(CONFIG_FILE="$LOCAL_CONFIG" php -r 'define("KS_LINE_BOT_BOOTSTRAP", true); $c=require getenv("CONFIG_FILE"); echo json_encode(["token"=>$c["channel_access_token"]??"", "id"=>$c["channel_id"]??"", "secret"=>$c["channel_secret"]??""]);')"
+          TOKEN="$(CREDS="$CREDS" php -r '$d=json_decode(getenv("CREDS"),true); echo $d["token"]??"";')"
+          if [ -z "$TOKEN" ]; then
+            CHANNEL_ID="$(CREDS="$CREDS" php -r '$d=json_decode(getenv("CREDS"),true); echo $d["id"]??"";')"
+            CHANNEL_SECRET="$(CREDS="$CREDS" php -r '$d=json_decode(getenv("CREDS"),true); echo $d["secret"]??"";')"
+            TOKEN_RESPONSE="$(curl --fail --silent --show-error --request POST https://api.line.me/oauth2/v3/token --header 'Content-Type: application/x-www-form-urlencoded' --data-urlencode 'grant_type=client_credentials' --data-urlencode "client_id=$CHANNEL_ID" --data-urlencode "client_secret=$CHANNEL_SECRET")"
+            TOKEN="$(TOKEN_RESPONSE="$TOKEN_RESPONSE" php -r '$d=json_decode(getenv("TOKEN_RESPONSE"),true); echo $d["access_token"]??"";')"
+            unset CHANNEL_SECRET TOKEN_RESPONSE
+          fi
+          test -n "$TOKEN"
+          INFO="$(curl --fail --silent --show-error -H "Authorization: Bearer $TOKEN" https://api.line.me/v2/bot/info)"
+          unset TOKEN
+          INFO="$INFO" php -r '
+            $d=json_decode(getenv("INFO"),true);
+            echo "bot_display_name=" . ($d["displayName"] ?? "") . PHP_EOL;
+            echo "bot_basic_id=" . ($d["basicId"] ?? "") . PHP_EOL;
+          '
+
+      - name: Verify isolated webhook health endpoint
+        if: steps.secrets.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          body="$(curl --fail --silent --show-error --location --retry 5 --retry-delay 2 "$WEBHOOK_URL?v=$GITHUB_RUN_ID")"
+          relay="$(curl --fail --silent --show-error --location --retry 5 --retry-delay 2 "$RELAY_URL?v=$GITHUB_RUN_ID")"
+          member_counts="$(curl --fail --silent --show-error --location --retry 5 --retry-delay 2 "$MEMBER_COUNTS_URL?v=$GITHUB_RUN_ID")"
+          [ "$body" = 'ok' ]
+          [ "$relay" = 'ok' ]
+          echo "$member_counts" | grep -q '"ok":true'
+          echo "$member_counts" | grep -q '"counts"'
+          echo "Isolated nami LINE bot endpoints are healthy."
+
+      - name: Verify isolated relay self-test
+        if: steps.secrets.outputs.ready == 'true'
+        shell: bash
+        env:
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          CRON_TOKEN="$(printf '%s' "$FTP_PASSWORD" | sha256sum | awk '{print $1}')"
+          RESPONSE="$(curl --fail --silent --show-error --http1.1             --request POST             --data-urlencode "cron_token=$CRON_TOKEN"             "$RELAY_URL?selftest=1")"
+          echo "$RESPONSE"
+          echo "$RESPONSE" | grep -q '"ok":true'
+          echo "LINE relay forwards safely to both current production and self-intro webhook."

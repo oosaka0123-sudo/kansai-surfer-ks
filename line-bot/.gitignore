@@ -1,0 +1,6 @@
+config.php
+cron_key.php
+state.php
+state.php.tmp
+.state.lock
+admin_setup.php
