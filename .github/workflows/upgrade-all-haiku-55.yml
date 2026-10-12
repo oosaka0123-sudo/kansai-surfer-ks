@@ -54,7 +54,7 @@ jobs:
             open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST"
             get "$remote" -o "$TMP/original/$base"
             bye
-LFTP_EOF
+          LFTP_EOF
           done
 
           TMP="$TMP" OLD_MODEL="$OLD_MODEL" NEW_MODEL="$NEW_MODEL" python - <<'PY'
