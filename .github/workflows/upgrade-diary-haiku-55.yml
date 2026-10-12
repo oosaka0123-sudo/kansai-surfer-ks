@@ -1,0 +1,151 @@
+name: Upgrade diary Claude Haiku to 5.5
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ks-diary-haiku-upgrade
+  cancel-in-progress: false
+
+jobs:
+  upgrade:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      FTP_HOST: ftp.lolipop.jp
+      REMOTE_FILE: /kansai/admin/ai_draft.php
+      OLD_MODEL: claude-haiku-4-5-20251001
+      NEW_MODEL: claude-haiku-5-5
+
+    steps:
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y lftp
+
+      - name: Patch, deploy, verify, and auto-rollback on failure
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          test -n "$FTP_USERNAME"
+          test -n "$FTP_PASSWORD"
+
+          TMP="$RUNNER_TEMP/ks-haiku55"
+          mkdir -p "$TMP"
+          ORIGINAL="$TMP/ai_draft.original.php"
+          PATCHED="$TMP/ai_draft.patched.php"
+          VERIFY="$TMP/ai_draft.verify.php"
+
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST"
+          get "$REMOTE_FILE" -o "$ORIGINAL"
+          bye
+          LFTP_EOF
+
+          ORIGINAL="$ORIGINAL" PATCHED="$PATCHED" OLD_MODEL="$OLD_MODEL" NEW_MODEL="$NEW_MODEL" python - <<'PY'
+          import os, pathlib, re, difflib
+
+          src = pathlib.Path(os.environ['ORIGINAL'])
+          dst = pathlib.Path(os.environ['PATCHED'])
+          old = os.environ['OLD_MODEL']
+          new = os.environ['NEW_MODEL']
+
+          text = src.read_text(encoding='utf-8')
+          if text.count(old) != 1:
+              raise SystemExit(f'Expected exactly one old model ID, found {text.count(old)}')
+          if new in text:
+              raise SystemExit('New model already present before migration')
+
+          out = text.replace(old, new, 1)
+
+          # Haiku 5.5 rejects legacy sampling parameters. Remove temperature only
+          # when it is a standalone PHP array entry.
+          temp_re = re.compile(
+              r'(?m)^(?P<indent>\s*)[\'\"]temperature[\'\"]\s*=>\s*[^,\n]+,?\s*\n'
+          )
+          out, removed = temp_re.subn('', out, count=1)
+          if removed != 1:
+              raise SystemExit(f'Expected exactly one standalone temperature entry, removed {removed}')
+
+          forbidden = []
+          for key in ('temperature', 'top_p', 'top_k'):
+              if re.search(r'[\'\"]' + re.escape(key) + r'[\'\"]\s*=>', out):
+                  forbidden.append(key)
+          if forbidden:
+              raise SystemExit('Forbidden Haiku 5.5 sampling keys remain: ' + ','.join(forbidden))
+
+          if not re.search(r'[\'\"]max_tokens[\'\"]\s*=>', out):
+              raise SystemExit('max_tokens unexpectedly missing after patch')
+
+          diff = list(difflib.unified_diff(
+              text.splitlines(), out.splitlines(), lineterm=''
+          ))
+          changed = [line for line in diff if line.startswith(('+','-')) and not line.startswith(('+++','---'))]
+          if len(changed) < 2 or len(changed) > 4:
+              raise SystemExit(f'Unexpected patch size: {len(changed)} changed lines')
+          if any(('temperature' not in line and old not in line and new not in line) for line in changed):
+              raise SystemExit('Patch changed content outside model/temperature lines')
+
+          dst.write_text(out, encoding='utf-8')
+          print('Patch validation OK: model ID updated and legacy temperature removed.')
+          PY
+
+          php -l "$PATCHED"
+
+          rollback() {
+            echo "::warning::Verification failed; restoring original ai_draft.php"
+            lftp <<LFTP_EOF
+            set cmd:fail-exit true
+            set ftp:ssl-force true
+            set ftp:ssl-protect-data true
+            set ftp:passive-mode true
+            open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST"
+            put "$ORIGINAL" -o "$REMOTE_FILE"
+            bye
+            LFTP_EOF
+          }
+
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST"
+          put "$PATCHED" -o "$REMOTE_FILE"
+          get "$REMOTE_FILE" -o "$VERIFY"
+          bye
+          LFTP_EOF
+
+          if ! cmp -s "$PATCHED" "$VERIFY"; then
+            rollback
+            echo "::error::Uploaded file does not match patched file."
+            exit 1
+          fi
+
+          if ! php -l "$VERIFY" >/dev/null; then
+            rollback
+            echo "::error::Uploaded PHP failed syntax validation."
+            exit 1
+          fi
+
+          VERIFY="$VERIFY" NEW_MODEL="$NEW_MODEL" python - <<'PY'
+          import os, pathlib, re
+          text = pathlib.Path(os.environ['VERIFY']).read_text(encoding='utf-8')
+          new = os.environ['NEW_MODEL']
+          if text.count(new) != 1:
+              raise SystemExit('New model verification failed')
+          for key in ('temperature', 'top_p', 'top_k'):
+              if re.search(r'[\'\"]' + re.escape(key) + r'[\'\"]\s*=>', text):
+                  raise SystemExit(f'Forbidden key remains after upload: {key}')
+          print('Production source verification OK: Claude Haiku 5.5 is active in ai_draft.php.')
+          PY
