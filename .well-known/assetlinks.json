@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "net.rss7.kansai.twa",
+      "sha256_cert_fingerprints": [
+        "7C:77:CB:33:2B:35:81:BC:40:4F:FC:E0:56:CC:41:D7:0F:6C:F3:AB:73:E7:C8:79:F5:C0:C2:69:42:C6:41:7B"
+      ]
+    }
+  }
+]
