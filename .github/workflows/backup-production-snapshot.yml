@@ -1,0 +1,74 @@
+name: Backup Kansai production snapshot
+
+on:
+  push:
+    branches:
+      - backup/pre-major-update-20261012
+    paths:
+      - .github/workflows/backup-production-snapshot.yml
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      FTP_SERVER: ftp.lolipop.jp
+      FTP_SERVER_DIR: /kansai
+
+    steps:
+      - name: Checkout backup branch
+        uses: actions/checkout@v4
+
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y lftp
+
+      - name: Download production snapshot
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_PROD_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_PROD_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          test -n "$FTP_USERNAME"
+          test -n "$FTP_PASSWORD"
+          SNAP="$RUNNER_TEMP/kansai-production-live"
+          mkdir -p "$SNAP"
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 30
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER"
+          mirror --verbose=1 --no-perms "$FTP_SERVER_DIR" "$SNAP"
+          bye
+          LFTP_EOF
+          test -f "$SNAP/index.html"
+          echo "Downloaded production snapshot."
+
+      - name: Create archive and manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          SNAP="$RUNNER_TEMP/kansai-production-live"
+          OUT="$RUNNER_TEMP/kansai-production-backup-20261012"
+          mkdir -p "$OUT"
+          find "$SNAP" -type f -printf '%P\n' | sort > "$OUT/file-list.txt"
+          find "$SNAP" -type f -print0 | sort -z | xargs -0 sha256sum > "$OUT/sha256-full.txt"
+          tar -C "$SNAP" -czf "$OUT/kansai-production-live-20261012.tar.gz" .
+          sha256sum "$OUT/kansai-production-live-20261012.tar.gz" > "$OUT/archive.sha256"
+          du -sh "$SNAP" > "$OUT/size.txt"
+          wc -l "$OUT/file-list.txt" > "$OUT/file-count.txt"
+
+      - name: Upload immutable backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kansai-production-live-backup-20261012
+          path: ${{ runner.temp }}/kansai-production-backup-20261012/
+          retention-days: 90
+          if-no-files-found: error
