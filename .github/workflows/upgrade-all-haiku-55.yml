@@ -1,0 +1,143 @@
+name: Upgrade all production Haiku to 5.5
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ks-haiku55-upgrade
+  cancel-in-progress: false
+
+jobs:
+  upgrade:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      FTP_HOST: ftp.lolipop.jp
+      OLD_MODEL: claude-haiku-4-5-20251001
+      NEW_MODEL: claude-haiku-5-5
+
+    steps:
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y lftp
+
+      - name: Upgrade all three Claude Haiku production scripts
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          test -n "$FTP_USERNAME"
+          test -n "$FTP_PASSWORD"
+
+          TMP="$RUNNER_TEMP/ks-haiku55-all"
+          mkdir -p "$TMP/original" "$TMP/patched" "$TMP/verify"
+
+          FILES=(
+            "/kansai/admin/ai_draft.php"
+            "/kansai/admin/auto_wave_post.php"
+            "/kansai/admin/auto_wave_today.php"
+          )
+
+          for remote in "${FILES[@]}"; do
+            base="$(basename "$remote")"
+            lftp <<LFTP_EOF
+            set cmd:fail-exit true
+            set ftp:ssl-force true
+            set ftp:ssl-protect-data true
+            set ftp:passive-mode true
+            open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST"
+            get "$remote" -o "$TMP/original/$base"
+            bye
+LFTP_EOF
+          done
+
+          TMP="$TMP" OLD_MODEL="$OLD_MODEL" NEW_MODEL="$NEW_MODEL" python - <<'PY'
+          import os, pathlib, re, shutil
+
+          root = pathlib.Path(os.environ['TMP'])
+          old = os.environ['OLD_MODEL']
+          new = os.environ['NEW_MODEL']
+
+          for src in sorted((root / 'original').glob('*.php')):
+              text = src.read_text(encoding='utf-8')
+              before = text
+
+              # Allow rerun after partial success.
+              old_count = text.count(old)
+              new_count = text.count(new)
+              if old_count == 0 and new_count == 1:
+                  out = text
+              elif old_count == 1 and new_count == 0:
+                  out = text.replace(old, new, 1)
+              else:
+                  raise SystemExit(f'{src.name}: unexpected model counts old={old_count} new={new_count}')
+
+              # Haiku 5.5 migration requirement: omit legacy sampling keys.
+              for key in ('temperature', 'top_p', 'top_k'):
+                  pat = re.compile(
+                      r'(?m)^\s*[\'\"]' + re.escape(key) + r'[\'\"]\s*=>\s*[^,\n]+,?\s*\n'
+                  )
+                  out = pat.sub('', out)
+
+              if out.count(new) != 1:
+                  raise SystemExit(f'{src.name}: new model ID validation failed')
+
+              for key in ('temperature', 'top_p', 'top_k'):
+                  if re.search(r'[\'\"]' + re.escape(key) + r'[\'\"]\s*=>', out):
+                      raise SystemExit(f'{src.name}: forbidden key remains: {key}')
+
+              if not re.search(r'[\'\"]max_tokens[\'\"]\s*=>', out):
+                  raise SystemExit(f'{src.name}: max_tokens missing unexpectedly')
+
+              dst = root / 'patched' / src.name
+              dst.write_text(out, encoding='utf-8')
+
+              changed = before != out
+              print(f'{src.name}: patched={str(changed).lower()}')
+          PY
+
+          for f in "$TMP"/patched/*.php; do
+            php -l "$f"
+          done
+
+          rollback_all() {
+            echo "::warning::Verification failed; restoring all original production scripts."
+            for remote in "${FILES[@]}"; do
+              base="$(basename "$remote")"
+              lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST" -e "set cmd:fail-exit true; set ftp:ssl-force true; set ftp:ssl-protect-data true; set ftp:passive-mode true; put \"$TMP/original/$base\" -o \"$remote\"; bye"
+            done
+          }
+
+          trap 'rollback_all' ERR
+
+          for remote in "${FILES[@]}"; do
+            base="$(basename "$remote")"
+            lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST" -e "set cmd:fail-exit true; set ftp:ssl-force true; set ftp:ssl-protect-data true; set ftp:passive-mode true; put \"$TMP/patched/$base\" -o \"$remote\"; get \"$remote\" -o \"$TMP/verify/$base\"; bye"
+          done
+
+          for f in "$TMP"/verify/*.php; do
+            php -l "$f"
+          done
+
+          TMP="$TMP" NEW_MODEL="$NEW_MODEL" python - <<'PY'
+          import os, pathlib, re
+          root = pathlib.Path(os.environ['TMP'])
+          new = os.environ['NEW_MODEL']
+          for p in sorted((root / 'verify').glob('*.php')):
+              text = p.read_text(encoding='utf-8')
+              if text.count(new) != 1:
+                  raise SystemExit(f'{p.name}: uploaded model verification failed')
+              for key in ('temperature', 'top_p', 'top_k'):
+                  if re.search(r'[\'\"]' + re.escape(key) + r'[\'\"]\s*=>', text):
+                      raise SystemExit(f'{p.name}: forbidden key remains after upload: {key}')
+              print(f'{p.name}: Haiku 5.5 verified')
+          PY
+
+          trap - ERR
+          echo "All production Claude Haiku scripts upgraded and verified."
