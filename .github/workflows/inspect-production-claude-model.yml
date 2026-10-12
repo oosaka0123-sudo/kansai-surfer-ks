@@ -48,7 +48,9 @@ jobs:
               text = p.read_text(encoding='utf-8', errors='ignore')
               models = sorted(set(model_re.findall(text)))
               anthropic = 'api.anthropic.com' in text.lower() or 'anthropic' in text.lower()
+              params = [k for k in ['temperature','top_p','top_k','max_tokens','effort'] if re.search(r'''[\"']''' + re.escape(k) + r'''[\"']\s*=>''', text)]
               print(f'FILE={p.name}')
               print('MODELS=' + (','.join(models) if models else '(none detected)'))
               print('ANTHROPIC_REF=' + ('yes' if anthropic else 'no'))
+              print('PARAM_KEYS=' + (','.join(params) if params else '(none)'))
           PY
