@@ -129,7 +129,7 @@ jobs:
           config_code="$(curl --silent --output /dev/null --write-out '%{http_code}' https://nami.rss7.net/ks-line-bot/config.php)"
           cron_code="$(curl --silent --output /dev/null --write-out '%{http_code}' https://nami.rss7.net/ks-line-bot/cron_key.php)"
           state_code="$(curl --silent --output /dev/null --write-out '%{http_code}' https://nami.rss7.net/ks-line-bot/state.php)"
-          echo "config.php HTTP $config_code"
+          echo "config.php HTTP $config_code (404 is expected because direct access is blocked)"
           echo "cron_key.php HTTP $cron_code"
           echo "state.php HTTP $state_code"
 
@@ -168,7 +168,7 @@ jobs:
           get "$FTP_SERVER_DIR/config.php" -o "$LOCAL_CONFIG"
           bye
           LFTP_EOF
-          TOKEN="$(CONFIG_FILE="$LOCAL_CONFIG" php -r '$c=require getenv("CONFIG_FILE"); echo $c["channel_access_token"] ?? "";')"
+          TOKEN="$(CONFIG_FILE="$LOCAL_CONFIG" php -r 'define("KS_LINE_BOT_BOOTSTRAP", true); $c=require getenv("CONFIG_FILE"); echo $c["channel_access_token"] ?? "";')"
           test -n "$TOKEN"
           INFO="$(curl --fail --silent --show-error -H "Authorization: Bearer $TOKEN" https://api.line.me/v2/bot/info)"
           unset TOKEN
