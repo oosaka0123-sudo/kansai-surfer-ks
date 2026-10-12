@@ -104,15 +104,7 @@ jobs:
 
           rollback() {
             echo "::warning::Verification failed; restoring original ai_draft.php"
-            lftp <<LFTP_EOF
-            set cmd:fail-exit true
-            set ftp:ssl-force true
-            set ftp:ssl-protect-data true
-            set ftp:passive-mode true
-            open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST"
-            put "$ORIGINAL" -o "$REMOTE_FILE"
-            bye
-            LFTP_EOF
+            lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST" -e "set cmd:fail-exit true; set ftp:ssl-force true; set ftp:ssl-protect-data true; set ftp:passive-mode true; put \"$ORIGINAL\" -o \"$REMOTE_FILE\"; bye"
           }
 
           lftp <<LFTP_EOF
