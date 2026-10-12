@@ -1,0 +1,40 @@
+{
+  "id": "/",
+  "name": "関西サーファー｜波情報",
+  "short_name": "関西サーファー",
+  "description": "関西・西日本エリアの波情報、ライブカメラ、風予想をリアルタイムでチェック",
+  "start_url": "/index.html?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0a1520",
+  "theme_color": "#0a1520",
+  "orientation": "portrait-primary",
+  "lang": "ja",
+  "categories": ["sports", "weather", "lifestyle"],
+  "icons": [
+    {
+      "src": "/img/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/img/icon-192-maskable.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/img/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/img/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
