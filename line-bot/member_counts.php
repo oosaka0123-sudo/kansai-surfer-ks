@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+const KS_LINE_BOT_BOOTSTRAP = true;
+
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: public, max-age=60, s-maxage=60');
 header('Access-Control-Allow-Origin: *');
