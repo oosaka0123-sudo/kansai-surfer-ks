@@ -14,7 +14,7 @@ jobs:
       - name: Install lftp
         run: sudo apt-get update -qq && sudo apt-get install -y lftp
 
-      - name: Locate Claude runtime references safely
+      - name: Inspect likely production AI scripts
         shell: bash
         env:
           FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
@@ -25,56 +25,30 @@ jobs:
           test -n "$FTP_USERNAME"
           test -n "$FTP_PASSWORD"
           TMP="$RUNNER_TEMP/ks-claude-inspect"
-          mkdir -p "$TMP/files"
+          mkdir -p "$TMP"
 
-          lftp <<LFTP_EOF > "$TMP/list.txt"
+          lftp <<LFTP_EOF
           set cmd:fail-exit true
           set ftp:ssl-force true
           set ftp:ssl-protect-data true
           set ftp:passive-mode true
           open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
-          find /kansai
+          get /kansai/admin/ai_draft.php -o "$TMP/ai_draft.php"
+          get /kansai/admin/auto_wave_post.php -o "$TMP/auto_wave_post.php"
+          get /kansai/admin/auto_wave_today.php -o "$TMP/auto_wave_today.php"
           bye
           LFTP_EOF
 
-          grep -Ei '\.(php|py|js|sh)$' "$TMP/list.txt"             | grep -Ei '(blog|diary|journal|cron|claude|anthropic|article|generate|ai)'             | grep -Evi '(config|secret|token|credential|uploads|/data/)'             | head -n 120 > "$TMP/candidates.txt" || true
-
-          echo 'CANDIDATE_PATHS'
-          cat "$TMP/candidates.txt" || true
-
-          while IFS= read -r remote; do
-            [ -n "$remote" ] || continue
-            safe="$(printf '%s' "$remote" | tr '/ ' '__')"
-            local_file="$TMP/files/$safe"
-            lftp <<LFTP_EOF >/dev/null
-            set cmd:fail-exit true
-            set ftp:ssl-force true
-            set ftp:ssl-protect-data true
-            set ftp:passive-mode true
-            open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
-            get "$remote" -o "$local_file"
-            bye
-            LFTP_EOF
-          done < "$TMP/candidates.txt"
-
-          PROD_ROOT="$TMP/files" python - <<'PY'
+          PROD_ROOT="$TMP" python - <<'PY'
           import os, re, pathlib
           root = pathlib.Path(os.environ['PROD_ROOT'])
           model_re = re.compile(r'claude-[a-z0-9][a-z0-9._-]*', re.I)
-          hits = []
-          for p in root.iterdir():
-              if not p.is_file():
-                  continue
+          print('CLAUDE_RUNTIME_MATCHES')
+          for p in sorted(root.glob('*.php')):
               text = p.read_text(encoding='utf-8', errors='ignore')
               models = sorted(set(model_re.findall(text)))
               anthropic = 'api.anthropic.com' in text.lower() or 'anthropic' in text.lower()
-              if models or anthropic:
-                  hits.append((p.name, models, anthropic))
-          print('CLAUDE_RUNTIME_MATCHES')
-          if not hits:
-              print('NONE')
-          for name, models, anthropic in hits:
-              print(f'FILE={name}')
+              print(f'FILE={p.name}')
               print('MODELS=' + (','.join(models) if models else '(none detected)'))
               print('ANTHROPIC_REF=' + ('yes' if anthropic else 'no'))
           PY
