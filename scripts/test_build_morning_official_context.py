@@ -54,10 +54,10 @@ JCG_RSS = """<?xml version="1.0" encoding="UTF-8"?>
 def test_ranking():
     rows = collector.parse_sleague_top3(RANKING_HTML.encode())
     assert [(x["rank"], x["name"], x["points"]) for x in rows] == [
-        (1, "松永　大輝", "5,000"),
-        (2, "川俣　海徳(S.TWO)", "4,300"),
-        (3, "大音　凜太", "3,600"),
-        (3, "加藤　翔平", "3,600"),
+        (1, "松永 大輝", "5,000"),
+        (2, "川俣 海徳(S.TWO)", "4,300"),
+        (3, "大音 凜太", "3,600"),
+        (3, "加藤 翔平", "3,600"),
     ]
 
 
