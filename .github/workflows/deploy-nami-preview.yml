@@ -148,6 +148,32 @@ jobs:
           set -euo pipefail
           curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "$SITE_URL" > /tmp/ks-preview-index.html
           curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "${SITE_URL}isonoura.html" > /tmp/ks-preview-isonoura.html
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "${SITE_URL}morning-brief.html" > /tmp/ks-preview-morning.html
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "${SITE_URL}data/morning-brief.json" > /tmp/ks-preview-morning.json
+
           grep -qi '<html' /tmp/ks-preview-index.html
           grep -qi '<html' /tmp/ks-preview-isonoura.html
+          grep -q 'おはようございます、木山です。' /tmp/ks-preview-morning.html
+          grep -q 'サーフィン関連ニュース' /tmp/ks-preview-morning.html
+          grep -q '海の事故・安全情報' /tmp/ks-preview-morning.html
+          grep -q 'https://sleague.rss7.net/' /tmp/ks-preview-morning.html
+
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          data = json.loads(Path('/tmp/ks-preview-morning.json').read_text(encoding='utf-8'))
+          expected = ['磯ノ浦','国府の浜','生見','小松海岸','伊良湖','静波','浜詰','高浜','白兎']
+
+          assert data.get('preview') is True
+          assert (data.get('opening') or {}).get('greeting') == 'おはようございます、木山です。'
+          assert [x.get('name') for x in data.get('spots', [])] == expected
+
+          fallback_kinds = {x.get('kind') for x in data.get('competition_fallback', [])}
+          for required in {'monthly_schedule', 'sleague_top3', 'kanoa_ranking'}:
+              assert required in fallback_kinds, f'missing fallback kind: {required}'
+
+          print('Morning brief public JSON verification passed.')
+          PY
+
           echo "nami preview HTTP verification succeeded: $SITE_URL"
