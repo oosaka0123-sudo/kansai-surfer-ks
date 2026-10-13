@@ -32,7 +32,7 @@ jobs:
           set ftp:passive-mode true
           open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST"
           get /kansai/line/index.html -o "$W/line.html"
-          mirror --verbose=0 --parallel=8 --include-glob '*.html' --include-glob '*.php' --exclude-glob 'admin/**' --exclude-glob 'data/**' --exclude-glob 'uploads/**' --exclude-glob 'line-bot/**' --exclude-glob 'line/**' /kansai "$O"
+          mirror --verbose=0 --parallel=8 --include-glob '*.html' --include-glob '*.php' --exclude-glob 'admin/**' --exclude-glob 'data/**' --exclude-glob 'uploads/**' --exclude-glob 'line-bot/**' --exclude-glob 'line/**' --exclude-glob 'img/**' --exclude-glob 'secret/**' /kansai "$O"
           bye
           LFTP_EOF
           LINE="$W/line.html" O="$O" P="$P" python - <<'PY'
@@ -51,7 +51,16 @@ jobs:
               m=list(rx.finditer(before))
               if not m: continue
               if len(m)!=1: raise SystemExit(f"{f.relative_to(o)} footer count={len(m)}")
-              x=m[0]; after=before[:x.start()]+footer+before[x.end():]
+              x=m[0]
+              # Only replace a literal page footer. If the footer text appears
+              # while PHP code is open (for example inside a helper string),
+              # it is not a rendered page footer and must not be touched.
+              if f.suffix.lower()==".php":
+                  prev_open=max(before.rfind("<?php",0,x.start()),before.rfind("<?=",0,x.start()),before.rfind("<?",0,x.start()))
+                  prev_close=before.rfind("?>",0,x.start())
+                  if prev_open>prev_close:
+                      continue
+              after=before[:x.start()]+footer+before[x.end():]
               if after==before: continue
               # hard proof: only the footer span changes
               if before[:x.start()]!=after[:x.start()]: raise SystemExit("prefix changed")
