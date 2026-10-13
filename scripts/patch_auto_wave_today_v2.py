@@ -131,7 +131,7 @@ def self_test() -> None:
     else:
         raise AssertionError("hash mismatch must fail")
 
-    duplicate = b"<?php\n$prompt = <<<PROMPT\na\nPROMPT;\n$prompt = <<<PROMPT\nb\nPROMPT;\n"
+    duplicate = b"<?php\nfunction generate_article($spots_data) {\n$prompt = <<<PROMPT\na\nPROMPT;\n$prompt = <<<PROMPT\nb\nPROMPT;\n}\n"
     try:
         patch_source(duplicate, sha256_bytes(duplicate))
     except ValueError as exc:
