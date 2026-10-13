@@ -33,7 +33,7 @@ jobs:
           open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
           mirror --verbose=0             --include-glob '*.html'             --include-glob '*.php'             --include-glob '*.js'             --exclude-glob 'admin/**'             --exclude-glob 'data/**'             --exclude-glob 'uploads/**'             --exclude-glob 'line-bot/**'             /kansai "$ROOT"
           bye
-LFTP_EOF
+          LFTP_EOF
 
           ROOT="$ROOT" python - <<'PY'
           import pathlib, re, os
