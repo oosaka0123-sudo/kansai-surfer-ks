@@ -36,6 +36,9 @@ jobs:
       EXPECTED_SHA256: e2224884f6fded3655e4bfee83e3355c02da1f4ed9f08ae4d6b6861782203795
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Install lftp and PHP
         run: sudo apt-get update -qq && sudo apt-get install -y lftp php-cli
 
@@ -65,62 +68,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          SRC="$RUNNER_TEMP/ks-morning-v2/auto_wave_today.php"
-          OUT="$RUNNER_TEMP/ks-morning-v2/auto_wave_today.v2.php"
-
-          SRC="$SRC" OUT="$OUT" EXPECTED_SHA256="$EXPECTED_SHA256" python3 - <<'PY'
-          import hashlib
-          import os
-          import pathlib
-          import re
-
-          src = pathlib.Path(os.environ["SRC"])
-          out = pathlib.Path(os.environ["OUT"])
-          expected = os.environ["EXPECTED_SHA256"]
-
-          raw = src.read_bytes()
-          old_hash = hashlib.sha256(raw).hexdigest()
-          if old_hash != expected:
-              raise SystemExit(f"source hash changed: expected={expected} actual={old_hash}")
-
-          text = raw.decode("utf-8")
-          opener = re.compile(r"(\$prompt\s*=\s*<<<PROMPT\s*\r?\n)")
-          matches = list(opener.finditer(text))
-          if len(matches) != 1:
-              raise SystemExit(f"expected exactly one article prompt opener, found {len(matches)}")
-
-          policy = """【関西サーファー朝刊 v2 最優先ルール】
-          ・冒頭は必ず「おはようございます、木山です。」で始める。
-          ・大阪の天気や時事・季節ネタは、入力として確認済みの情報だけを短く使う。未提供なら作らない。
-          ・現地を見ていないのに「今朝見てきた」「仲間から聞いた」などの体験・証言を作らない。
-          ・現在の波と今後の予報を混ぜない。数値・サイズ・順位は入力データを改変しない。
-          ・波ランキングは最大TOP5。9スポットはデータが無い場合「本日データなし」とし、推測で補完しない。
-          ・コンペ情報、サーフィン関連ニュース、海の事故・安全情報は、確認済み外部コンテキストが入力された場合だけ事実として書く。
-          ・コンペ情報が無い日に、月間日程・S.LEAGUE TOP3・五十嵐カノア順位などを勝手に生成しない。確認済み入力がある場合だけ使用する。
-          ・海の事故・津波・地震・台風・高波等は一次情報と発表時刻が入力された場合だけ掲載し、古い警報を現在情報として書かない。
-          ・通常日は朝2〜3分で読める簡潔さを優先する。重大な安全情報がある場合のみ必要な長さにする。
-          ・本文中のS.LEAGUE / エスリーグは、表示側で https://sleague.rss7.net/ へリンクする前提で扱う。
-          【ここまで最優先ルール】
-
-          """
-
-          patched, count = opener.subn(lambda m: m.group(1) + policy, text, count=1)
-          if count != 1:
-              raise SystemExit(f"prompt patch count was {count}, expected 1")
-          if patched.count("【関西サーファー朝刊 v2 最優先ルール】") != 1:
-              raise SystemExit("policy marker count invalid")
-
-          out.write_text(patched, encoding="utf-8", newline="")
-          new_hash = hashlib.sha256(out.read_bytes()).hexdigest()
-
-          print("MORNING_V2_DRY_RUN_PATCH_READY")
-          print(f"SOURCE_SHA256={old_hash}")
-          print(f"PATCHED_SHA256={new_hash}")
-          print(f"SOURCE_BYTES={len(raw)}")
-          print(f"PATCHED_BYTES={len(out.read_bytes())}")
-          print("PROMPT_PATCH_COUNT=1")
-          print("PRODUCTION_WRITE=none")
-          PY
+          python3 scripts/patch_auto_wave_today_v2.py \
+            --source "$RUNNER_TEMP/ks-morning-v2/auto_wave_today.php" \
+            --output "$RUNNER_TEMP/ks-morning-v2/auto_wave_today.v2.php" \
+            --expected-sha256 "$EXPECTED_SHA256"
 
       - name: PHP syntax validation
         shell: bash
