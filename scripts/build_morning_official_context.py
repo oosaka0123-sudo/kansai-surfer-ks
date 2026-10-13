@@ -21,8 +21,8 @@ JST = timezone(timedelta(hours=9))
 SCHEMA_VERSION = "ks-morning-brief-v2"
 SLEAGUE_RANKING_URL = "https://sleague.jp/ranking/?league=s1"
 SLEAGUE_SCHEDULE_URL = "https://sleague.jp/schedule/"
-JMA_EXTRA_FEED = "https://www.data.jma.go.jp/developer/xml/feed/extra_l.xml"
-JMA_EQVOL_FEED = "https://www.data.jma.go.jp/developer/xml/feed/eqvol_l.xml"
+JMA_EXTRA_FEED = "https://www.data.jma.go.jp/developer/xml/feed/extra.xml"
+JMA_EQVOL_FEED = "https://www.data.jma.go.jp/developer/xml/feed/eqvol.xml"
 JCG_RSS_URL = "https://www6.kaiho.mlit.go.jp/rss.xml"
 
 SPOTS = ["磯ノ浦","国府の浜","生見","小松海岸","伊良湖","静波","浜詰","高浜","白兎"]
@@ -352,8 +352,11 @@ def collect_jma(now, status):
         except Exception as exc:
             feed_status[feed_url] = {"ok": False, "error": type(exc).__name__}
             continue
-        for entry in entries:
+        for entry in entries[:40]:
             if not any(key in entry["title"] for key in JMA_TITLES):
+                continue
+            entry_time = parse_iso_any(entry.get("updated"))
+            if entry_time and (now - entry_time > timedelta(minutes=30) or entry_time - now > timedelta(minutes=5)):
                 continue
             try:
                 detail = parse_jma_detail(fetch(entry["url"]))
@@ -389,8 +392,8 @@ def collect_jma(now, status):
             continue
         if item["info_type"] in ("取消", "解除"):
             continue
-        # Long feed is used to find the latest state, but only surface reasonably current facts.
-        if now - item["published"] > timedelta(hours=24):
+        # The high-frequency feed only describes very recent changes; stay fail-closed.
+        if now - item["published"] > timedelta(minutes=90):
             continue
         body = item["headline"] or f"{'・'.join(fresh_regions)}に関する{item['title']}。"
         output.append({
