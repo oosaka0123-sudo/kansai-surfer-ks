@@ -23,15 +23,78 @@
   "headline": null,
   "ranking": [],
   "spots": [
-    {"name": "磯ノ浦", "current": null, "current_at": null, "wind": null, "forecast": null, "forecast_at": null},
-    {"name": "国府の浜", "current": null, "current_at": null, "wind": null, "forecast": null, "forecast_at": null},
-    {"name": "生見", "current": null, "current_at": null, "wind": null, "forecast": null, "forecast_at": null},
-    {"name": "小松海岸", "current": null, "current_at": null, "wind": null, "forecast": null, "forecast_at": null},
-    {"name": "伊良湖", "current": null, "current_at": null, "wind": null, "forecast": null, "forecast_at": null},
-    {"name": "静波", "current": null, "current_at": null, "wind": null, "forecast": null, "forecast_at": null},
-    {"name": "浜詰", "current": null, "current_at": null, "wind": null, "forecast": null, "forecast_at": null},
-    {"name": "高浜", "current": null, "current_at": null, "wind": null, "forecast": null, "forecast_at": null},
-    {"name": "白兎", "current": null, "current_at": null, "wind": null, "forecast": null, "forecast_at": null}
+    {
+      "name": "磯ノ浦",
+      "current": null,
+      "current_at": null,
+      "wind": null,
+      "forecast": null,
+      "forecast_at": null
+    },
+    {
+      "name": "国府の浜",
+      "current": null,
+      "current_at": null,
+      "wind": null,
+      "forecast": null,
+      "forecast_at": null
+    },
+    {
+      "name": "生見",
+      "current": null,
+      "current_at": null,
+      "wind": null,
+      "forecast": null,
+      "forecast_at": null
+    },
+    {
+      "name": "小松海岸",
+      "current": null,
+      "current_at": null,
+      "wind": null,
+      "forecast": null,
+      "forecast_at": null
+    },
+    {
+      "name": "伊良湖",
+      "current": null,
+      "current_at": null,
+      "wind": null,
+      "forecast": null,
+      "forecast_at": null
+    },
+    {
+      "name": "静波",
+      "current": null,
+      "current_at": null,
+      "wind": null,
+      "forecast": null,
+      "forecast_at": null
+    },
+    {
+      "name": "浜詰",
+      "current": null,
+      "current_at": null,
+      "wind": null,
+      "forecast": null,
+      "forecast_at": null
+    },
+    {
+      "name": "高浜",
+      "current": null,
+      "current_at": null,
+      "wind": null,
+      "forecast": null,
+      "forecast_at": null
+    },
+    {
+      "name": "白兎",
+      "current": null,
+      "current_at": null,
+      "wind": null,
+      "forecast": null,
+      "forecast_at": null
+    }
   ],
   "competition_news": [],
   "competition_fallback": [
@@ -66,7 +129,7 @@
   "surf_news": [],
   "safety_news": [],
   "safety_status": {
-    "summary": "特記事項なし",
+    "summary": null,
     "checked_at": null,
     "sources": []
   },
