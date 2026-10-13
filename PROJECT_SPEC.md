@@ -177,6 +177,51 @@ Reel format:
 - Use no more than 5 hashtags.
 - Do not invent wave observations, forecasts, scores, or sizes when source data is unavailable.
 
+## Morning blog / 関西サーファー朝刊
+
+The morning blog is being redesigned as a short, fact-grounded surf morning edition that can normally be read in about 2–3 minutes.
+
+### Opening voice
+- Begin with: `おはようございます、木山です。`
+- Follow with a short Osaka weather note, one verified current/seasonal/surf-related topic, and a transition into the surf report.
+- Keep the opening to roughly 3–4 short sentences.
+- Use a friendly, popular-host tone, but never fabricate personal observation, friend reports, or lived experience.
+- Weather and current-affairs facts must be sourced/verified before publication.
+
+### Standard article order
+1. Human opening by Kiyama.
+2. `今日の関西 波ランキングTOP5`.
+3. Nine fixed surf spots, with current conditions and forecast clearly separated.
+4. Competition news.
+5. Surfing-related news.
+6. Sea accidents / safety information.
+7. Short closing comment.
+
+Normal days should remain concise. Major typhoon, earthquake, tsunami, high-wave, marine-accident, or surfer-accident information may exceed the normal length because safety has priority.
+
+### Competition news fallback
+- Prefer real current competition developments first: WSL, S.LEAGUE, domestic and international events.
+- When there is no meaningful new competition story, use one or two useful fallback items such as the current month's event schedule, S.LEAGUE Top 3, KS-supported Kanoa Igarashi's current WSL ranking, or his next event.
+- Do not repeat unchanged fallback items every day. Track the last-published date and normally leave at least about three days between repeats unless a meaningful change occurs.
+- A stronger surf-news item may replace a routine Kanoa or S.LEAGUE fallback on that day.
+- Visible body-text occurrences of `S.LEAGUE` / `エスリーグ` link to S.LEAGUE NOW: `https://sleague.rss7.net/`. Do not blindly rewrite URLs, attributes, alt text, or code.
+
+### Surf news and safety
+- Surfing-related news is a separate section and should include only worthwhile verified stories, not filler.
+- Sea accidents and safety information have the highest factuality requirement.
+- Prefer primary sources such as JMA, Japan Coast Guard, police, municipalities, official lifesaving bodies, and official competition organizers.
+- Safety entries should include source/issuer, issued time, checked time, and source URL when available.
+- Unknown-source social posts alone are not sufficient for accident reporting.
+- If no meaningful safety item exists, keep the section brief rather than inventing content.
+
+### Data and generation guardrails
+- Current observations, forecasts, alerts, and news must remain separate fields in source data.
+- Show observation/issue times where relevant.
+- Missing spot data must be shown as unavailable / `本日データなし`; do not infer or fill it with invented values.
+- Claude/Haiku may turn confirmed structured data into prose but must not change numeric values, independently invent facts, or add fabricated first-person experience.
+- Breaking safety information must be freshness-checked close to publication so lifted or superseded alerts are not presented as current.
+- Production remains untouched until the NAMI test implementation is reviewed and verified.
+
 ## Security boundary
 Never commit:
 - passwords
