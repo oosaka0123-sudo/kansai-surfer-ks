@@ -79,6 +79,19 @@ jobs:
               php_refs = sorted(set(pathlib.PurePosixPath(x).name for x in re.findall(r"""['"]([^'"]+\.php)['"]""", text)))
               print("PHP_REFS=" + (",".join(php_refs) if php_refs else "(none)"))
 
+              json_refs = sorted(set(pathlib.PurePosixPath(x).name for x in re.findall(r"""['"]([^'"]+\.json)['"]""", text)))
+              print("JSON_REFS=" + (",".join(json_refs) if json_refs else "(none)"))
+
+              array_keys = sorted(set(re.findall(r"""\[['"]([A-Za-z0-9_\-]{1,64})['"]\]""", text)))
+              print("ARRAY_KEYS=" + (",".join(array_keys[:200]) if array_keys else "(none)"))
+
+              for fname in ("generate_article", "fetch_osaka_weather", "fetch_marine_data", "save_article", "rate_spot"):
+                  sig = re.search(r"(?is)function\s+" + re.escape(fname) + r"\s*\((.*?)\)\s*\{", text)
+                  if sig:
+                      params = re.sub(r"\s+", " ", sig.group(1)).strip()
+                      params = re.sub(r"=[^,)]*", "=<default>", params)
+                      print(f"SIGNATURE[{fname}]={params[:500]}")
+
               hosts = set()
               for url in re.findall(r"https?://[^\s'\"<>]+", text, flags=re.I):
                   try:
@@ -120,6 +133,15 @@ jobs:
                       scrubbed = re.sub(r"[A-Za-z0-9_\-]{24,}", "<redacted-token>", scrubbed)
                       shape_lines.append(f"{no}:{scrubbed.strip()[:240]}")
               print("PROMPT_SHAPE_LINES=" + (" || ".join(shape_lines[:20]) if shape_lines else "(none)"))
+
+              call_shapes = []
+              for fname in ("generate_article", "fetch_osaka_weather", "fetch_marine_data", "save_article", "rate_spot"):
+                  for no, line in enumerate(text.splitlines(), start=1):
+                      if re.search(r"\b" + re.escape(fname) + r"\s*\(", line) and not re.search(r"\bfunction\s+" + re.escape(fname), line):
+                          scrubbed = re.sub(r"""(['"])(?:(?=(\\?))\2.)*?\1""", '"<redacted-string>"', line)
+                          scrubbed = re.sub(r"[A-Za-z0-9_\-]{24,}", "<redacted-token>", scrubbed)
+                          call_shapes.append(f"{no}:{scrubbed.strip()[:320]}")
+              print("CALL_SHAPES=" + (" || ".join(call_shapes[:30]) if call_shapes else "(none)"))
               print("END_FILE")
 
           print("AUDIT_COMPLETE_NO_SOURCE_EXPORTED")
