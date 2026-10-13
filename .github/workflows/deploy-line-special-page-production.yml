@@ -1,0 +1,254 @@
+name: Deploy LINE special page to production
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ks-line-special-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      FTP_HOST: ftp.lolipop.jp
+      PROD_ROOT: /kansai
+      SPECIAL_URL: https://kansai.rss7.net/line/
+      STAGING_PAGE: https://nami.rss7.net/line-preview-chatgpt-v2.html
+      STAGING_VIDEO: https://nami.rss7.net/line-preview-chatgpt-hero.mp4
+
+    steps:
+      - name: Install tools
+        run: sudo apt-get update -qq && sudo apt-get install -y lftp file
+
+      - name: Prepare production patch
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          test -n "$FTP_USERNAME"
+          test -n "$FTP_PASSWORD"
+
+          WORK="$RUNNER_TEMP/ks-line-production"
+          ORIG="$WORK/original"
+          PATCHED="$WORK/patched"
+          SPECIAL="$WORK/special"
+          mkdir -p "$ORIG" "$PATCHED" "$SPECIAL"
+
+          # Fetch the currently approved special page and hero asset.
+          curl --fail --silent --show-error --location --retry 3 "$STAGING_PAGE?v=$GITHUB_RUN_ID" -o "$SPECIAL/index.html"
+          curl --fail --silent --show-error --location --retry 3 "$STAGING_VIDEO?v=$GITHUB_RUN_ID" -o "$SPECIAL/hero.mp4"
+          test "$(wc -c < "$SPECIAL/index.html")" -gt 5000
+          test "$(wc -c < "$SPECIAL/hero.mp4")" -gt 100000
+          file "$SPECIAL/hero.mp4" | grep -Eqi 'mp4|iso media'
+
+          # Read current production home page. On idempotent reruns its LINE
+          # buttons may already point to /line/, so also keep the existing
+          # production special page as a fallback source for the OpenChat URL.
+          curl --fail --silent --show-error --location --retry 3 "https://kansai.rss7.net/index.html?v=$GITHUB_RUN_ID" -o "$WORK/home.html"
+          curl --silent --show-error --location --retry 2 "https://kansai.rss7.net/line/?v=$GITHUB_RUN_ID" -o "$WORK/existing-special.html" || true
+
+          SPECIAL="$SPECIAL/index.html" HOME="$WORK/home.html" EXISTING="$WORK/existing-special.html" python - <<'PY'
+          import os, pathlib, re, html
+
+          special = pathlib.Path(os.environ['SPECIAL'])
+          home = pathlib.Path(os.environ['HOME'])
+          existing = pathlib.Path(os.environ['EXISTING'])
+          src = special.read_text(encoding='utf-8', errors='strict')
+          home_text = home.read_text(encoding='utf-8', errors='ignore')
+          existing_text = existing.read_text(encoding='utf-8', errors='ignore') if existing.exists() else ''
+
+          # Find the existing production OpenChat link by its visible label.
+          anchor_re = re.compile(r'<a\b[^>]*href=["\']([^"\']+)["\'][^>]*>(.*?)</a>', re.I|re.S)
+          main_url = None
+          for href, body in anchor_re.findall(home_text):
+              label = re.sub(r'<[^>]+>', ' ', body)
+              label = html.unescape(' '.join(label.split()))
+              if ('LINEオープンチャット' in label or 'オープンチャット' in label) and ('line.me' in href or 'lin.ee' in href):
+                  main_url = href
+                  break
+          if not main_url and existing_text:
+              main_card = re.search(r'<article\b[^>]*class=["\'][^"\']*\bmain\b[^"\']*["\'][^>]*>(.*?)</article>', existing_text, re.I|re.S)
+              if main_card:
+                  for href, body in anchor_re.findall(main_card.group(1)):
+                      if 'line.me' in href or 'lin.ee' in href:
+                          main_url = href
+                          break
+          if not main_url:
+              raise SystemExit('Could not locate current production main OpenChat URL from home or existing special page; refusing incomplete deployment.')
+
+          src = src.replace('#TODO-LINE-URL-main', main_url)
+          src = src.replace('line-preview-chatgpt-hero.mp4', 'hero.mp4')
+          src = src.replace('<meta name="robots" content="noindex,follow">', '<meta name="robots" content="index,follow">')
+          src = src.replace('https://nami.rss7.net/ks-line-bot/member_counts.php', 'https://nami.rss7.net/ks-line-bot/member_counts.php')
+
+          if '#TODO-LINE-URL-main' in src:
+              raise SystemExit('Main OpenChat placeholder still present.')
+          if 'href="#TODO-LINE-URL-main"' in src:
+              raise SystemExit('Main OpenChat placeholder anchor still present.')
+          special.write_text(src, encoding='utf-8')
+          print('Special page prepared with current production OpenChat URL.')
+          PY
+
+          # Mirror public textual pages only. Exclude admin/runtime and the new special-page directory.
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 25
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST"
+          mirror --verbose=0 --parallel=8             --include-glob '*.html'             --include-glob '*.php'             --include-glob '*.js'             --exclude-glob 'admin/**'             --exclude-glob 'data/**'             --exclude-glob 'uploads/**'             --exclude-glob 'line-bot/**'             --exclude-glob 'line/**'             "$PROD_ROOT" "$ORIG"
+          bye
+          LFTP_EOF
+
+          ORIG="$ORIG" PATCHED="$PATCHED" python - <<'PY'
+          import os, pathlib, re, shutil
+
+          orig = pathlib.Path(os.environ['ORIG'])
+          patched = pathlib.Path(os.environ['PATCHED'])
+          special_url = 'https://kansai.rss7.net/line/'
+
+          # Redirect every public anchor whose href goes directly to LINE.
+          # The special page itself is excluded by the FTP mirror rule.
+          href_re = re.compile(
+              r'(?P<prefix><a\b[^>]*?\bhref\s*=\s*["\'])'
+              r'(?P<href>https?://(?:line\.me|lin\.ee)/[^"\']*)'
+              r'(?P<suffix>["\'])',
+              re.I|re.S,
+          )
+
+          changed=[]
+          direct_remaining=[]
+          for p in orig.rglob('*'):
+              if not p.is_file() or p.suffix.lower() not in {'.html','.php','.js'}:
+                  continue
+              rel=p.relative_to(orig)
+              text=p.read_text(encoding='utf-8',errors='ignore')
+              out,n=href_re.subn(lambda m: m.group('prefix')+special_url+m.group('suffix'), text)
+              if n:
+                  dst=patched/rel
+                  dst.parent.mkdir(parents=True,exist_ok=True)
+                  dst.write_text(out,encoding='utf-8')
+                  changed.append((str(rel),n))
+              for m in href_re.finditer(out):
+                  direct_remaining.append((str(rel),m.group('href')))
+
+          if direct_remaining:
+              raise SystemExit('Direct LINE anchors remain after patch: '+repr(direct_remaining[:10]))
+          (patched/'_changed.tsv').write_text(
+              ''.join(f'{path}\t{count}\n' for path,count in changed),
+              encoding='utf-8'
+          )
+          print(f'CHANGED_FILES={len(changed)}')
+          print(f'CHANGED_ANCHORS={sum(n for _,n in changed)}')
+          if not changed:
+              print('No direct LINE anchors require rewriting; production may already be converged.')
+          for path,n in changed:
+              print(f'PATCH {path} anchors={n}')
+          PY
+
+          # Syntax-check patched PHP files before upload.
+          while IFS=$'\t' read -r rel count; do
+            case "$rel" in
+              *.php) php -l "$PATCHED/$rel" >/dev/null ;;
+            esac
+          done < "$PATCHED/_changed.tsv"
+
+      - name: Deploy to production with rollback
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          WORK="$RUNNER_TEMP/ks-line-production"
+          ORIG="$WORK/original"
+          PATCHED="$WORK/patched"
+          SPECIAL="$WORK/special"
+
+          rollback() {
+            echo "::warning::Verification failed; restoring changed production pages."
+            while IFS=$'\t' read -r rel count; do
+              lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST" -e "set cmd:fail-exit true; set ftp:ssl-force true; set ftp:ssl-protect-data true; put \"$ORIG/$rel\" -o \"$PROD_ROOT/$rel\"; bye" || true
+            done < "$PATCHED/_changed.tsv"
+          }
+          trap 'rollback' ERR
+
+          # Upload the new dedicated production page.
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST"
+          mkdir -f "$PROD_ROOT/line"
+          put "$SPECIAL/index.html" -o "$PROD_ROOT/line/index.html"
+          put "$SPECIAL/hero.mp4" -o "$PROD_ROOT/line/hero.mp4"
+          bye
+          LFTP_EOF
+
+          # Upload only files whose direct LINE anchors changed.
+          while IFS=$'\t' read -r rel count; do
+            lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST" -e "set cmd:fail-exit true; set ftp:ssl-force true; set ftp:ssl-protect-data true; set ftp:passive-mode true; put \"$PATCHED/$rel\" -o \"$PROD_ROOT/$rel\"; bye"
+          done < "$PATCHED/_changed.tsv"
+
+          # Verify dedicated page is live and complete.
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 2 "$SPECIAL_URL?v=$GITHUB_RUN_ID" -o "$WORK/live-special.html"
+          grep -q '関西サーファーLINE' "$WORK/live-special.html"
+          grep -q 'hero.mp4' "$WORK/live-special.html"
+          if grep -q '#TODO-LINE-URL' "$WORK/live-special.html"; then
+            echo "::error::A LINE placeholder is live on the special page."
+            false
+          fi
+
+          # Verify every changed public page now points LINE anchors to the special page.
+          while IFS=$'\t' read -r rel count; do
+            case "$rel" in
+              *.html|*.php)
+                url="https://kansai.rss7.net/$rel?v=$GITHUB_RUN_ID"
+                live_file="$WORK/live-$(printf '%s' "$rel" | tr '/ ' '__')"
+                curl --fail --silent --show-error --location --retry 3 "$url" -o "$live_file"
+                if grep -Eqi 'href=["'\'' ]*https?://(line\.me|lin\.ee)/' "$live_file"; then
+                  echo "::error::Direct LINE anchor still live in $rel"
+                  false
+                fi
+                if ! grep -q 'https://kansai.rss7.net/line/' "$live_file"; then
+                  echo "::error::Special-page link missing in $rel"
+                  false
+                fi
+                ;;
+            esac
+          done < "$PATCHED/_changed.tsv"
+
+          # Verify all known public pages that previously contained LINE buttons,
+          # including idempotent reruns where there are no newly changed files.
+          CHECK_PAGES=(
+            index.html contact.html isonoura.html kounohama.html ikumi.html komatsu.html
+            irago.html shizunami.html hamadutu.html takahama.html hakuto.html
+          )
+          for rel in "${CHECK_PAGES[@]}"; do
+            live_file="$WORK/check-$(printf '%s' "$rel" | tr '/ ' '__')"
+            curl --fail --silent --show-error --location --retry 3 "https://kansai.rss7.net/$rel?v=$GITHUB_RUN_ID" -o "$live_file"
+            if grep -Eqi 'href=["'\'' ]*https?://(line\.me|lin\.ee)/' "$live_file"; then
+              echo "::error::Direct LINE anchor still live in $rel"
+              false
+            fi
+            grep -q 'https://kansai.rss7.net/line/' "$live_file"
+          done
+
+          # Member count API must still be healthy from the new page.
+          counts="$(curl --fail --silent --show-error --location --retry 3 "https://nami.rss7.net/ks-line-bot/member_counts.php?v=$GITHUB_RUN_ID")"
+          echo "$counts" | grep -q '"ok":true'
+
+          trap - ERR
+          echo "PRODUCTION_LINE_SPECIAL_PAGE_OK"
