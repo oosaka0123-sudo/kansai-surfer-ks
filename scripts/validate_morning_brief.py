@@ -277,50 +277,90 @@ def self_test(base):
     def add(name, payload, expected):
         cases.append((name, payload, expected))
 
+    def assert_no_error(name, payload, forbidden):
+        case_errors = validate(payload)
+        if any(forbidden in error for error in case_errors):
+            raise SystemExit(f"self-test failed: {name} unexpectedly returned {forbidden}: {case_errors}")
+
+    bad = copy.deepcopy(base); bad["preview"] = False
+    add("preview flag", bad, "preview=true")
+
     bad = copy.deepcopy(base); bad["opening"]["greeting"] = "おはよう"
     add("wrong greeting", bad, "fixed Kiyama greeting")
 
-    bad = copy.deepcopy(base); bad["opening"]["topic"]["text"] = "今朝ポイントを見てきました"; bad["opening"]["topic"]["source"] = "https://example.com/"; bad["opening"]["topic"]["checked_at"] = "2026-10-13T06:00:00+09:00"; bad["generated_at"] = "2026-10-13T06:30:00+09:00"
+    bad = copy.deepcopy(base); bad["opening"]["topic"].update({"text":"今朝ポイントを見てきました","source":"https://example.com/","checked_at":"2026-10-13T06:00:00+09:00"}); bad["generated_at"]="2026-10-13T06:30:00+09:00"
     add("fabricated phrase variant", bad, "fabricated-experience pattern")
 
-    bad = copy.deepcopy(base); bad["spots"][0]["current"] = "モモ"; bad["generated_at"] = "2026-10-13T06:30:00+09:00"
+    bad = copy.deepcopy(base); bad["opening"]["topic"].update({"text":"仲間から聞きました","source":"https://example.com/","checked_at":"2026-10-13T06:00:00+09:00"}); bad["generated_at"]="2026-10-13T06:30:00+09:00"
+    add("fabricated exact phrase", bad, "fabricated-experience phrase")
+
+    bad = copy.deepcopy(base); bad["spots"][0]["current"]="モモ"; bad["generated_at"]="2026-10-13T06:30:00+09:00"
     add("spot time missing", bad, "current requires current_at")
 
-    bad = copy.deepcopy(base); bad["opening"]["osaka_weather"]["current"] = "晴れ"; bad["opening"]["osaka_weather"]["observed_at"] = "2026-10-13T06:00:00+09:00"; bad["opening"]["osaka_weather"]["checked_at"] = "2026-10-13T06:10:00+09:00"; bad["generated_at"] = "2026-10-13T06:30:00+09:00"
+    bad = copy.deepcopy(base); bad["opening"]["osaka_weather"].update({"current":"晴れ","observed_at":"2026-10-13T06:00:00+09:00","checked_at":"2026-10-13T06:10:00+09:00"}); bad["generated_at"]="2026-10-13T06:30:00+09:00"
     add("weather source missing", bad, "Osaka current weather requires source")
 
-    bad = copy.deepcopy(base); bad["competition_news"] = [{"title":"x","body":"y","published_at":"2026-10-13T05:00:00+09:00","checked_at":"2026-10-13T06:00:00+09:00"}]; bad["generated_at"] = "2026-10-13T06:30:00+09:00"
+    bad = copy.deepcopy(base); bad["competition_news"]=[{"title":"x","body":"y","published_at":"2026-10-13T05:00:00+09:00","checked_at":"2026-10-13T06:00:00+09:00"}]; bad["generated_at"]="2026-10-13T06:30:00+09:00"
     add("competition source missing", bad, "competition_news item requires source")
 
-    bad = copy.deepcopy(base); bad["surf_news"] = [{"title":"x","body":"y","source":"https://example.com/","checked_at":"2026-10-13T06:00:00+09:00"}]; bad["generated_at"] = "2026-10-13T06:30:00+09:00"
+    bad = copy.deepcopy(base); bad["surf_news"]=[{"title":"x","body":"y","source":"https://example.com/","checked_at":"2026-10-13T06:00:00+09:00"}]; bad["generated_at"]="2026-10-13T06:30:00+09:00"
     add("surf published time missing", bad, "surf_news item requires published_at")
 
-    bad = copy.deepcopy(base); bad["ranking"] = [{"rank":i+1,"spot":REQUIRED_SPOTS[i % len(REQUIRED_SPOTS)],"size":"モモ","basis":"current"} for i in range(6)]
+    bad = copy.deepcopy(base); bad["ranking"]=[{"rank":i+1,"spot":REQUIRED_SPOTS[i % len(REQUIRED_SPOTS)],"size":"モモ","basis":"current"} for i in range(6)]
     add("ranking too long", bad, "at most 5 entries")
 
-    bad = copy.deepcopy(base); bad["ranking"] = [{"rank":2,"spot":"磯ノ浦","size":"モモ","basis":"current"}]
+    bad = copy.deepcopy(base); bad["ranking"]=[{"rank":2,"spot":"磯ノ浦","size":"モモ","basis":"current"}]
     add("ranking nonconsecutive", bad, "ranks must be consecutive")
 
-    bad = copy.deepcopy(base); bad["ranking"] = [{"rank":1,"spot":"存在しない","size":"モモ","basis":"current"}]
+    bad = copy.deepcopy(base); bad["ranking"]=[{"rank":1,"spot":"存在しない","size":"モモ","basis":"current"}]
     add("ranking unknown spot", bad, "not a KS spot")
 
-    bad = copy.deepcopy(base); bad["spots"] = list(reversed(bad["spots"]))
+    bad = copy.deepcopy(base); bad["spots"][0].update({"current":"モモ","current_at":"2026-10-13T06:00:00+09:00"}); bad["ranking"]=[{"rank":1,"spot":"磯ノ浦","size":"モモ","basis":"forecast"}]; bad["generated_at"]="2026-10-13T06:30:00+09:00"
+    add("ranking forecast basis without forecast", bad, "basis=forecast requires spot forecast data")
+
+    bad = copy.deepcopy(base); bad["spots"][0].update({"current":"モモ","current_at":"2026-10-13T06:00:00+09:00"}); bad["ranking"]=[{"rank":1,"spot":"磯ノ浦","size":"モモ","basis":"current"},{"rank":2,"spot":"磯ノ浦","size":"モモ","basis":"current"}]; bad["generated_at"]="2026-10-13T06:30:00+09:00"
+    add("duplicate ranking spot", bad, "must not contain duplicate spots")
+
+    bad = copy.deepcopy(base); bad["spots"]=list(reversed(bad["spots"]))
     add("wrong spot order", bad, "canonical order")
 
-    bad = copy.deepcopy(base); bad["competition_fallback"][0]["repeat_after_days"] = 2
+    bad = copy.deepcopy(base); bad["competition_fallback"][0]["repeat_after_days"]=2
     add("fallback minimum interval", bad, "repeat_after_days must be >= 3")
+
+    bad = copy.deepcopy(base); bad["competition_fallback"]=bad["competition_fallback"][:-1]
+    add("fallback kind missing", bad, "canonical fallback kind exactly once")
+
+    bad = copy.deepcopy(base); bad["competition_fallback"][0]["kind"]="unknown_kind"
+    add("fallback kind unknown", bad, "canonical fallback kind exactly once")
+
+    bad = copy.deepcopy(base); bad["competition_fallback"][0]["publish"]="true"
+    add("fallback publish type", bad, "publish must be boolean")
+
+    bad = copy.deepcopy(base); bad["competition_fallback"][0].update({"publish":True,"title":"x","body":None,"source":"https://example.com/","checked_at":"2026-10-13T06:00:00+09:00"}); bad["generated_at"]="2026-10-13T06:30:00+09:00"
+    add("fallback publish missing body", bad, "publish=true requires title and body")
 
     bad = copy.deepcopy(base); f=bad["competition_fallback"][0]; f.update({"title":"schedule","body":"body","source":"https://example.com/","checked_at":"2026-10-13T06:00:00+09:00","publish":True,"last_published_at":"2026-10-12","meaningful_change":False}); bad["generated_at"]="2026-10-13T06:30:00+09:00"
     add("fallback cooldown blocks publish", bad, "violates repeat interval")
 
-    changed = copy.deepcopy(bad); changed["competition_fallback"][0]["meaningful_change"] = True
-    if validate(changed):
-        raise SystemExit("self-test failed: meaningful_change should allow fallback cooldown override")
+    changed = copy.deepcopy(bad); changed["competition_fallback"][0]["meaningful_change"]=True
+    assert_no_error("meaningful change override", changed, "violates repeat interval")
+
+    eligible = copy.deepcopy(bad); eligible["competition_fallback"][0]["last_published_at"]="2026-10-10"
+    assert_no_error("fallback after cooldown", eligible, "violates repeat interval")
+
+    suppressed = copy.deepcopy(bad); suppressed["competition_fallback"][0]["publish"]=False
+    assert_no_error("suppressed fallback ignores cooldown", suppressed, "violates repeat interval")
 
     safety_base = {
         "title":"test","body":"test","source_name":"JMA","source_url":"https://www.jma.go.jp/","source_type":"primary",
         "published_at":"2026-10-13T06:00:00+09:00","checked_at":"2026-10-13T06:10:00+09:00","status":"active","valid_until":"2026-10-13T08:00:00+09:00"
     }
+
+    bad = copy.deepcopy(base); bad["generated_at"]=None; bad["safety_news"]=[copy.deepcopy(safety_base)]
+    add("safety without generated_at", bad, "safety_news requires valid generated_at")
+
+    bad = copy.deepcopy(base); bad["generated_at"]="2026-10-13T06:30:00+09:00"; item=copy.deepcopy(safety_base); item["checked_at"]="2026-10-13T04:00:00+09:00"; bad["safety_news"]=[item]
+    add("stale safety news", bad, "within 90 minutes")
 
     bad = copy.deepcopy(base); bad["generated_at"]="2026-10-13T06:30:00+09:00"; item=copy.deepcopy(safety_base); item["source_url"]="http://example.com/"; bad["safety_news"]=[item]
     add("safety https", bad, "must use https")
@@ -334,11 +374,23 @@ def self_test(base):
     bad = copy.deepcopy(base); bad["generated_at"]="2026-10-13T06:30:00+09:00"; item=copy.deepcopy(safety_base); item["checked_at"]="2026-10-13T06:40:00+09:00"; bad["safety_news"]=[item]
     add("future safety check", bad, "cannot be later than generated_at")
 
-    bad = copy.deepcopy(base); bad["generated_at"]="2026-10-13T06:30:00+09:00"; item=copy.deepcopy(safety_base); item["source_type"]="social"; item["source_url"]="https://x.com/example"; bad["safety_news"]=[item]
-    add("social-only safety source", bad, "source_type must be primary")
+    bad = copy.deepcopy(base); bad["generated_at"]="2026-10-13T06:30:00+09:00"; item=copy.deepcopy(safety_base); item["source_type"]="social"; bad["safety_news"]=[item]
+    add("safety nonprimary source", bad, "source_type must be primary")
+
+    bad = copy.deepcopy(base); bad["generated_at"]="2026-10-13T06:30:00+09:00"; item=copy.deepcopy(safety_base); item["source_url"]="https://x.com/example"; bad["safety_news"]=[item]
+    add("social host with primary label", bad, "social-media-only safety sources are not allowed")
+
+    bad = copy.deepcopy(base); bad["generated_at"]="2026-10-13T06:30:00+09:00"; bad["safety_status"]={"summary":None,"checked_at":"2026-10-13T06:10:00+09:00","sources":[{"name":"JMA","url":"https://www.jma.go.jp/","type":"primary"}]}
+    add("safety status missing summary", bad, "non-empty summary")
+
+    bad = copy.deepcopy(base); bad["generated_at"]=None; bad["safety_status"]={"summary":"特記事項なし","checked_at":"2026-10-13T06:10:00+09:00","sources":[{"name":"JMA","url":"https://www.jma.go.jp/","type":"primary"}]}
+    add("safety status without generated_at", bad, "requires valid generated_at")
 
     bad = copy.deepcopy(base); bad["generated_at"]="2026-10-13T06:30:00+09:00"; bad["safety_status"]={"summary":"特記事項なし","checked_at":"2026-10-10T06:00:00+09:00","sources":[{"name":"JMA","url":"https://www.jma.go.jp/","type":"primary"}]}
     add("stale safety status", bad, "within 90 minutes")
+
+    bad = copy.deepcopy(base); bad["generated_at"]="2026-10-13T06:30:00+09:00"; bad["safety_status"]={"summary":"特記事項なし","checked_at":"2026-10-13T06:10:00+09:00","sources":[{"name":"JMA","url":"https://www.jma.go.jp/"}]}
+    add("safety status source type", bad, "type=primary")
 
     failures = []
     for name, payload, expected_fragment in cases:

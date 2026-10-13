@@ -203,6 +203,7 @@ Normal days should remain concise. Major typhoon, earthquake, tsunami, high-wave
 - Prefer real current competition developments first: WSL, S.LEAGUE, domestic and international events.
 - When there is no meaningful new competition story, use one or two useful fallback items such as the current month's event schedule, S.LEAGUE Top 3, KS-supported Kanoa Igarashi's current WSL ranking, or his next event.
 - Do not repeat unchanged fallback items every day. Track the last-published date and normally leave at least about three days between repeats unless a meaningful change occurs.
+- The generator owns fallback state: keep candidates as `publish=false`, set `publish=true` only for items selected for the article, update `last_published_at` after publication, and set `meaningful_change=true` only when verified source data actually changed.
 - A stronger surf-news item may replace a routine Kanoa or S.LEAGUE fallback on that day.
 - Visible body-text occurrences of `S.LEAGUE` / `エスリーグ` link to S.LEAGUE NOW: `https://sleague.rss7.net/`. Do not blindly rewrite URLs, attributes, alt text, or code.
 
