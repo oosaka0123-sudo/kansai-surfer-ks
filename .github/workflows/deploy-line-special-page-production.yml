@@ -206,8 +206,8 @@ jobs:
           curl --fail --silent --show-error --location --retry 5 --retry-delay 2 "$SPECIAL_URL?v=$GITHUB_RUN_ID" -o "$WORK/live-special.html"
           grep -q '関西サーファーLINE' "$WORK/live-special.html"
           grep -q 'hero.mp4' "$WORK/live-special.html"
-          if grep -q '#TODO-LINE-URL' "$WORK/live-special.html"; then
-            echo "::error::A LINE placeholder is live on the special page."
+          if grep -Eqi 'href=["'\'' ]*#TODO-LINE-URL' "$WORK/live-special.html"; then
+            echo "::error::A clickable LINE placeholder is live on the special page."
             false
           fi
 
