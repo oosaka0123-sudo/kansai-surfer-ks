@@ -34,7 +34,8 @@ REGION_WORDS = [
 JMA_TITLES = ("津波警報・注意報・予報", "気象警報・注意報", "地方海上警報")
 MARINE_WARNING_WORDS = ("波浪", "高潮", "暴風", "強風", "風")
 SURF_INCIDENT_WORDS = ("サーファー", "サーフィン", "SUP", "ＳＵＰ")
-INCIDENT_WORDS = ("海難", "水難", "溺れ", "溺水", "行方不明", "漂流", "救助", "負傷事故")
+INCIDENT_WORDS = ("海難事故", "水難事故", "溺れ", "溺水", "行方不明", "漂流", "救助", "死亡", "負傷事故")
+JCG_ALERT_WORDS = ("荒天", "注意情報", "警報", "高波", "強風", "暴風", "波浪", "高潮")
 
 
 def iso(dt):
@@ -449,13 +450,18 @@ def collect_jcg(now, status):
         if not published or now - published > timedelta(hours=48) or published - now > timedelta(minutes=5):
             continue
         surf_specific = any(k.lower() in hay.lower() for k in SURF_INCIDENT_WORDS)
-        regional_incident = any(k in hay for k in INCIDENT_WORDS) and any(r in hay for r in REGION_WORDS + SPOTS)
-        if not (surf_specific or regional_incident):
+        region_match = any(r in hay for r in REGION_WORDS + SPOTS)
+        incident_specific = any(k in title for k in INCIDENT_WORDS) or (
+            surf_specific and any(k in hay for k in INCIDENT_WORDS)
+        )
+        regional_alert = region_match and any(k in title for k in JCG_ALERT_WORDS)
+        if not (incident_specific or regional_alert):
             continue
         if not link.startswith("https://"):
             continue
+        kind = "incident" if incident_specific else "alert"
         output.append({
-            "kind": "incident",
+            "kind": kind,
             "title": title,
             "body": (description or title)[:500],
             "source_name": "海上保安庁 海の安全情報",
@@ -463,7 +469,7 @@ def collect_jcg(now, status):
             "source_type": "primary",
             "published_at": iso(published),
             "checked_at": checked,
-            "status": "reported",
+            "status": "reported" if kind == "incident" else "active",
         })
         if len(output) >= 4:
             break
