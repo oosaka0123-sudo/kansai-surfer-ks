@@ -1,0 +1,73 @@
+name: Audit LINE first view
+
+on:
+  workflow_dispatch: {}
+  push:
+    paths:
+      - '.github/workflows/audit-line-first-view.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Capture production first view
+        shell: bash
+        run: |
+          set -euo pipefail
+          W="$RUNNER_TEMP/line-first-view"
+          mkdir -p "$W"
+
+          curl --fail --silent --show-error --location "https://kansai.rss7.net/line/?v=$GITHUB_RUN_ID" -o "$W/index.html"
+          curl --fail --silent --show-error --location "https://kansai.rss7.net/img/logo-ks-white.png?v=$GITHUB_RUN_ID" -o "$W/logo-ks-white.png"
+
+          echo "=== HEADER/HERO MARKUP ==="
+          python3 - "$W/index.html" <<'PY'
+          import pathlib,re,sys
+          text=pathlib.Path(sys.argv[1]).read_text(encoding="utf-8",errors="ignore")
+          for pat in [
+              r'<header\b.*?</header>',
+              r'<section\b[^>]*class=["\'][^"\']*(?:hero|hero-ks)[^"\']*["\'][^>]*>.*?</section>',
+          ]:
+              m=re.search(pat,text,re.I|re.S)
+              if m:
+                  s=re.sub(r'\s+',' ',m.group(0))
+                  print(s[:7000])
+          PY
+
+          echo "=== RELEVANT CSS ==="
+          python3 - "$W/index.html" <<'PY'
+          import pathlib,re,sys
+          text=pathlib.Path(sys.argv[1]).read_text(encoding="utf-8",errors="ignore")
+          css='\n'.join(re.findall(r'<style[^>]*>(.*?)</style>',text,re.I|re.S))
+          keys=('top-bar','hero-','heroVideo','video','logo','social','hamburger','scroll')
+          for rule in re.findall(r'[^{}]+\{[^{}]*\}',css,re.S):
+              if any(k.lower() in rule.lower() for k in keys):
+                  print(re.sub(r'\s+',' ',rule).strip()[:2500])
+          PY
+
+          echo "=== LOGO INSPECTION ==="
+          file "$W/logo-ks-white.png"
+          identify -format 'FORMAT=%m SIZE=%wx%h TYPE=%[type] OPAQUE=%[opaque]\n' "$W/logo-ks-white.png" || true
+
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
+          test -n "$CHROME"
+
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --hide-scrollbars             --window-size=390,844 --screenshot="$W/mobile.png" "https://kansai.rss7.net/line/?v=$GITHUB_RUN_ID"
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --hide-scrollbars             --window-size=1440,900 --screenshot="$W/desktop.png" "https://kansai.rss7.net/line/?v=$GITHUB_RUN_ID"
+
+          identify "$W/mobile.png" "$W/desktop.png"
+
+      - name: Upload visual audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: line-first-view-audit
+          path: |
+            ${{ runner.temp }}/line-first-view/index.html
+            ${{ runner.temp }}/line-first-view/logo-ks-white.png
+            ${{ runner.temp }}/line-first-view/mobile.png
+            ${{ runner.temp }}/line-first-view/desktop.png
+          retention-days: 3
