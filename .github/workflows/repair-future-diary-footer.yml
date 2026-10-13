@@ -20,7 +20,7 @@ jobs:
       - name: Install lftp
         run: sudo apt-get update -qq && sudo apt-get install -y lftp
 
-      - name: Patch footer sources only
+      - name: Patch diary footer source only
         shell: bash
         env:
           FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
@@ -28,6 +28,7 @@ jobs:
         run: |
           set -euo pipefail
           set +x
+
           W="$RUNNER_TEMP/diary-footer"
           O="$W/orig"
           P="$W/patched"
@@ -47,81 +48,84 @@ jobs:
           bye
           LFTP_EOF
 
-          LINE="$W/line.html" O="$O" P="$P" python3 - <<'PY'
-          import os, pathlib, re, shutil
+          LINE="$W/line.html" O="$O" P="$P" W="$W" python3 - <<'PY'
+          import os, pathlib, re
 
           line = pathlib.Path(os.environ["LINE"]).read_text(encoding="utf-8")
           orig = pathlib.Path(os.environ["O"])
           patched = pathlib.Path(os.environ["P"])
-          rx = re.compile(r"<footer\b[^>]*>.*?</footer>", re.I | re.S)
+          work = pathlib.Path(os.environ["W"])
 
-          cm = list(rx.finditer(line))
+          footer_rx = re.compile(r"<footer\b[^>]*>.*?</footer>", re.I | re.S)
+          cm = list(footer_rx.finditer(line))
           if len(cm) != 1:
               raise SystemExit(f"canonical footer count={len(cm)}")
           canonical = cm[0].group(0)
+          (work/"canonical-footer.html").write_text(canonical, encoding="utf-8")
 
-          rows=[]
-          for src in sorted(orig.glob("*.php")):
-              before = src.read_text(encoding="utf-8")
-              mm = list(rx.finditer(before))
-              print(f"SOURCE={src.name} FOOTER_BLOCKS={len(mm)} COMMON_REF={int('common.php' in before)}")
-              if not mm:
-                  continue
-              if len(mm) != 1:
-                  raise SystemExit(f"{src.name}: footer count={len(mm)}")
-              m=mm[0]
-              after = before[:m.start()] + canonical + before[m.end():]
+          # The two automatic diary generators must continue to use common.php.
+          for name in ("auto_wave_post.php","auto_wave_today.php"):
+              text = (orig/name).read_text(encoding="utf-8")
+              common_ref = int("common.php" in text)
+              footer_calls = len(re.findall(r"\bks_footer\s*\(", text))
+              print(f"SOURCE={name} COMMON_REF={common_ref} KS_FOOTER_CALLS={footer_calls}")
+              if not common_ref:
+                  raise SystemExit(f"{name}: common.php reference missing")
 
-              # Absolute guard: only the exact footer block can differ.
-              if before[:m.start()] != after[:m.start()]:
-                  raise SystemExit(f"{src.name}: prefix changed")
-              if before[m.end():] != after[m.start()+len(canonical):]:
-                  raise SystemExit(f"{src.name}: suffix changed")
+          src = orig/"blog-common.php"
+          before = src.read_text(encoding="utf-8")
+          func = re.search(r"function\s+ks_footer\s*\([^)]*\)\s*\{", before)
+          if not func:
+              raise SystemExit("ks_footer function missing")
 
-              if after == before:
-                  print(f"ALREADY_CANONICAL={src.name}")
-                  continue
+          body = before[func.end():]
+          ret = re.search(r"return\s+'<footer>'(?s:.*?)\.'</footer>'\s*;", body)
+          if not ret:
+              raise SystemExit("ks_footer return expression not found")
 
-              dst = patched/src.name
-              dst.write_text(after, encoding="utf-8")
-              rows.append(src.name)
-              print(f"PATCH={src.name}")
+          start = func.end() + ret.start()
+          end = func.end() + ret.end()
 
-          (patched/"_changed.txt").write_text("\n".join(rows)+("\n" if rows else ""), encoding="utf-8")
-          print(f"FOOTER_SOURCE_FILES_CHANGED={len(rows)}")
+          php_literal = "'" + canonical.replace("\\","\\\\").replace("'","\\'") + "'"
+          replacement = "return " + php_literal + ";"
+          after = before[:start] + replacement + before[end:]
+
+          # Absolute guard: everything outside ks_footer's return expression is identical.
+          if before[:start] != after[:start]:
+              raise SystemExit("prefix changed outside footer return")
+          if before[end:] != after[start+len(replacement):]:
+              raise SystemExit("suffix changed outside footer return")
+
+          if after == before:
+              print("ALREADY_CANONICAL=blog-common.php")
+              (patched/"_changed.txt").write_text("", encoding="utf-8")
+          else:
+              (patched/"blog-common.php").write_text(after, encoding="utf-8")
+              (patched/"_changed.txt").write_text("blog-common.php\n", encoding="utf-8")
+              print("PATCH=blog-common.php")
+
+          print("FOOTER_SOURCE_FILES_CHANGED=" + ("1" if after != before else "0"))
           PY
 
           if [ -s "$P/_changed.txt" ]; then
-            while IFS= read -r name; do php -l "$P/$name" >/dev/null; done < "$P/_changed.txt"
+            php -l "$P/blog-common.php" >/dev/null
+            php -r 'require $argv[1]; echo ks_footer();' "$P/blog-common.php" > "$W/rendered-footer.html"
+            cmp -s "$W/canonical-footer.html" "$W/rendered-footer.html"
           fi
 
           rollback(){
-            echo "::warning::Restoring original diary footer sources."
+            echo "::warning::Restoring original diary footer source."
             [ -s "$P/_changed.txt" ] || return 0
-            while IFS= read -r name; do
-              case "$name" in
-                blog-common.php) remote="/kansai/blog/common.php" ;;
-                auto_wave_post.php) remote="/kansai/admin/auto_wave_post.php" ;;
-                auto_wave_today.php) remote="/kansai/admin/auto_wave_today.php" ;;
-                *) continue ;;
-              esac
-              lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST" -e "set cmd:fail-exit true; set ftp:ssl-force true; set ftp:ssl-protect-data true; put \"$O/$name\" -o \"$remote\"; bye" || true
-            done < "$P/_changed.txt"
+            lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST" -e "set cmd:fail-exit true; set ftp:ssl-force true; set ftp:ssl-protect-data true; put \"$O/blog-common.php\" -o \"/kansai/blog/common.php\"; bye" || true
           }
           trap rollback ERR
 
           if [ -s "$P/_changed.txt" ]; then
-            while IFS= read -r name; do
-              case "$name" in
-                blog-common.php) remote="/kansai/blog/common.php" ;;
-                auto_wave_post.php) remote="/kansai/admin/auto_wave_post.php" ;;
-                auto_wave_today.php) remote="/kansai/admin/auto_wave_today.php" ;;
-                *) continue ;;
-              esac
-              lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST" -e "set cmd:fail-exit true; set ftp:ssl-force true; set ftp:ssl-protect-data true; put \"$P/$name\" -o \"$remote\"; get \"$remote\" -o \"$V/$name\"; bye"
-              cmp -s "$P/$name" "$V/$name"
-              php -l "$V/$name" >/dev/null
-            done < "$P/_changed.txt"
+            lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST" -e "set cmd:fail-exit true; set ftp:ssl-force true; set ftp:ssl-protect-data true; put \"$P/blog-common.php\" -o \"/kansai/blog/common.php\"; get \"/kansai/blog/common.php\" -o \"$V/blog-common.php\"; bye"
+            cmp -s "$P/blog-common.php" "$V/blog-common.php"
+            php -l "$V/blog-common.php" >/dev/null
+            php -r 'require $argv[1]; echo ks_footer();' "$V/blog-common.php" > "$W/live-rendered-footer.html"
+            cmp -s "$W/canonical-footer.html" "$W/live-rendered-footer.html"
           fi
 
           trap - ERR
