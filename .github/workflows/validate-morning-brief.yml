@@ -20,7 +20,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Validate morning brief schema and guardrails
-        run: python3 scripts/validate_morning_brief.py
+        run: |
+          python3 scripts/validate_morning_brief.py
+          python3 scripts/validate_morning_brief.py --self-test
       - name: Basic HTML assertions
         run: |
           grep -q '"greeting": "おはようございます、木山です。"' prototype/ks-redesign/data/morning-brief.json
