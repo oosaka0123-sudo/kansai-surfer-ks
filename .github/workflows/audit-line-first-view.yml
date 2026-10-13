@@ -59,7 +59,7 @@ jobs:
           "$CHROME" --headless=new --no-sandbox --disable-gpu --hide-scrollbars             --window-size=390,844 --screenshot="$W/mobile.png" "https://kansai.rss7.net/line/?v=$GITHUB_RUN_ID"
           "$CHROME" --headless=new --no-sandbox --disable-gpu --hide-scrollbars             --window-size=1440,900 --screenshot="$W/desktop.png" "https://kansai.rss7.net/line/?v=$GITHUB_RUN_ID"
 
-          identify "$W/mobile.png" "$W/desktop.png"
+          file "$W/mobile.png" "$W/desktop.png"
 
       - name: Upload visual audit
         uses: actions/upload-artifact@v4
