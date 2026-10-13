@@ -1,0 +1,35 @@
+name: Inspect blog common footer once
+on:
+  push:
+    paths:
+      - '.github/workflows/inspect-blog-common-footer-once.yml'
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - run: sudo apt-get update -qq && sudo apt-get install -y lftp
+      - name: Inspect footer source shape
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          F="$RUNNER_TEMP/blog-common.php"
+          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp -e "set cmd:fail-exit true; set ftp:ssl-force true; set ftp:ssl-protect-data true; get /kansai/blog/common.php -o \"$F\"; bye"
+          F="$F" python3 - <<'PY'
+          import os,re,pathlib
+          p=pathlib.Path(os.environ["F"])
+          lines=p.read_text(encoding="utf-8").splitlines()
+          idx=next((i for i,x in enumerate(lines) if "<footer" in x.lower()),None)
+          if idx is None:
+              raise SystemExit("NO_FOOTER")
+          lo=max(0,idx-8); hi=min(len(lines),idx+24)
+          for i in range(lo,hi):
+              s=lines[i]
+              s=re.sub(r'[A-Za-z0-9_-]{32,}', '<token>', s)
+              print(f"{i+1:04d}: {s}")
+          PY
