@@ -543,7 +543,18 @@ def main():
     published = [x["kind"] for x in data["competition_fallback"] if x.get("publish")]
     print("KS_MORNING_OFFICIAL_CONTEXT_BUILT")
     print("PUBLISHED_FALLBACKS=" + (",".join(published) if published else "(none)"))
+    for item in data["competition_fallback"]:
+        if item.get("publish"):
+            print("FALLBACK_TITLE=" + str(item.get("title") or "")[:180])
+            print("FALLBACK_BODY=" + str(item.get("body") or "")[:500])
     print(f"SAFETY_ITEMS={len(data['safety_news'])}")
+    for item in data["safety_news"]:
+        print("SAFETY_ITEM=" + " | ".join([
+            str(item.get("kind") or ""),
+            str(item.get("title") or "")[:180],
+            str(item.get("source_name") or ""),
+            str(item.get("published_at") or ""),
+        ]))
     for key, value in data["collection_meta"]["sources"].items():
         print(f"SOURCE[{key}]=" + ("OK" if value.get("ok", all(v.get('ok', False) for v in value.get('feeds', {}).values())) else "UNAVAILABLE"))
 
