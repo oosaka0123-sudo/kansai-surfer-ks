@@ -1,0 +1,27 @@
+name: Test morning v2 patcher
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/patch_auto_wave_today_v2.py'
+      - '.github/workflows/dry-run-morning-v2-patch.yml'
+      - '.github/workflows/test-morning-v2-patcher.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'scripts/patch_auto_wave_today_v2.py'
+      - '.github/workflows/dry-run-morning-v2-patch.yml'
+      - '.github/workflows/test-morning-v2-patcher.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  self-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run patcher self-test
+        run: python3 scripts/patch_auto_wave_today_v2.py --self-test
