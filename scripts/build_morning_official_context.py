@@ -8,6 +8,7 @@ import argparse
 import html
 import json
 import re
+import time
 import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta, timezone
@@ -40,19 +41,27 @@ def iso(dt):
     return dt.astimezone(JST).replace(microsecond=0).isoformat()
 
 
-def fetch(url, timeout=20, max_bytes=3_000_000):
-    req = urllib.request.Request(url, headers={
-        "User-Agent": "KansaiSurferKS/1.0 (+https://kansai.rss7.net/)",
-        "Accept": "text/html,application/xml,text/xml,application/rss+xml;q=0.9,*/*;q=0.5",
-    })
-    with urllib.request.urlopen(req, timeout=timeout) as res:
-        final = res.geturl()
-        if urlparse(final).scheme != "https":
-            raise ValueError(f"refused non-https redirect: {final}")
-        data = res.read(max_bytes + 1)
-        if len(data) > max_bytes:
-            raise ValueError(f"response too large: {url}")
-        return data
+def fetch(url, timeout=20, max_bytes=3_000_000, attempts=3):
+    last_error = None
+    for attempt in range(attempts):
+        req = urllib.request.Request(url, headers={
+            "User-Agent": "KansaiSurferKS/1.0 (+https://kansai.rss7.net/)",
+            "Accept": "text/html,application/xml,text/xml,application/rss+xml;q=0.9,*/*;q=0.5",
+        })
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as res:
+                final = res.geturl()
+                if urlparse(final).scheme != "https":
+                    raise ValueError(f"refused non-https redirect: {final}")
+                data = res.read(max_bytes + 1)
+                if len(data) > max_bytes:
+                    raise ValueError(f"response too large: {url}")
+                return data
+        except Exception as exc:
+            last_error = exc
+            if attempt + 1 < attempts:
+                time.sleep(1 + attempt)
+    raise last_error
 
 
 class TextParser(HTMLParser):
