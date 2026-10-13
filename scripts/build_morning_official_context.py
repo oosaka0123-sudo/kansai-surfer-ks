@@ -34,8 +34,9 @@ REGION_WORDS = [
 JMA_TITLES = ("津波警報・注意報・予報", "気象警報・注意報", "地方海上警報")
 MARINE_WARNING_WORDS = ("波浪", "高潮", "暴風", "強風", "風")
 SURF_INCIDENT_WORDS = ("サーファー", "サーフィン", "SUP", "ＳＵＰ")
-INCIDENT_WORDS = ("海難事故", "水難事故", "溺れ", "溺水", "行方不明", "漂流", "救助", "死亡", "負傷事故")
-JCG_ALERT_WORDS = ("荒天", "注意情報", "警報", "高波", "強風", "暴風", "波浪", "高潮")
+INCIDENT_WORDS = ("海難事故", "水難事故", "溺れ", "溺水", "行方不明", "漂流者", "人が漂流", "救助", "死亡", "負傷事故")
+JCG_ALERT_WORDS = ("荒天", "高波", "強風", "暴風", "波浪", "高潮")
+JCG_IGNORE_WORDS = ("訓練", "工事", "航行警報", "灯浮標", "射撃", "ロケット", "漂流物")
 
 
 def iso(dt):
@@ -449,10 +450,13 @@ def collect_jcg(now, status):
         hay = f"{title} {description}"
         if not published or now - published > timedelta(hours=48) or published - now > timedelta(minutes=5):
             continue
+        if any(k in title for k in JCG_IGNORE_WORDS):
+            continue
         surf_specific = any(k.lower() in hay.lower() for k in SURF_INCIDENT_WORDS)
         region_match = any(r in hay for r in REGION_WORDS + SPOTS)
-        incident_specific = any(k in title for k in INCIDENT_WORDS) or (
-            surf_specific and any(k in hay for k in INCIDENT_WORDS)
+        incident_specific = (
+            (region_match and any(k in title for k in INCIDENT_WORDS))
+            or (surf_specific and any(k in hay for k in INCIDENT_WORDS))
         )
         regional_alert = region_match and any(k in title for k in JCG_ALERT_WORDS)
         if not (incident_specific or regional_alert):
