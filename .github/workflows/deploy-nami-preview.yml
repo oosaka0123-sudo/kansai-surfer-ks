@@ -165,7 +165,9 @@ jobs:
           data = json.loads(Path('/tmp/ks-preview-morning.json').read_text(encoding='utf-8'))
           expected = ['磯ノ浦','国府の浜','生見','小松海岸','伊良湖','静波','浜詰','高浜','白兎']
 
+          assert data.get('schema_version') == 'ks-morning-brief-v2'
           assert data.get('preview') is True
+          assert data.get('verified') is False
           assert (data.get('opening') or {}).get('greeting') == 'おはようございます、木山です。'
           assert [x.get('name') for x in data.get('spots', [])] == expected
 
