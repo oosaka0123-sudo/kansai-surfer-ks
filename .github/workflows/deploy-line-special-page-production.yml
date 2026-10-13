@@ -132,15 +132,14 @@ jobs:
 
           if direct_remaining:
               raise SystemExit('Direct LINE anchors remain after patch: '+repr(direct_remaining[:10]))
-          if not changed:
-              raise SystemExit('No production LINE anchors found; refusing blind deployment.')
-
           (patched/'_changed.tsv').write_text(
               ''.join(f'{path}\t{count}\n' for path,count in changed),
               encoding='utf-8'
           )
           print(f'CHANGED_FILES={len(changed)}')
           print(f'CHANGED_ANCHORS={sum(n for _,n in changed)}')
+          if not changed:
+              print('No direct LINE anchors require rewriting; production may already be converged.')
           for path,n in changed:
               print(f'PATCH {path} anchors={n}')
           PY
@@ -195,9 +194,9 @@ jobs:
           curl --fail --silent --show-error --location --retry 5 --retry-delay 2 "$SPECIAL_URL?v=$GITHUB_RUN_ID" -o "$WORK/live-special.html"
           grep -q '関西サーファーLINE' "$WORK/live-special.html"
           grep -q 'hero.mp4' "$WORK/live-special.html"
-          if grep -q '#TODO-LINE-URL-main' "$WORK/live-special.html"; then
-            echo "::error::Main OpenChat placeholder is live."
-            exit 1
+          if grep -q '#TODO-LINE-URL' "$WORK/live-special.html"; then
+            echo "::error::A LINE placeholder is live on the special page."
+            false
           fi
 
           # Verify every changed public page now points LINE anchors to the special page.
@@ -205,18 +204,35 @@ jobs:
             case "$rel" in
               *.html|*.php)
                 url="https://kansai.rss7.net/$rel?v=$GITHUB_RUN_ID"
-                body="$(curl --fail --silent --show-error --location --retry 3 "$url")"
-                if printf '%s' "$body" | grep -Eqi 'href=["'\'' ]*https?://(line\.me|lin\.ee)/'; then
+                live_file="$WORK/live-$(printf '%s' "$rel" | tr '/ ' '__')"
+                curl --fail --silent --show-error --location --retry 3 "$url" -o "$live_file"
+                if grep -Eqi 'href=["'\'' ]*https?://(line\.me|lin\.ee)/' "$live_file"; then
                   echo "::error::Direct LINE anchor still live in $rel"
-                  exit 1
+                  false
                 fi
-                if ! printf '%s' "$body" | grep -q 'https://kansai.rss7.net/line/'; then
+                if ! grep -q 'https://kansai.rss7.net/line/' "$live_file"; then
                   echo "::error::Special-page link missing in $rel"
-                  exit 1
+                  false
                 fi
                 ;;
             esac
           done < "$PATCHED/_changed.tsv"
+
+          # Verify all known public pages that previously contained LINE buttons,
+          # including idempotent reruns where there are no newly changed files.
+          CHECK_PAGES=(
+            index.html contact.html isonoura.html kounohama.html ikumi.html komatsu.html
+            irago.html shizunami.html hamadutu.html takahama.html hakuto.html
+          )
+          for rel in "${CHECK_PAGES[@]}"; do
+            live_file="$WORK/check-$(printf '%s' "$rel" | tr '/ ' '__')"
+            curl --fail --silent --show-error --location --retry 3 "https://kansai.rss7.net/$rel?v=$GITHUB_RUN_ID" -o "$live_file"
+            if grep -Eqi 'href=["'\'' ]*https?://(line\.me|lin\.ee)/' "$live_file"; then
+              echo "::error::Direct LINE anchor still live in $rel"
+              false
+            fi
+            grep -q 'https://kansai.rss7.net/line/' "$live_file"
+          done
 
           # Member count API must still be healthy from the new page.
           counts="$(curl --fail --silent --show-error --location --retry 3 "https://nami.rss7.net/ks-line-bot/member_counts.php?v=$GITHUB_RUN_ID")"
