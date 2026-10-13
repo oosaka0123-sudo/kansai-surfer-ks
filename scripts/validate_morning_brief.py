@@ -326,7 +326,7 @@ def self_test(base):
     add("safety https", bad, "must use https")
 
     bad = copy.deepcopy(base); bad["generated_at"]="2026-10-13T06:30:00+09:00"; item=copy.deepcopy(safety_base); item["status"]="lifted"; bad["safety_news"]=[item]
-    add("safety active status", bad, "must be published as current")
+    add("safety active status", bad, "active safety_news items may be published as current")
 
     bad = copy.deepcopy(base); bad["generated_at"]="2026-10-13T06:30:00+09:00"; item=copy.deepcopy(safety_base); item["valid_until"]="2026-10-13T06:20:00+09:00"; bad["safety_news"]=[item]
     add("safety expiry", bad, "expired safety_news")
