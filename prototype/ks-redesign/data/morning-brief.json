@@ -134,7 +134,8 @@
       "checked_at": null,
       "last_published_at": null,
       "repeat_after_days": 3,
-      "meaningful_change": false
+      "meaningful_change": false,
+      "publish": false
     },
     {
       "kind": "sleague_top3",
@@ -144,7 +145,8 @@
       "checked_at": null,
       "last_published_at": null,
       "repeat_after_days": 3,
-      "meaningful_change": false
+      "meaningful_change": false,
+      "publish": false
     },
     {
       "kind": "kanoa_ranking",
@@ -154,7 +156,8 @@
       "checked_at": null,
       "last_published_at": null,
       "repeat_after_days": 3,
-      "meaningful_change": false
+      "meaningful_change": false,
+      "publish": false
     },
     {
       "kind": "kanoa_next_event",
@@ -164,7 +167,8 @@
       "checked_at": null,
       "last_published_at": null,
       "repeat_after_days": 3,
-      "meaningful_change": false
+      "meaningful_change": false,
+      "publish": false
     }
   ],
   "surf_news": [],
