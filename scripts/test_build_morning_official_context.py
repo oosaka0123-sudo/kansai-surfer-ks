@@ -45,9 +45,21 @@ JMA_DETAIL = """<?xml version="1.0" encoding="UTF-8"?>
 JCG_RSS = """<?xml version="1.0" encoding="UTF-8"?>
 <rss><channel>
  <item><title>和歌山県沿岸でサーファーを救助</title>
- <link>https://www6.kaiho.mlit.go.jp/example.html</link>
+ <link>https://www6.kaiho.mlit.go.jp/example-incident.html</link>
  <description>サーファーの海難事故について発表。</description>
  <pubDate>Mon, 12 Oct 2026 23:00:00 +0900</pubDate></item>
+ <item><title>荒天に関する注意情報（和歌山県沿岸）</title>
+ <link>https://www6.kaiho.mlit.go.jp/example-weather.html</link>
+ <description>和歌山県沿岸では荒天に注意してください。</description>
+ <pubDate>Tue, 13 Oct 2026 06:00:00 +0900</pubDate></item>
+ <item><title>救難訓練：若狭湾北方（八管区地域航行警報）</title>
+ <link>https://www6.kaiho.mlit.go.jp/example-training.html</link>
+ <description>若狭湾北方で訓練を実施。</description>
+ <pubDate>Tue, 13 Oct 2026 06:00:00 +0900</pubDate></item>
+ <item><title>漂流物：悪石島東方</title>
+ <link>https://www6.kaiho.mlit.go.jp/example-object.html</link>
+ <description>漂流物を確認。</description>
+ <pubDate>Mon, 12 Oct 2026 23:30:00 +0900</pubDate></item>
 </channel></rss>"""
 
 
@@ -90,8 +102,14 @@ def test_official_collectors():
         collector.fetch = real_fetch
     assert jma and jma[0]["kind"] == "alert" and jma[0]["status"] == "active"
     assert jma[0]["source_name"] == "気象庁"
-    assert jcg and jcg[0]["kind"] == "incident" and jcg[0]["status"] == "reported"
-    assert jcg[0]["source_name"].startswith("海上保安庁")
+    assert len(jcg) == 2, jcg
+    by_kind = {x["kind"]: x for x in jcg}
+    assert by_kind["incident"]["status"] == "reported"
+    assert "サーファー" in by_kind["incident"]["title"]
+    assert by_kind["alert"]["status"] == "active"
+    assert "荒天" in by_kind["alert"]["title"]
+    assert all("訓練" not in x["title"] and "漂流物" not in x["title"] for x in jcg)
+    assert all(x["source_name"].startswith("海上保安庁") for x in jcg)
 
 
 def test_cooldown():
