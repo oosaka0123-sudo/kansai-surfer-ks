@@ -255,6 +255,7 @@
   .hamburger{width:38px!important}
   .hero-video-content{top:54%;padding:0 15px!important}
   .hero-video-ks .hero-title{font-size:clamp(2.05rem,9.7vw,2.7rem)!important}
+  .hero-video-ks .hero-title .green{font-size:.80em;letter-spacing:-.04em!important}
   .hero-video-ks .hero-lead{font-size:.84rem!important}
   .hero-scroll{left:15px!important}
 }
