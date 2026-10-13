@@ -8,33 +8,60 @@
   <title>KS 朝刊プレビュー｜NAMI TEST</title>
   <link rel="stylesheet" href="styles.css">
   <style>
-    .brief-wrap{width:min(100% - 32px,980px);margin:0 auto;padding:120px 0 72px}.brief-kicker{font-size:.72rem;letter-spacing:.16em;color:#8fd7d1}.brief-title{font-size:clamp(1.8rem,5vw,3.2rem);line-height:1.25;margin:.5rem 0}.brief-meta,.brief-note{color:#b7b6b1;font-size:.86rem}.brief-lead{font-size:1.02rem;line-height:1.9;margin:22px 0 34px}.brief-section{padding:28px 0;border-top:1px solid rgba(255,255,255,.12)}.brief-section h2{margin:0 0 18px;font-size:1.35rem}.rank-list,.spot-list,.news-list{display:grid;gap:10px}.rank-row,.spot-row,.news-row{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09);border-radius:14px;padding:14px 16px}.rank-row{display:grid;grid-template-columns:54px 1.1fr .9fr .9fr 1.4fr;gap:10px;align-items:center}.rank-no{font-size:1.25rem;font-weight:800}.spot-row h3,.news-row h3{margin:0 0 8px;font-size:1rem}.spot-row p,.news-row p{margin:4px 0;line-height:1.65;color:#d7d3ca}.label{display:inline-block;min-width:54px;color:#8fd7d1;font-size:.76rem;font-weight:700}.alert{border-color:rgba(255,130,90,.45);background:rgba(255,105,70,.08)}.sleague-link{color:#8fd7d1;text-decoration:underline;text-underline-offset:3px}.empty{color:#b7b6b1}.brief-footer{padding-top:26px;border-top:1px solid rgba(255,255,255,.12);color:#9c9a95;font-size:.78rem;line-height:1.7}@media(max-width:760px){.brief-wrap{width:min(100% - 24px,980px);padding-top:96px}.rank-row{grid-template-columns:44px 1fr}.rank-row span:nth-child(n+3){grid-column:2}.brief-section{padding:24px 0}}
+    .brief-wrap{width:min(100% - 32px,980px);margin:0 auto;padding:120px 0 72px}.brief-kicker{font-size:.72rem;letter-spacing:.16em;color:#8fd7d1}.brief-title{font-size:clamp(1.8rem,5vw,3.2rem);line-height:1.25;margin:.5rem 0}.brief-meta,.brief-note,.opening-meta{color:#b7b6b1;font-size:.82rem}.brief-lead{font-size:1.02rem;line-height:1.9;margin:22px 0 34px}.opening-box{padding:18px 20px;margin:20px 0 34px;border:1px solid rgba(255,255,255,.1);border-radius:14px;background:rgba(255,255,255,.04)}.opening-box p{margin:6px 0;line-height:1.75}.brief-section{padding:28px 0;border-top:1px solid rgba(255,255,255,.12)}.brief-section h2{margin:0 0 18px;font-size:1.35rem}.rank-list,.spot-list,.news-list{display:grid;gap:10px}.rank-row,.spot-row,.news-row{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09);border-radius:14px;padding:14px 16px}.rank-row{display:grid;grid-template-columns:54px 1.1fr .9fr .9fr 1.4fr;gap:10px;align-items:center}.rank-no{font-size:1.25rem;font-weight:800}.spot-row h3,.news-row h3{margin:0 0 8px;font-size:1rem}.spot-row p,.news-row p{margin:4px 0;line-height:1.65;color:#d7d3ca}.label{display:inline-block;min-width:70px;color:#8fd7d1;font-size:.76rem;font-weight:700}.alert{border-color:rgba(255,130,90,.45);background:rgba(255,105,70,.08)}.sleague-link,.source-link{color:#8fd7d1;text-decoration:underline;text-underline-offset:3px}.empty{color:#b7b6b1}.brief-footer{padding-top:26px;border-top:1px solid rgba(255,255,255,.12);color:#9c9a95;font-size:.78rem;line-height:1.7}@media(max-width:760px){.brief-wrap{width:min(100% - 24px,980px);padding-top:96px}.rank-row{grid-template-columns:44px 1fr}.rank-row span:nth-child(n+3){grid-column:2}.brief-section{padding:24px 0}}
   </style>
 </head>
 <body>
-  <header class="site-header">
-    <a class="brand" href="index.html"><span class="brand-mark">KS</span><span class="brand-copy">KANSAI SURFER</span></a>
-  </header>
+  <header class="site-header"><a class="brand" href="index.html"><span class="brand-mark">KS</span><span class="brand-copy">KANSAI SURFER</span></a></header>
   <main class="brief-wrap" id="brief" aria-live="polite">
-    <p class="brief-kicker">NAMI TEST / MORNING BRIEF</p>
-    <h1 class="brief-title">朝刊プレビューを読み込み中…</h1>
-    <p class="brief-note">本番未反映。表示・情報設計の確認用です。</p>
+    <p class="brief-kicker">NAMI TEST / MORNING BRIEF</p><h1 class="brief-title">朝刊プレビューを読み込み中…</h1><p class="brief-note">本番未反映。表示・情報設計の確認用です。</p>
   </main>
 <script>
 const SLEAGUE_URL='https://sleague.rss7.net/';
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-const sleagueText=s=>esc(s).replaceAll('S.LEAGUE',`<a class="sleague-link" href="${SLEAGUE_URL}">S.LEAGUE</a>`);
+const safeUrl=s=>{try{const u=new URL(String(s));return u.protocol==='https:'?u.href:''}catch{return''}};
+const sourceLink=(label,url)=>{const href=safeUrl(url);return href?`<a class="source-link" href="${esc(href)}" rel="noopener noreferrer">${esc(label||href)}</a>`:esc(label||'')};
+const sleagueText=s=>esc(s).replaceAll('S.LEAGUE',`<a class="sleague-link" href="${SLEAGUE_URL}">S.LEAGUE</a>`).replaceAll('エスリーグ',`<a class="sleague-link" href="${SLEAGUE_URL}">エスリーグ</a>`);
+const hasValue=v=>v!==null&&v!==undefined&&v!=='';
+const valueOrEmpty=(v,fallback='未接続')=>hasValue(v)?sleagueText(v):`<span class="empty">${esc(fallback)}</span>`;
+const neutralSourceLabel=s=>/S\.LEAGUE|エスリーグ/i.test(String(s||''))?'出典':(s||'出典');
+const calendarDay=s=>{
+  const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(s||''));
+  return m?Date.UTC(Number(m[1]),Number(m[2])-1,Number(m[3])):null;
+};
+const fallbackEligible=(item,date)=>{
+  if(item?.publish!==true||!item?.title||!item?.body)return false;
+  if(item.meaningful_change===true)return true;
+  if(!item.last_published_at)return true;
+  const last=calendarDay(item.last_published_at), now=calendarDay(date);
+  if(last===null||now===null)return false;
+  const minDays=Math.max(3,Number(item.repeat_after_days)||3);
+  return (now-last)>=minDays*86400000;
+};
 fetch('data/morning-brief.json',{cache:'no-store'})
 .then(r=>{if(!r.ok)throw new Error('JSON load failed');return r.json()})
 .then(d=>{
-  const title=`${d.date.replaceAll('-','/')}（${esc(d.weekday)}）関西サーフィン波情報`;
-  const ranking=d.ranking.map(x=>`<div class="rank-row"><span class="rank-no">${esc(x.rank)}位</span><strong>${esc(x.spot)}</strong><span>${esc(x.size)}</span><span>${esc(x.wind)}</span><span>${esc(x.note)}</span></div>`).join('');
-  const spots=d.spots.map(x=>x.current?`<article class="spot-row"><h3>${esc(x.name)}｜${esc(x.current)}</h3><p><span class="label">現在</span>${esc(x.current)}</p><p><span class="label">風</span>${esc(x.wind)}</p><p><span class="label">今後</span>${esc(x.forecast)}</p></article>`:`<article class="spot-row"><h3>${esc(x.name)}</h3><p class="empty">本日データなし。推測で補完しません。</p></article>`).join('');
-  const comp=d.competition_news.length?d.competition_news.map(x=>`<article class="news-row"><h3>${sleagueText(x.type)}</h3><p><strong>${sleagueText(x.title)}</strong></p><p>${sleagueText(x.body)}</p></article>`).join(''):'<p class="empty">本日、大きなコンペニュースはありません。</p>';
-  const safety=d.safety_news.length?d.safety_news.map(x=>`<article class="news-row alert"><h3>${esc(x.title)}</h3><p>${esc(x.body)}</p><p>発表元：${esc(x.source)}｜発表時刻：${esc(x.published_at)}</p></article>`).join(''):'<p class="empty">特記事項なし。重大情報がある日は一次情報・発表時刻付きで長文化します。</p>';
-  document.querySelector('#brief').innerHTML=`<p class="brief-kicker">NAMI TEST / MORNING BRIEF</p><h1 class="brief-title">${title}</h1><p class="brief-meta">記事生成時刻：${esc(d.generated_at)}</p><p class="brief-lead">${esc(d.headline)}</p><section class="brief-section"><h2>今日の関西 波ランキングTOP5</h2><div class="rank-list">${ranking}</div></section><section class="brief-section"><h2>各スポットの波情報</h2><div class="spot-list">${spots}</div></section><section class="brief-section"><h2>今日のコンペニュース</h2><div class="news-list">${comp}</div></section><section class="brief-section"><h2>海・災害ニュース</h2><div class="news-list">${safety}</div></section><section class="brief-section"><h2>今日のひとこと</h2><p>${esc(d.closing)}</p></section><footer class="brief-footer">${esc(d.sources_note)}<br>現在値と予報値を分離し、未確認の現地体験・人物証言は生成しません。</footer>`;
+  const dateText=d.date?esc(String(d.date).replaceAll('-','/')):'日付未設定';
+  const title=`${dateText}（${esc(d.weekday||'')}）関西サーフィン波情報`;
+  const o=d.opening||{}, weather=o.osaka_weather||{}, topic=o.topic||{};
+  const weatherMeta=[weather.observed_at&&`観測 ${esc(weather.observed_at)}`,weather.forecast_at&&`予報 ${esc(weather.forecast_at)}`,weather.checked_at&&`確認 ${esc(weather.checked_at)}`,weather.source&&sourceLink('天気ソース',weather.source)].filter(Boolean).join('｜');
+  const topicMeta=[topic.published_at&&`発表 ${esc(topic.published_at)}`,topic.checked_at&&`確認 ${esc(topic.checked_at)}`,topic.source&&sourceLink('話題ソース',topic.source)].filter(Boolean).join('｜');
+  const opening=`<div class="opening-box"><p><strong>${esc(o.greeting||'おはようございます、木山です。')}</strong></p><p>${weather.current?sleagueText(weather.current):'<span class="empty">大阪の現在天気は未接続です。</span>'}</p>${weather.forecast?`<p>${sleagueText(weather.forecast)}</p>`:''}${weatherMeta?`<p class="opening-meta">${weatherMeta}</p>`:''}<p>${topic.text?sleagueText(topic.text):'<span class="empty">今日の時事・季節ネタは未接続です。</span>'}</p>${topicMeta?`<p class="opening-meta">${topicMeta}</p>`:''}<p>${sleagueText(o.transition||'では今日の波を見ていきましょう。')}</p></div>`;
+  const ranking=(d.ranking||[]).length?d.ranking.slice(0,5).map(x=>`<div class="rank-row"><span class="rank-no">${esc(x.rank)}位</span><strong>${esc(x.spot)}</strong><span>${valueOrEmpty(x.size,'サイズなし')}</span><span>${valueOrEmpty(x.wind,'風なし')}</span><span>${valueOrEmpty(x.note,'コメントなし')} ${x.basis?`<small>${x.basis==='current'?'現在':'予報'}基準</small>`:''}</span></div>`).join(''):'<p class="empty">ランキングデータ未接続。推測値は表示しません。</p>';
+  const spots=(d.spots||[]).map(x=>{
+    const hasAny=[x.current,x.wind_current,x.forecast,x.wind_forecast].some(hasValue);
+    if(!hasAny)return `<article class="spot-row"><h3>${esc(x.name)}</h3><p class="empty">本日データなし。推測で補完しません。</p></article>`;
+    return `<article class="spot-row"><h3>${esc(x.name)}</h3><p><span class="label">現在</span>${valueOrEmpty(x.current,'現在データなし')} ${x.current_at?`<small>${esc(x.current_at)}</small>`:''}</p><p><span class="label">現在風</span>${valueOrEmpty(x.wind_current,'現在風なし')} ${x.wind_current_at?`<small>${esc(x.wind_current_at)}</small>`:''}</p><p><span class="label">今後</span>${valueOrEmpty(x.forecast,'予報データなし')} ${x.forecast_at?`<small>${esc(x.forecast_at)}</small>`:''}</p><p><span class="label">予報風</span>${valueOrEmpty(x.wind_forecast,'予報風なし')} ${x.wind_forecast_at?`<small>${esc(x.wind_forecast_at)}</small>`:''}</p></article>`;
+  }).join('');
+  const freshComp=(d.competition_news||[]).filter(x=>x?.title||x?.body).map(x=>`<article class="news-row"><h3>${sleagueText(x.type||'COMPETITION')}</h3><p><strong>${sleagueText(x.title||'')}</strong></p><p>${sleagueText(x.body||'')}</p>${x.published_at?`<p class="brief-meta">発表 ${esc(x.published_at)}｜確認 ${esc(x.checked_at||'')}</p>`:''}${x.source?`<p><span class="label">出典</span>${sourceLink(neutralSourceLabel(x.source_name),x.source)}</p>`:''}</article>`).join('');
+  const fallback=(d.competition_fallback||[]).filter(x=>fallbackEligible(x,d.date)).slice(0,2).map(x=>`<article class="news-row"><h3>${sleagueText(x.title)}</h3><p>${sleagueText(x.body)}</p>${x.checked_at?`<p class="brief-meta">確認 ${esc(x.checked_at)}</p>`:''}${x.source?`<p><span class="label">出典</span>${sourceLink(neutralSourceLabel(x.source_name),x.source)}</p>`:''}</article>`).join('');
+  const comp=freshComp||fallback||'<p class="empty">本日、大きなコンペニュースはありません。定番情報も再掲条件を満たす場合のみ掲載します。</p>';
+  const surf=(d.surf_news||[]).filter(x=>x?.title||x?.body).length?(d.surf_news||[]).filter(x=>x?.title||x?.body).map(x=>`<article class="news-row"><h3>${sleagueText(x.title)}</h3><p>${sleagueText(x.body)}</p>${x.published_at?`<p class="brief-meta">発表 ${esc(x.published_at)}｜確認 ${esc(x.checked_at||'')}</p>`:''}${x.source?`<p><span class="label">出典</span>${sourceLink(neutralSourceLabel(x.source_name),x.source)}</p>`:''}</article>`).join(''):'<p class="empty">本日、掲載するサーフィン関連ニュースはありません。</p>';
+  const safetyStatus=d.safety_status||{};
+  const safety=(d.safety_news||[]).length?d.safety_news.map(x=>`<article class="news-row alert"><h3>${sleagueText(x.title)}</h3><p>${sleagueText(x.body)}</p><p><span class="label">発表元</span>${sleagueText(x.source_name||'')}</p><p><span class="label">発表時刻</span>${esc(x.published_at||'')}</p><p><span class="label">確認時刻</span>${esc(x.checked_at||'')}</p><p><span class="label">一次情報</span>${sourceLink(neutralSourceLabel(x.source_name||x.source_url),x.source_url)}</p></article>`).join(''):(safetyStatus.summary&&safetyStatus.checked_at&&(safetyStatus.sources||[]).length?`<p class="empty">${sleagueText(safetyStatus.summary)}（${esc(safetyStatus.checked_at)}時点）</p><p class="brief-meta">確認元：${safetyStatus.sources.map(s=>sourceLink(neutralSourceLabel(s.name),s.url)).join(' / ')}</p>`:'<p class="empty">安全情報は未確認です。公開前に一次情報を確認してください。</p>');
+  document.querySelector('#brief').innerHTML=`<p class="brief-kicker">NAMI TEST / MORNING BRIEF</p><h1 class="brief-title">${title}</h1><p class="brief-meta">記事生成時刻：${d.generated_at?esc(d.generated_at):'未生成'}</p>${opening}<p class="brief-lead">${d.headline?sleagueText(d.headline):'<span class="empty">朝刊見出しは未生成です。</span>'}</p><section class="brief-section"><h2>今日の関西 波ランキングTOP5</h2><div class="rank-list">${ranking}</div></section><section class="brief-section"><h2>各スポットの波情報</h2><div class="spot-list">${spots}</div></section><section class="brief-section"><h2>今日のコンペニュース</h2><div class="news-list">${comp}</div></section><section class="brief-section"><h2>サーフィン関連ニュース</h2><div class="news-list">${surf}</div></section><section class="brief-section"><h2>海の事故・安全情報</h2><div class="news-list">${safety}</div></section><section class="brief-section"><h2>今日のひとこと</h2><p>${d.closing?sleagueText(d.closing):'<span class="empty">未生成</span>'}</p></section><footer class="brief-footer">${sleagueText(d.sources_note||'')}<br>現在値・予報・ニュース・警報を分離し、未確認の現地体験や人物証言は生成しません。</footer>`;
 })
-.catch(()=>{document.querySelector('#brief').innerHTML+='<p class="alert rank-row">データを読み込めませんでした。推測値は表示しません。</p>'});
+.catch(()=>{const root=document.querySelector('#brief');if(root)root.innerHTML='<p class="alert">データを読み込めませんでした。推測値は表示しません。</p>';});
 </script>
 </body>
 </html>
