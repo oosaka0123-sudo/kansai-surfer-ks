@@ -1,0 +1,83 @@
+name: Deploy LINE Hero v2 to production
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ks-line-hero-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y lftp
+
+      - name: Patch, upload, and verify
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          W="$RUNNER_TEMP/line-hero-v2-production"
+          mkdir -p "$W"
+
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          get /kansai/line/index.html -o "$W/index.before.html"
+          bye
+          LFTP_EOF
+
+          python3 scripts/patch-line-hero-v2.py             "$W/index.before.html"             line-design/hero-v2.css             line-design/header-v2.html             "$W/index.after.html"
+
+          rollback(){
+            echo "::warning::Restoring original LINE page."
+            lftp -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp -e "set cmd:fail-exit true; set ftp:ssl-force true; set ftp:ssl-protect-data true; put \"$W/index.before.html\" -o /kansai/line/index.html; bye" || true
+          }
+          trap rollback ERR
+
+          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp -e "set cmd:fail-exit true; set ftp:ssl-force true; set ftp:ssl-protect-data true; put \"$W/index.after.html\" -o /kansai/line/index.html; get /kansai/line/index.html -o \"$W/index.verify.html\"; bye"
+          cmp -s "$W/index.after.html" "$W/index.verify.html"
+
+          curl --fail --silent --show-error --location "https://kansai.rss7.net/line/?v=$GITHUB_RUN_ID" -o "$W/index.live.html"
+          cmp -s "$W/index.after.html" "$W/index.live.html"
+          grep -q 'id="ks-line-hero-v2"' "$W/index.live.html"
+          grep -q 'class="ks-social-link"' "$W/index.live.html"
+          grep -q '@keyframes ks-line-video-pan' "$W/index.live.html"
+          grep -q '海でつながる。' "$W/index.live.html"
+          grep -q '関西サーファーLINE' "$W/index.live.html"
+          grep -q 'member_counts.php' "$W/index.live.html"
+
+          curl --fail --silent --show-error --location "https://kansai.rss7.net/img/logo-ks-white.png?v=$GITHUB_RUN_ID" -o "$W/logo.png"
+          file "$W/logo.png" | grep -q 'RGBA'
+
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium)"
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --hide-scrollbars --autoplay-policy=no-user-gesture-required             --virtual-time-budget=2200 --window-size=320,700 --screenshot="$W/mobile-320.png" "https://kansai.rss7.net/line/?v=$GITHUB_RUN_ID"
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --hide-scrollbars --autoplay-policy=no-user-gesture-required             --virtual-time-budget=2200 --window-size=390,844 --screenshot="$W/mobile-390.png" "https://kansai.rss7.net/line/?v=$GITHUB_RUN_ID"
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --hide-scrollbars --autoplay-policy=no-user-gesture-required             --virtual-time-budget=2200 --window-size=1440,900 --screenshot="$W/desktop-1440.png" "https://kansai.rss7.net/line/?v=$GITHUB_RUN_ID"
+
+          trap - ERR
+          echo LINE_HERO_V2_PRODUCTION_OK
+
+      - name: Upload production visual verification
+        uses: actions/upload-artifact@v4
+        with:
+          name: line-hero-v2-production
+          path: |
+            ${{ runner.temp }}/line-hero-v2-production/index.live.html
+            ${{ runner.temp }}/line-hero-v2-production/mobile-320.png
+            ${{ runner.temp }}/line-hero-v2-production/mobile-390.png
+            ${{ runner.temp }}/line-hero-v2-production/desktop-1440.png
+          retention-days: 3

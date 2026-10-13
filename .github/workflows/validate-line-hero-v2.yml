@@ -1,0 +1,60 @@
+name: Validate LINE Hero v2
+
+on:
+  pull_request:
+    paths:
+      - 'line-design/**'
+      - 'scripts/patch-line-hero-v2.py'
+      - '.github/workflows/validate-line-hero-v2.yml'
+      - '.github/workflows/deploy-line-hero-v2-production.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build production-based preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          W="$RUNNER_TEMP/line-hero-v2"
+          mkdir -p "$W"
+          curl --fail --silent --show-error --location "https://kansai.rss7.net/line/?v=$GITHUB_RUN_ID" -o "$W/index.before.html"
+          curl --fail --silent --show-error --location "https://kansai.rss7.net/line/hero.mp4?v=$GITHUB_RUN_ID" -o "$W/hero.mp4"
+
+          python3 scripts/patch-line-hero-v2.py             "$W/index.before.html"             line-design/hero-v2.css             line-design/header-v2.html             "$W/index.html"
+
+          grep -q 'id="ks-line-hero-v2"' "$W/index.html"
+          grep -q 'class="ks-social-link"' "$W/index.html"
+          grep -q '@keyframes ks-line-video-pan' "$W/index.html"
+          grep -q 'prefers-reduced-motion' "$W/index.html"
+
+          python3 -m http.server 8765 --directory "$W" >/tmp/ks-line-preview.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
+          sleep 1
+          curl --fail --silent --show-error http://127.0.0.1:8765/ >/dev/null
+
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium)"
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --hide-scrollbars --autoplay-policy=no-user-gesture-required             --virtual-time-budget=2200 --window-size=320,700 --screenshot="$W/mobile-320.png" http://127.0.0.1:8765/
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --hide-scrollbars --autoplay-policy=no-user-gesture-required             --virtual-time-budget=2200 --window-size=390,844 --screenshot="$W/mobile-390.png" http://127.0.0.1:8765/
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --hide-scrollbars --autoplay-policy=no-user-gesture-required             --virtual-time-budget=2200 --window-size=1440,900 --screenshot="$W/desktop-1440.png" http://127.0.0.1:8765/
+
+          file "$W/mobile-320.png" "$W/mobile-390.png" "$W/desktop-1440.png"
+
+      - name: Upload visual preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: line-hero-v2-preview
+          path: |
+            ${{ runner.temp }}/line-hero-v2/index.html
+            ${{ runner.temp }}/line-hero-v2/mobile-320.png
+            ${{ runner.temp }}/line-hero-v2/mobile-390.png
+            ${{ runner.temp }}/line-hero-v2/desktop-1440.png
+          retention-days: 3
