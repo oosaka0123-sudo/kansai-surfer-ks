@@ -1,6 +1,15 @@
 name: Validate morning brief
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'PROJECT_SPEC.md'
+      - 'prototype/ks-redesign/morning-brief.html'
+      - 'prototype/ks-redesign/data/morning-brief.json'
+      - 'scripts/validate_morning_brief.py'
+      - '.github/workflows/validate-morning-brief.yml'
   pull_request:
     paths:
       - 'PROJECT_SPEC.md'
@@ -23,6 +32,18 @@ jobs:
         run: |
           python3 scripts/validate_morning_brief.py
           python3 scripts/validate_morning_brief.py --self-test
+      - name: Check embedded JavaScript syntax
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          html = Path('prototype/ks-redesign/morning-brief.html').read_text(encoding='utf-8')
+          match = re.search(r'(?s)<script>(.*?)</script>', html)
+          if not match:
+              raise SystemExit('script block not found')
+          Path('/tmp/morning-brief.js').write_text(match.group(1), encoding='utf-8')
+          PY
+          node --check /tmp/morning-brief.js
       - name: Basic HTML assertions
         run: |
           grep -q '"greeting": "おはようございます、木山です。"' prototype/ks-redesign/data/morning-brief.json
