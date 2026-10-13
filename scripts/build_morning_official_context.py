@@ -173,10 +173,10 @@ def parse_sleague_top3(raw):
 def parse_sleague_month_schedule(raw, month):
     parser, _ = parse_html(raw)
     tokens = [x for x in parser.tokens if x != "\n" and x.strip()]
-    start = next((i for i, x in enumerate(tokens) if "S.ONE" in x and "ショートボード" in x), None)
+    start = next((i for i in range(len(tokens)) if "S.ONE" in " ".join(tokens[i:i+3]) and "ショートボード" in " ".join(tokens[i:i+3])), None)
     if start is None:
         raise ValueError("S.ONE shortboard schedule section not found")
-    end = next((i for i in range(start + 1, len(tokens)) if "S.ONE" in tokens[i] and "ロングボード" in tokens[i]), len(tokens))
+    end = next((i for i in range(start + 1, len(tokens)) if "S.ONE" in " ".join(tokens[i:i+3]) and "ロングボード" in " ".join(tokens[i:i+3])), len(tokens))
     section = tokens[start:end]
     month_key = f"{month}月"
     events = []
@@ -297,19 +297,30 @@ def atom_entries(raw):
     return out
 
 
-def find_text(root, local_name):
+def first_local(root, local_name):
     for elem in root.iter():
         if elem.tag.rsplit("}", 1)[-1] == local_name and elem.text and elem.text.strip():
             return elem.text.strip()
     return ""
 
 
+def first_element(root, local_name):
+    for elem in root.iter():
+        if elem.tag.rsplit("}", 1)[-1] == local_name:
+            return elem
+    return None
+
+
 def parse_jma_detail(raw):
     root = ET.fromstring(raw)
-    title = find_text(root, "Title")
-    info_type = find_text(root, "InfoType")
-    report_time = find_text(root, "ReportDateTime") or find_text(root, "DateTime")
-    headline = find_text(root, "Text")
+    head = first_element(root, "Head")
+    if head is None:
+        raise ValueError("JMA XML Head element missing")
+    title = first_local(head, "Title")
+    info_type = first_local(head, "InfoType")
+    report_time = first_local(head, "ReportDateTime") or first_local(head, "TargetDateTime")
+    headline_node = first_element(head, "Headline")
+    headline = first_local(headline_node, "Text") if headline_node is not None else ""
     all_text = " ".join(x.strip() for x in root.itertext() if x and x.strip())
     regions = sorted({x for x in REGION_WORDS if x in all_text})
     return {
