@@ -3,6 +3,7 @@ name: Validate morning brief
 on:
   pull_request:
     paths:
+      - 'PROJECT_SPEC.md'
       - 'prototype/ks-redesign/morning-brief.html'
       - 'prototype/ks-redesign/data/morning-brief.json'
       - 'scripts/validate_morning_brief.py'
@@ -19,10 +20,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Validate morning brief schema and guardrails
-        run: python scripts/validate_morning_brief.py
+        run: python3 scripts/validate_morning_brief.py
       - name: Basic HTML assertions
         run: |
-          grep -q 'おはようございます、木山です。' prototype/ks-redesign/morning-brief.html
+          grep -q '"greeting": "おはようございます、木山です。"' prototype/ks-redesign/data/morning-brief.json
           grep -q 'サーフィン関連ニュース' prototype/ks-redesign/morning-brief.html
           grep -q '海の事故・安全情報' prototype/ks-redesign/morning-brief.html
-          grep -q 'https://sleague.rss7.net/' prototype/ks-redesign/morning-brief.html
+          grep -q "const SLEAGUE_URL='https://sleague.rss7.net/';" prototype/ks-redesign/morning-brief.html
+          grep -q 'fallbackEligible' prototype/ks-redesign/morning-brief.html
+          grep -q '安全情報は未確認です' prototype/ks-redesign/morning-brief.html
