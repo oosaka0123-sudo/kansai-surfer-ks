@@ -1,0 +1,126 @@
+name: Audit production morning generator safely
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ks-morning-generator-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y lftp
+
+      - name: Download production generator candidates read-only
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          test -n "$FTP_USERNAME"
+          test -n "$FTP_PASSWORD"
+          TMP="$RUNNER_TEMP/ks-morning-generator-audit"
+          mkdir -p "$TMP"
+
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          get /kansai/admin/ai_draft.php -o "$TMP/ai_draft.php"
+          get /kansai/admin/auto_wave_post.php -o "$TMP/auto_wave_post.php"
+          get /kansai/admin/auto_wave_today.php -o "$TMP/auto_wave_today.php"
+          bye
+          LFTP_EOF
+
+          AUDIT_ROOT="$TMP" python3 - <<'PY'
+          import hashlib
+          import os
+          import pathlib
+          import re
+          from urllib.parse import urlparse
+
+          root = pathlib.Path(os.environ["AUDIT_ROOT"])
+          terms = [
+              "朝", "今日", "明日", "ランキング", "記事", "ブログ", "波情報",
+              "articles.json", "file_put_contents", "json_encode", "json_decode",
+              "anthropic", "gemini", "claude", "prompt", "system"
+          ]
+          safe_calls = [
+              "file_put_contents", "file_get_contents", "json_encode", "json_decode",
+              "curl_init", "curl_exec", "fopen", "fwrite", "rename", "copy"
+          ]
+
+          print("MORNING_GENERATOR_SAFE_AUDIT_V1")
+          for path in sorted(root.glob("*.php")):
+              raw = path.read_bytes()
+              text = raw.decode("utf-8", errors="ignore")
+              print(f"FILE={path.name}")
+              print(f"BYTES={len(raw)}")
+              print(f"LINES={text.count(chr(10)) + 1}")
+              print(f"SHA256={hashlib.sha256(raw).hexdigest()}")
+
+              funcs = sorted(set(re.findall(r"(?i)\bfunction\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(", text)))
+              print("FUNCTIONS=" + (",".join(funcs) if funcs else "(none)"))
+
+              calls = [name for name in safe_calls if re.search(r"\b" + re.escape(name) + r"\s*\(", text)]
+              print("SAFE_CALLS=" + (",".join(calls) if calls else "(none)"))
+
+              php_refs = sorted(set(pathlib.PurePosixPath(x).name for x in re.findall(r"""['"]([^'"]+\.php)['"]""", text)))
+              print("PHP_REFS=" + (",".join(php_refs) if php_refs else "(none)"))
+
+              hosts = set()
+              for url in re.findall(r"https?://[^\s'\"<>]+", text, flags=re.I):
+                  try:
+                      host = urlparse(url).hostname
+                  except Exception:
+                      host = None
+                  if host:
+                      hosts.add(host.lower())
+              print("HOSTS=" + (",".join(sorted(hosts)) if hosts else "(none)"))
+
+              models = sorted(set(re.findall(r"claude-[a-z0-9][a-z0-9._-]*", text, flags=re.I)))
+              print("CLAUDE_MODELS=" + (",".join(models) if models else "(none)"))
+
+              prompt_vars = sorted(set(re.findall(
+                  r"(?im)^\s*\$([A-Za-z_][A-Za-z0-9_]*(?:prompt|instruction|system)[A-Za-z0-9_]*)\s*=",
+                  text
+              )))
+              print("PROMPT_LIKE_VARS=" + (",".join(prompt_vars) if prompt_vars else "(none)"))
+
+              writes = []
+              for match in re.finditer(r"file_put_contents\s*\(\s*(['\"])([^'\"]+)\1", text):
+                  target = pathlib.PurePosixPath(match.group(2)).name
+                  if target:
+                      writes.append(target)
+              print("LITERAL_WRITE_BASENAMES=" + (",".join(sorted(set(writes))) if writes else "(none)"))
+
+              cli_guard = bool(re.search(r"PHP_SAPI|php_sapi_name|STDIN|argv", text, flags=re.I))
+              print("CLI_GUARD_HINT=" + ("yes" if cli_guard else "no"))
+
+              for term in terms:
+                  count = text.lower().count(term.lower())
+                  if count:
+                      print(f"TERM_COUNT[{term}]={count}")
+
+              shape_lines = []
+              for no, line in enumerate(text.splitlines(), start=1):
+                  if re.search(r"(?i)prompt|instruction|system", line) and "$" in line:
+                      scrubbed = re.sub(r"""(['"])(?:(?=(\\?))\2.)*?\1""", '"<redacted-string>"', line)
+                      scrubbed = re.sub(r"[A-Za-z0-9_\-]{24,}", "<redacted-token>", scrubbed)
+                      shape_lines.append(f"{no}:{scrubbed.strip()[:240]}")
+              print("PROMPT_SHAPE_LINES=" + (" || ".join(shape_lines[:20]) if shape_lines else "(none)"))
+              print("END_FILE")
+
+          print("AUDIT_COMPLETE_NO_SOURCE_EXPORTED")
+          PY
