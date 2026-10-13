@@ -54,6 +54,15 @@ jobs:
           assert data['preview'] is False and data['verified'] is True
           assert src['sleague_ranking']['ok'] is True, src['sleague_ranking']
           assert src['sleague_schedule']['ok'] is True, src['sleague_schedule']
+          fallback = {x['kind']: x for x in data['competition_fallback']}
+          top3 = fallback['sleague_top3']
+          assert top3['source'] == 'https://sleague.jp/ranking/?league=s1'
+          assert all(label in (top3['body'] or '') for label in ('1位', '2位', '3位')), top3
+          assert 'Image' not in (top3['body'] or ''), top3
+          schedule = fallback['monthly_schedule']
+          if schedule['title']:
+              assert schedule['source'] == 'https://sleague.jp/schedule/'
+              assert f"{data['date'][5:7].lstrip('0')}月" in schedule['title'], schedule
           assert all(v['ok'] for v in src['jma']['feeds'].values()), src['jma']
           assert src['jcg']['ok'] is True, src['jcg']
           assert src['wsl_kanoa']['ok'] is False
