@@ -23,8 +23,8 @@ jobs:
         run: |
           set -euo pipefail
           set +x
-          W="$RUNNER_TEMP/footer-sync"; O="$W/orig"; P="$W/patched"
-          mkdir -p "$O" "$P"
+          W="$RUNNER_TEMP/footer-sync"; O="$W/orig"; P="$W/patched"; B="$W/backup"
+          mkdir -p "$O" "$P" "$B"
           lftp <<LFTP_EOF
           set cmd:fail-exit true
           set ftp:ssl-force true
@@ -35,10 +35,10 @@ jobs:
           mirror --verbose=0 --parallel=8 --include-glob '*.html' --include-glob '*.php' --exclude-glob 'admin/**' --exclude-glob 'data/**' --exclude-glob 'uploads/**' --exclude-glob 'line-bot/**' --exclude-glob 'line/**' --exclude-glob 'img/**' --exclude-glob 'secret/**' /kansai "$O"
           bye
           LFTP_EOF
-          LINE="$W/line.html" O="$O" P="$P" python - <<'PY'
-          import os,pathlib,re
+          LINE="$W/line.html" O="$O" P="$P" B="$B" python - <<'PY'
+          import os,pathlib,re,shutil
           line=pathlib.Path(os.environ["LINE"]).read_text(encoding="utf-8")
-          o=pathlib.Path(os.environ["O"]); p=pathlib.Path(os.environ["P"])
+          o=pathlib.Path(os.environ["O"]); p=pathlib.Path(os.environ["P"]); b=pathlib.Path(os.environ["B"])
           rx=re.compile(r"<footer\b[^>]*>.*?</footer>",re.I|re.S)
           mm=list(rx.finditer(line))
           if len(mm)!=1: raise SystemExit(f"canonical footer count={len(mm)}")
@@ -65,8 +65,11 @@ jobs:
               # hard proof: only the footer span changes
               if before[:x.start()]!=after[:x.start()]: raise SystemExit("prefix changed")
               if before[x.end():]!=after[x.start()+len(footer):]: raise SystemExit("suffix changed")
-              rel=f.relative_to(o); dst=p/rel; dst.parent.mkdir(parents=True,exist_ok=True)
-              dst.write_text(after,encoding="utf-8"); rows.append(str(rel))
+              rel=f.relative_to(o)
+              dst=p/rel; dst.parent.mkdir(parents=True,exist_ok=True)
+              dst.write_text(after,encoding="utf-8")
+              bak=b/rel; bak.parent.mkdir(parents=True,exist_ok=True); shutil.copy2(f,bak)
+              rows.append(str(rel))
           (p/"_changed.txt").write_text("\n".join(rows)+("\n" if rows else ""),encoding="utf-8")
           print("FOOTER_FILES_CHANGED="+str(len(rows)))
           for r in rows: print("PATCH "+r)
@@ -82,17 +85,51 @@ jobs:
         run: |
           set -euo pipefail
           set +x
-          W="$RUNNER_TEMP/footer-sync"; O="$W/orig"; P="$W/patched"; V="$W/verify"; mkdir -p "$V"
+          W="$RUNNER_TEMP/footer-sync"; P="$W/patched"; B="$W/backup"; V="$W/verify"
+          mkdir -p "$V"
           [ -s "$P/_changed.txt" ] || { echo FOOTER_ALREADY_UNIFIED; exit 0; }
-          rollback(){ while IFS= read -r rel; do lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST" -e "set cmd:fail-exit true; set ftp:ssl-force true; set ftp:ssl-protect-data true; put \"$O/$rel\" -o \"/kansai/$rel\"; bye" || true; done < "$P/_changed.txt"; }
+
+          rollback(){
+            echo "::warning::Restoring originals after failed verification."
+            lftp <<LFTP_EOF
+            set cmd:fail-exit true
+            set ftp:ssl-force true
+            set ftp:ssl-protect-data true
+            set ftp:passive-mode true
+            open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST"
+            mirror -R --verbose=0 --parallel=8 --include-glob '*.html' --include-glob '*.php' "$B" /kansai
+            bye
+            LFTP_EOF
+          }
           trap rollback ERR
+
+          # Upload all prepared footer-only patches in one parallel FTPS session.
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST"
+          mirror -R --verbose=0 --parallel=8 --include-glob '*.html' --include-glob '*.php' --exclude-glob '_changed.txt' "$P" /kansai
+          bye
+          LFTP_EOF
+
+          # Re-download the public page tree once, then compare only changed files.
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST"
+          mirror --verbose=0 --parallel=8 --include-glob '*.html' --include-glob '*.php' --exclude-glob 'admin/**' --exclude-glob 'data/**' --exclude-glob 'uploads/**' --exclude-glob 'line-bot/**' --exclude-glob 'line/**' --exclude-glob 'img/**' --exclude-glob 'secret/**' /kansai "$V"
+          bye
+          LFTP_EOF
+
           while IFS= read -r rel; do
-            lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST" -e "set cmd:fail-exit true; set ftp:ssl-force true; set ftp:ssl-protect-data true; put \"$P/$rel\" -o \"/kansai/$rel\"; bye"
-            mkdir -p "$V/$(dirname "$rel")"
-            lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST" -e "set cmd:fail-exit true; set ftp:ssl-force true; set ftp:ssl-protect-data true; get \"/kansai/$rel\" -o \"$V/$rel\"; bye"
             cmp -s "$P/$rel" "$V/$rel"
             case "$rel" in *.php) php -l "$V/$rel" >/dev/null;; esac
           done < "$P/_changed.txt"
+
           curl --fail --silent --show-error --location "https://kansai.rss7.net/index.html?v=$GITHUB_RUN_ID" >/dev/null
           curl --fail --silent --show-error --location "https://kansai.rss7.net/line/?v=$GITHUB_RUN_ID" >/dev/null
           trap - ERR
