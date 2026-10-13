@@ -1,0 +1,128 @@
+name: Repair future diary footer source
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ks-future-diary-footer
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      FTP_HOST: ftp.lolipop.jp
+    steps:
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y lftp
+
+      - name: Patch footer sources only
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          W="$RUNNER_TEMP/diary-footer"
+          O="$W/orig"
+          P="$W/patched"
+          V="$W/verify"
+          mkdir -p "$O" "$P" "$V"
+
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST"
+          get /kansai/line/index.html -o "$W/line.html"
+          get /kansai/blog/common.php -o "$O/blog-common.php"
+          get /kansai/admin/auto_wave_post.php -o "$O/auto_wave_post.php"
+          get /kansai/admin/auto_wave_today.php -o "$O/auto_wave_today.php"
+          bye
+          LFTP_EOF
+
+          LINE="$W/line.html" O="$O" P="$P" python3 - <<'PY'
+          import os, pathlib, re, shutil
+
+          line = pathlib.Path(os.environ["LINE"]).read_text(encoding="utf-8")
+          orig = pathlib.Path(os.environ["O"])
+          patched = pathlib.Path(os.environ["P"])
+          rx = re.compile(r"<footer\b[^>]*>.*?</footer>", re.I | re.S)
+
+          cm = list(rx.finditer(line))
+          if len(cm) != 1:
+              raise SystemExit(f"canonical footer count={len(cm)}")
+          canonical = cm[0].group(0)
+
+          rows=[]
+          for src in sorted(orig.glob("*.php")):
+              before = src.read_text(encoding="utf-8")
+              mm = list(rx.finditer(before))
+              print(f"SOURCE={src.name} FOOTER_BLOCKS={len(mm)} COMMON_REF={int('common.php' in before)}")
+              if not mm:
+                  continue
+              if len(mm) != 1:
+                  raise SystemExit(f"{src.name}: footer count={len(mm)}")
+              m=mm[0]
+              after = before[:m.start()] + canonical + before[m.end():]
+
+              # Absolute guard: only the exact footer block can differ.
+              if before[:m.start()] != after[:m.start()]:
+                  raise SystemExit(f"{src.name}: prefix changed")
+              if before[m.end():] != after[m.start()+len(canonical):]:
+                  raise SystemExit(f"{src.name}: suffix changed")
+
+              if after == before:
+                  print(f"ALREADY_CANONICAL={src.name}")
+                  continue
+
+              dst = patched/src.name
+              dst.write_text(after, encoding="utf-8")
+              rows.append(src.name)
+              print(f"PATCH={src.name}")
+
+          (patched/"_changed.txt").write_text("\n".join(rows)+("\n" if rows else ""), encoding="utf-8")
+          print(f"FOOTER_SOURCE_FILES_CHANGED={len(rows)}")
+          PY
+
+          if [ -s "$P/_changed.txt" ]; then
+            while IFS= read -r name; do php -l "$P/$name" >/dev/null; done < "$P/_changed.txt"
+          fi
+
+          rollback(){
+            echo "::warning::Restoring original diary footer sources."
+            [ -s "$P/_changed.txt" ] || return 0
+            while IFS= read -r name; do
+              case "$name" in
+                blog-common.php) remote="/kansai/blog/common.php" ;;
+                auto_wave_post.php) remote="/kansai/admin/auto_wave_post.php" ;;
+                auto_wave_today.php) remote="/kansai/admin/auto_wave_today.php" ;;
+                *) continue ;;
+              esac
+              lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST" -e "set cmd:fail-exit true; set ftp:ssl-force true; set ftp:ssl-protect-data true; put \"$O/$name\" -o \"$remote\"; bye" || true
+            done < "$P/_changed.txt"
+          }
+          trap rollback ERR
+
+          if [ -s "$P/_changed.txt" ]; then
+            while IFS= read -r name; do
+              case "$name" in
+                blog-common.php) remote="/kansai/blog/common.php" ;;
+                auto_wave_post.php) remote="/kansai/admin/auto_wave_post.php" ;;
+                auto_wave_today.php) remote="/kansai/admin/auto_wave_today.php" ;;
+                *) continue ;;
+              esac
+              lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST" -e "set cmd:fail-exit true; set ftp:ssl-force true; set ftp:ssl-protect-data true; put \"$P/$name\" -o \"$remote\"; get \"$remote\" -o \"$V/$name\"; bye"
+              cmp -s "$P/$name" "$V/$name"
+              php -l "$V/$name" >/dev/null
+            done < "$P/_changed.txt"
+          fi
+
+          trap - ERR
+          echo FUTURE_DIARY_FOOTER_OK
