@@ -91,15 +91,7 @@ jobs:
 
           rollback(){
             echo "::warning::Restoring originals after failed verification."
-            lftp <<LFTP_EOF
-            set cmd:fail-exit true
-            set ftp:ssl-force true
-            set ftp:ssl-protect-data true
-            set ftp:passive-mode true
-            open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST"
-            mirror -R --verbose=0 --parallel=8 --include-glob '*.html' --include-glob '*.php' "$B" /kansai
-            bye
-            LFTP_EOF
+            lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST" -e "set cmd:fail-exit true; set ftp:ssl-force true; set ftp:ssl-protect-data true; set ftp:passive-mode true; mirror -R --verbose=0 --parallel=8 --include-glob '*.html' --include-glob '*.php' \"$B\" /kansai; bye" || true
           }
           trap rollback ERR
 
