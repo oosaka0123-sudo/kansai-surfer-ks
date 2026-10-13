@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "prototype" / "ks-redesign" / "data" / "morning-brief.json"
+SCHEMA_VERSION = "ks-morning-brief-v2"
 REQUIRED_SPOTS = ["磯ノ浦","国府の浜","生見","小松海岸","伊良湖","静波","浜詰","高浜","白兎"]
 BANNED_PHRASES = [
     "今朝チェックしてきました", "今朝見てきました", "仲間から連絡が来ました", "仲間から聞きました",
@@ -47,12 +48,26 @@ def parse_day(value):
 def has_value(value):
     return value is not None and value != ""
 
-def validate(data):
+def validate(data, mode="preview"):
     errors = []
     opening = data.get("opening") or {}
 
-    if data.get("preview") is not True:
-        errors.append("morning brief NAMI fixture must keep preview=true")
+    if data.get("schema_version") != SCHEMA_VERSION:
+        errors.append(f"schema_version must be {SCHEMA_VERSION}")
+    if not isinstance(data.get("verified"), bool):
+        errors.append("verified must be boolean")
+    if mode == "preview":
+        if data.get("preview") is not True:
+            errors.append("morning brief NAMI fixture must keep preview=true")
+        if data.get("verified") is not False:
+            errors.append("morning brief NAMI fixture must keep verified=false")
+    elif mode == "production":
+        if data.get("preview") is not False:
+            errors.append("production morning context must keep preview=false")
+        if data.get("verified") is not True:
+            errors.append("production morning context must keep verified=true")
+    else:
+        errors.append(f"unknown validation mode: {mode}")
 
     if opening.get("greeting") != "おはようございます、木山です。":
         errors.append("opening.greeting must be the fixed Kiyama greeting")
@@ -282,6 +297,12 @@ def self_test(base):
         if any(forbidden in error for error in case_errors):
             raise SystemExit(f"self-test failed: {name} unexpectedly returned {forbidden}: {case_errors}")
 
+    bad = copy.deepcopy(base); bad["schema_version"] = "wrong"
+    add("schema version", bad, "schema_version must be")
+
+    bad = copy.deepcopy(base); bad["verified"] = True
+    add("preview verified flag", bad, "verified=false")
+
     bad = copy.deepcopy(base); bad["preview"] = False
     add("preview flag", bad, "preview=true")
 
@@ -399,15 +420,31 @@ def self_test(base):
             failures.append(f"{name} (missing expected error: {expected_fragment}; got: {case_errors})")
     if failures:
         raise SystemExit("self-test failed: " + "; ".join(failures))
+
+    production = copy.deepcopy(base)
+    production["preview"] = False
+    production["verified"] = True
+    production_errors = validate(production, mode="production")
+    if production_errors:
+        raise SystemExit("production-mode self-test failed: " + "; ".join(production_errors))
+
+    bad_production = copy.deepcopy(production)
+    bad_production["verified"] = False
+    if not any("verified=true" in e for e in validate(bad_production, mode="production")):
+        raise SystemExit("production verified gate self-test failed")
+
     print(f"Morning brief negative self-tests passed ({len(cases)} cases)")
+    print("Morning brief production-mode gate self-test passed")
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--self-test", action="store_true")
+    parser.add_argument("--mode", choices=("preview", "production"), default="preview")
+    parser.add_argument("--file", type=Path, default=DATA)
     args = parser.parse_args()
 
-    data = json.loads(DATA.read_text(encoding="utf-8"))
-    errors = validate(data)
+    data = json.loads(args.file.read_text(encoding="utf-8"))
+    errors = validate(data, mode=args.mode)
     if errors:
         print("Morning brief validation FAILED")
         for error in errors:
