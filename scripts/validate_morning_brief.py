@@ -181,19 +181,27 @@ def validate(data):
 
     safety_status = data.get("safety_status") or {}
     summary = str(safety_status.get("summary") or "")
-    status_checked = parse_dt(safety_status.get("checked_at"))
+    raw_status_checked = safety_status.get("checked_at")
+    status_checked = parse_dt(raw_status_checked)
     sources = safety_status.get("sources") or []
-    if safety_status.get("checked_at") and not status_checked:
+    status_has_claim = bool(summary or raw_status_checked or sources)
+
+    if raw_status_checked and not status_checked:
         errors.append("safety_status checked_at must be timezone-aware ISO")
     for source in sources:
         if not isinstance(source, dict) or not source.get("name") or not str(source.get("url", "")).startswith("https://"):
             errors.append("each safety_status source requires name and https url")
-    if "特記事項なし" in summary:
-        if not status_checked or not sources:
-            errors.append("safety_status cannot claim no issues without valid checked_at and sources")
+
+    if status_has_claim:
+        if not summary:
+            errors.append("verified safety_status requires a non-empty summary")
         if not generated_at:
             errors.append("verified safety_status requires valid generated_at")
-        elif status_checked:
+        if not status_checked:
+            errors.append("verified safety_status requires valid checked_at")
+        if not sources:
+            errors.append("verified safety_status requires at least one primary source")
+        if generated_at and status_checked:
             age = (generated_at - status_checked).total_seconds()
             if age < 0:
                 errors.append("safety_status checked_at cannot be later than generated_at")
@@ -210,9 +218,17 @@ def validate(data):
 def self_test(base):
     cases = []
 
-    bad = copy.deepcopy(base); bad["opening"]["greeting"] = "おはよう"; cases.append(("wrong greeting", bad))
-    bad = copy.deepcopy(base); bad["competition_fallback"][0]["repeat_after_days"] = 2; cases.append(("fallback interval", bad))
-    bad = copy.deepcopy(base); bad["opening"]["topic"]["text"] = "仲間から聞きました"; cases.append(("fabricated phrase", bad))
+    bad = copy.deepcopy(base)
+    bad["opening"]["greeting"] = "おはよう"
+    cases.append(("wrong greeting", bad, "fixed Kiyama greeting"))
+
+    bad = copy.deepcopy(base)
+    bad["competition_fallback"][0]["repeat_after_days"] = 2
+    cases.append(("fallback interval", bad, "repeat_after_days must be >= 3"))
+
+    bad = copy.deepcopy(base)
+    bad["opening"]["topic"]["text"] = "仲間から聞きました"
+    cases.append(("fabricated phrase", bad, "fabricated-experience phrase"))
 
     bad = copy.deepcopy(base)
     bad["generated_at"] = "2026-10-13T06:30:00+09:00"
@@ -220,7 +236,7 @@ def self_test(base):
         "title":"test","body":"test","source_name":"official","source_url":"https://example.com/",
         "published_at":"2026-10-13T04:00:00+09:00","checked_at":"2026-10-13T04:00:00+09:00","status":"active"
     }]
-    cases.append(("stale safety", bad))
+    cases.append(("stale safety", bad, "within 90 minutes"))
 
     bad = copy.deepcopy(base)
     bad["generated_at"] = None
@@ -228,21 +244,40 @@ def self_test(base):
         "title":"test","body":"test","source_name":"official","source_url":"https://example.com/",
         "published_at":"2026-10-13T06:00:00+09:00","checked_at":"2026-10-13T06:00:00+09:00","status":"active"
     }]
-    cases.append(("safety without generated_at", bad))
+    cases.append(("safety without generated_at", bad, "safety_news requires valid generated_at"))
 
     bad = copy.deepcopy(base)
     bad["generated_at"] = "2026-10-13T06:30:00+09:00"
     bad["spots"][0]["current"] = "モモ"
     bad["spots"][0]["current_at"] = "2026-10-13T06:00:00+09:00"
     bad["ranking"] = [{"rank":1,"spot":"磯ノ浦","size":"モモ","basis":"forecast"}]
-    cases.append(("ranking basis without data", bad))
+    cases.append(("ranking basis without data", bad, "basis=forecast requires spot forecast data"))
+
+    bad = copy.deepcopy(base)
+    bad["generated_at"] = "2026-10-13T06:30:00+09:00"
+    bad["safety_status"] = {
+        "summary": None,
+        "checked_at": "2026-10-10T06:00:00+09:00",
+        "sources": [{"name":"JMA","url":"https://www.jma.go.jp/"}]
+    }
+    cases.append(("stale empty safety status", bad, "non-empty summary"))
+
+    bad = copy.deepcopy(base)
+    bad["generated_at"] = None
+    bad["safety_status"] = {
+        "summary": "特記事項なし",
+        "checked_at": "2026-10-13T06:00:00+09:00",
+        "sources": [{"name":"JMA","url":"https://www.jma.go.jp/"}]
+    }
+    cases.append(("verified safety status without generated_at", bad, "requires valid generated_at"))
 
     failures = []
-    for name, payload in cases:
-        if not validate(payload):
-            failures.append(name)
+    for name, payload, expected_fragment in cases:
+        case_errors = validate(payload)
+        if not any(expected_fragment in error for error in case_errors):
+            failures.append(f"{name} (missing expected error: {expected_fragment})")
     if failures:
-        raise SystemExit("self-test expected validation failures but passed: " + ", ".join(failures))
+        raise SystemExit("self-test failed: " + "; ".join(failures))
     print(f"Morning brief negative self-tests passed ({len(cases)} cases)")
 
 def main():
