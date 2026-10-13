@@ -2,8 +2,10 @@
 import argparse
 import copy
 import json
+import re
 from datetime import date, datetime, timezone
 from pathlib import Path
+from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "prototype" / "ks-redesign" / "data" / "morning-brief.json"
@@ -12,6 +14,12 @@ BANNED_PHRASES = [
     "今朝チェックしてきました", "今朝見てきました", "仲間から連絡が来ました", "仲間から聞きました",
     "今朝見に行ったら", "現地で見たところ", "さっき海を見て"
 ]
+BANNED_PATTERNS = [
+    re.compile(r"今朝.{0,12}(見|チェック|行)"),
+    re.compile(r"(仲間|友人|知人|ローカル).{0,12}(連絡|聞)")
+]
+FALLBACK_KINDS = {"monthly_schedule", "sleague_top3", "kanoa_ranking", "kanoa_next_event"}
+SOCIAL_ONLY_HOSTS = {"x.com", "twitter.com", "www.twitter.com", "instagram.com", "www.instagram.com", "facebook.com", "www.facebook.com", "tiktok.com", "www.tiktok.com"}
 
 def parse_dt(value):
     if not value:
@@ -43,19 +51,30 @@ def validate(data):
     errors = []
     opening = data.get("opening") or {}
 
+    if data.get("preview") is not True:
+        errors.append("morning brief NAMI fixture must keep preview=true")
+
     if opening.get("greeting") != "おはようございます、木山です。":
         errors.append("opening.greeting must be the fixed Kiyama greeting")
 
-    spots = data.get("spots", [])
+    spots = data.get("spots") or []
+    if not all(isinstance(x, dict) for x in spots):
+        errors.append("spots must be an array of objects")
+        spots = []
     if [x.get("name") for x in spots] != REQUIRED_SPOTS:
         errors.append("spots must contain the 9 fixed KS spots in canonical order")
     spot_map = {x.get("name"): x for x in spots}
 
-    ranking = data.get("ranking", [])
+    ranking = data.get("ranking") or []
+    if not all(isinstance(x, dict) for x in ranking):
+        errors.append("ranking must be an array of objects")
+        ranking = []
     if len(ranking) > 5:
         errors.append("ranking must contain at most 5 entries")
     if ranking and [x.get("rank") for x in ranking] != list(range(1, len(ranking) + 1)):
         errors.append("ranking ranks must be consecutive starting at 1")
+    if len({x.get("spot") for x in ranking if isinstance(x, dict)}) != len(ranking):
+        errors.append("ranking must not contain duplicate spots")
     for item in ranking:
         spot_name = item.get("spot")
         basis = item.get("basis")
@@ -65,7 +84,10 @@ def validate(data):
         if basis not in ("current", "forecast"):
             errors.append(f"ranking {spot_name} requires basis=current|forecast")
             continue
-        spot = spot_map[spot_name]
+        spot = spot_map.get(spot_name)
+        if not spot:
+            errors.append(f"ranking {spot_name} has no matching spot data")
+            continue
         if basis == "current" and not has_value(spot.get("current")):
             errors.append(f"ranking {spot_name} basis=current requires spot current data")
         if basis == "forecast" and not has_value(spot.get("forecast")):
@@ -106,6 +128,9 @@ def validate(data):
         or data.get("competition_news")
         or data.get("surf_news")
         or data.get("safety_news")
+        or any(isinstance(x, dict) and x.get("publish") is True for x in (data.get("competition_fallback") or []))
+        or has_value(data.get("headline"))
+        or has_value(data.get("closing"))
         or has_value(weather.get("current"))
         or has_value(weather.get("forecast"))
         or has_value(topic.get("text"))
@@ -120,26 +145,43 @@ def validate(data):
                     errors.append(f"competition_news item requires {key}")
 
     article_day = parse_day(data.get("date"))
-    for item in data.get("competition_fallback", []):
+    fallbacks = data.get("competition_fallback") or []
+    fallback_kinds = [item.get("kind") for item in fallbacks if isinstance(item, dict)]
+    if set(fallback_kinds) != FALLBACK_KINDS or len(fallback_kinds) != len(FALLBACK_KINDS):
+        errors.append("competition_fallback must contain each canonical fallback kind exactly once")
+    for item in fallbacks:
+        if not isinstance(item, dict):
+            errors.append("competition_fallback items must be objects")
+            continue
+        kind = item.get("kind")
+        if kind not in FALLBACK_KINDS:
+            errors.append(f"unknown competition fallback kind: {kind}")
+        if not isinstance(item.get("publish"), bool):
+            errors.append(f"competition fallback {kind} publish must be boolean")
+        if not isinstance(item.get("meaningful_change"), bool):
+            errors.append(f"competition fallback {kind} meaningful_change must be boolean")
         try:
             repeat_days = int(item.get("repeat_after_days") or 0)
         except (TypeError, ValueError):
             repeat_days = 0
         if repeat_days < 3:
-            errors.append(f"competition fallback {item.get('kind')} repeat_after_days must be >= 3")
+            errors.append(f"competition fallback {kind} repeat_after_days must be >= 3")
         populated = has_value(item.get("title")) or has_value(item.get("body"))
         if populated:
             for key in ("source", "checked_at"):
                 if not item.get(key):
-                    errors.append(f"competition fallback {item.get('kind')} requires {key}")
+                    errors.append(f"competition fallback {kind} requires {key}")
+        if item.get("publish") is True:
+            if not (has_value(item.get("title")) and has_value(item.get("body"))):
+                errors.append(f"competition fallback {kind} publish=true requires title and body")
             last_day = parse_day(item.get("last_published_at"))
             if item.get("last_published_at") and not last_day:
-                errors.append(f"competition fallback {item.get('kind')} has invalid last_published_at")
-            if last_day and article_day and not item.get("meaningful_change"):
-                if (article_day - last_day).days < repeat_days:
-                    errors.append(f"competition fallback {item.get('kind')} violates repeat interval")
+                errors.append(f"competition fallback {kind} has invalid last_published_at")
             if item.get("last_published_at") and not article_day:
                 errors.append("article date must be valid when fallback repeat control is used")
+            if last_day and article_day and not item.get("meaningful_change"):
+                if (article_day - last_day).days < repeat_days:
+                    errors.append(f"competition fallback {kind} violates repeat interval")
 
     for item in data.get("surf_news", []):
         if has_value(item.get("title")) or has_value(item.get("body")):
@@ -151,11 +193,16 @@ def validate(data):
     if safety_news and not generated_at:
         errors.append("safety_news requires valid generated_at")
     for item in safety_news:
-        for key in ("source_name", "source_url", "published_at", "checked_at", "status"):
+        for key in ("source_name", "source_url", "source_type", "published_at", "checked_at", "status"):
             if not item.get(key):
                 errors.append(f"safety_news entry missing {key}")
         if item.get("source_url") and not str(item["source_url"]).startswith("https://"):
             errors.append("safety source_url must use https")
+        if item.get("source_type") != "primary":
+            errors.append("safety_news source_type must be primary")
+        host = urlparse(str(item.get("source_url") or "")).hostname or ""
+        if host.lower() in SOCIAL_ONLY_HOSTS:
+            errors.append("social-media-only safety sources are not allowed")
         if item.get("status") != "active":
             errors.append("only active safety_news items may be published as current")
 
@@ -191,6 +238,12 @@ def validate(data):
     for source in sources:
         if not isinstance(source, dict) or not source.get("name") or not str(source.get("url", "")).startswith("https://"):
             errors.append("each safety_status source requires name and https url")
+            continue
+        if source.get("type") != "primary":
+            errors.append("each safety_status source must have type=primary")
+        host = urlparse(str(source.get("url") or "")).hostname or ""
+        if host.lower() in SOCIAL_ONLY_HOSTS:
+            errors.append("social-media-only safety status sources are not allowed")
 
     if status_has_claim:
         if not summary:
@@ -212,70 +265,86 @@ def validate(data):
     for phrase in BANNED_PHRASES:
         if phrase in blob:
             errors.append(f"fabricated-experience phrase is forbidden: {phrase}")
+    for pattern in BANNED_PATTERNS:
+        if pattern.search(blob):
+            errors.append(f"fabricated-experience pattern is forbidden: {pattern.pattern}")
 
     return errors
 
 def self_test(base):
     cases = []
 
-    bad = copy.deepcopy(base)
-    bad["opening"]["greeting"] = "おはよう"
-    cases.append(("wrong greeting", bad, "fixed Kiyama greeting"))
+    def add(name, payload, expected):
+        cases.append((name, payload, expected))
 
-    bad = copy.deepcopy(base)
-    bad["competition_fallback"][0]["repeat_after_days"] = 2
-    cases.append(("fallback interval", bad, "repeat_after_days must be >= 3"))
+    bad = copy.deepcopy(base); bad["opening"]["greeting"] = "おはよう"
+    add("wrong greeting", bad, "fixed Kiyama greeting")
 
-    bad = copy.deepcopy(base)
-    bad["opening"]["topic"]["text"] = "仲間から聞きました"
-    cases.append(("fabricated phrase", bad, "fabricated-experience phrase"))
+    bad = copy.deepcopy(base); bad["opening"]["topic"]["text"] = "今朝ポイントを見てきました"; bad["opening"]["topic"]["source"] = "https://example.com/"; bad["opening"]["topic"]["checked_at"] = "2026-10-13T06:00:00+09:00"; bad["generated_at"] = "2026-10-13T06:30:00+09:00"
+    add("fabricated phrase variant", bad, "fabricated-experience pattern")
 
-    bad = copy.deepcopy(base)
-    bad["generated_at"] = "2026-10-13T06:30:00+09:00"
-    bad["safety_news"] = [{
-        "title":"test","body":"test","source_name":"official","source_url":"https://example.com/",
-        "published_at":"2026-10-13T04:00:00+09:00","checked_at":"2026-10-13T04:00:00+09:00","status":"active"
-    }]
-    cases.append(("stale safety", bad, "within 90 minutes"))
+    bad = copy.deepcopy(base); bad["spots"][0]["current"] = "モモ"; bad["generated_at"] = "2026-10-13T06:30:00+09:00"
+    add("spot time missing", bad, "current requires current_at")
 
-    bad = copy.deepcopy(base)
-    bad["generated_at"] = None
-    bad["safety_news"] = [{
-        "title":"test","body":"test","source_name":"official","source_url":"https://example.com/",
-        "published_at":"2026-10-13T06:00:00+09:00","checked_at":"2026-10-13T06:00:00+09:00","status":"active"
-    }]
-    cases.append(("safety without generated_at", bad, "safety_news requires valid generated_at"))
+    bad = copy.deepcopy(base); bad["opening"]["osaka_weather"]["current"] = "晴れ"; bad["opening"]["osaka_weather"]["observed_at"] = "2026-10-13T06:00:00+09:00"; bad["opening"]["osaka_weather"]["checked_at"] = "2026-10-13T06:10:00+09:00"; bad["generated_at"] = "2026-10-13T06:30:00+09:00"
+    add("weather source missing", bad, "Osaka current weather requires source")
 
-    bad = copy.deepcopy(base)
-    bad["generated_at"] = "2026-10-13T06:30:00+09:00"
-    bad["spots"][0]["current"] = "モモ"
-    bad["spots"][0]["current_at"] = "2026-10-13T06:00:00+09:00"
-    bad["ranking"] = [{"rank":1,"spot":"磯ノ浦","size":"モモ","basis":"forecast"}]
-    cases.append(("ranking basis without data", bad, "basis=forecast requires spot forecast data"))
+    bad = copy.deepcopy(base); bad["competition_news"] = [{"title":"x","body":"y","published_at":"2026-10-13T05:00:00+09:00","checked_at":"2026-10-13T06:00:00+09:00"}]; bad["generated_at"] = "2026-10-13T06:30:00+09:00"
+    add("competition source missing", bad, "competition_news item requires source")
 
-    bad = copy.deepcopy(base)
-    bad["generated_at"] = "2026-10-13T06:30:00+09:00"
-    bad["safety_status"] = {
-        "summary": None,
-        "checked_at": "2026-10-10T06:00:00+09:00",
-        "sources": [{"name":"JMA","url":"https://www.jma.go.jp/"}]
+    bad = copy.deepcopy(base); bad["surf_news"] = [{"title":"x","body":"y","source":"https://example.com/","checked_at":"2026-10-13T06:00:00+09:00"}]; bad["generated_at"] = "2026-10-13T06:30:00+09:00"
+    add("surf published time missing", bad, "surf_news item requires published_at")
+
+    bad = copy.deepcopy(base); bad["ranking"] = [{"rank":i+1,"spot":REQUIRED_SPOTS[i % len(REQUIRED_SPOTS)],"size":"モモ","basis":"current"} for i in range(6)]
+    add("ranking too long", bad, "at most 5 entries")
+
+    bad = copy.deepcopy(base); bad["ranking"] = [{"rank":2,"spot":"磯ノ浦","size":"モモ","basis":"current"}]
+    add("ranking nonconsecutive", bad, "ranks must be consecutive")
+
+    bad = copy.deepcopy(base); bad["ranking"] = [{"rank":1,"spot":"存在しない","size":"モモ","basis":"current"}]
+    add("ranking unknown spot", bad, "not a KS spot")
+
+    bad = copy.deepcopy(base); bad["spots"] = list(reversed(bad["spots"]))
+    add("wrong spot order", bad, "canonical order")
+
+    bad = copy.deepcopy(base); bad["competition_fallback"][0]["repeat_after_days"] = 2
+    add("fallback minimum interval", bad, "repeat_after_days must be >= 3")
+
+    bad = copy.deepcopy(base); f=bad["competition_fallback"][0]; f.update({"title":"schedule","body":"body","source":"https://example.com/","checked_at":"2026-10-13T06:00:00+09:00","publish":True,"last_published_at":"2026-10-12","meaningful_change":False}); bad["generated_at"]="2026-10-13T06:30:00+09:00"
+    add("fallback cooldown blocks publish", bad, "violates repeat interval")
+
+    changed = copy.deepcopy(bad); changed["competition_fallback"][0]["meaningful_change"] = True
+    if validate(changed):
+        raise SystemExit("self-test failed: meaningful_change should allow fallback cooldown override")
+
+    safety_base = {
+        "title":"test","body":"test","source_name":"JMA","source_url":"https://www.jma.go.jp/","source_type":"primary",
+        "published_at":"2026-10-13T06:00:00+09:00","checked_at":"2026-10-13T06:10:00+09:00","status":"active","valid_until":"2026-10-13T08:00:00+09:00"
     }
-    cases.append(("stale empty safety status", bad, "non-empty summary"))
 
-    bad = copy.deepcopy(base)
-    bad["generated_at"] = None
-    bad["safety_status"] = {
-        "summary": "特記事項なし",
-        "checked_at": "2026-10-13T06:00:00+09:00",
-        "sources": [{"name":"JMA","url":"https://www.jma.go.jp/"}]
-    }
-    cases.append(("verified safety status without generated_at", bad, "requires valid generated_at"))
+    bad = copy.deepcopy(base); bad["generated_at"]="2026-10-13T06:30:00+09:00"; item=copy.deepcopy(safety_base); item["source_url"]="http://example.com/"; bad["safety_news"]=[item]
+    add("safety https", bad, "must use https")
+
+    bad = copy.deepcopy(base); bad["generated_at"]="2026-10-13T06:30:00+09:00"; item=copy.deepcopy(safety_base); item["status"]="lifted"; bad["safety_news"]=[item]
+    add("safety active status", bad, "must be published as current")
+
+    bad = copy.deepcopy(base); bad["generated_at"]="2026-10-13T06:30:00+09:00"; item=copy.deepcopy(safety_base); item["valid_until"]="2026-10-13T06:20:00+09:00"; bad["safety_news"]=[item]
+    add("safety expiry", bad, "expired safety_news")
+
+    bad = copy.deepcopy(base); bad["generated_at"]="2026-10-13T06:30:00+09:00"; item=copy.deepcopy(safety_base); item["checked_at"]="2026-10-13T06:40:00+09:00"; bad["safety_news"]=[item]
+    add("future safety check", bad, "cannot be later than generated_at")
+
+    bad = copy.deepcopy(base); bad["generated_at"]="2026-10-13T06:30:00+09:00"; item=copy.deepcopy(safety_base); item["source_type"]="social"; item["source_url"]="https://x.com/example"; bad["safety_news"]=[item]
+    add("social-only safety source", bad, "source_type must be primary")
+
+    bad = copy.deepcopy(base); bad["generated_at"]="2026-10-13T06:30:00+09:00"; bad["safety_status"]={"summary":"特記事項なし","checked_at":"2026-10-10T06:00:00+09:00","sources":[{"name":"JMA","url":"https://www.jma.go.jp/","type":"primary"}]}
+    add("stale safety status", bad, "within 90 minutes")
 
     failures = []
     for name, payload, expected_fragment in cases:
         case_errors = validate(payload)
         if not any(expected_fragment in error for error in case_errors):
-            failures.append(f"{name} (missing expected error: {expected_fragment})")
+            failures.append(f"{name} (missing expected error: {expected_fragment}; got: {case_errors})")
     if failures:
         raise SystemExit("self-test failed: " + "; ".join(failures))
     print(f"Morning brief negative self-tests passed ({len(cases)} cases)")
