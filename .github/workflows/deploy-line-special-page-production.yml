@@ -49,16 +49,21 @@ jobs:
           test "$(wc -c < "$SPECIAL/hero.mp4")" -gt 100000
           file "$SPECIAL/hero.mp4" | grep -Eqi 'mp4|iso media'
 
-          # Read current production home page to recover the existing main OpenChat URL.
+          # Read current production home page. On idempotent reruns its LINE
+          # buttons may already point to /line/, so also keep the existing
+          # production special page as a fallback source for the OpenChat URL.
           curl --fail --silent --show-error --location --retry 3 "https://kansai.rss7.net/index.html?v=$GITHUB_RUN_ID" -o "$WORK/home.html"
+          curl --silent --show-error --location --retry 2 "https://kansai.rss7.net/line/?v=$GITHUB_RUN_ID" -o "$WORK/existing-special.html" || true
 
-          SPECIAL="$SPECIAL/index.html" HOME="$WORK/home.html" python - <<'PY'
+          SPECIAL="$SPECIAL/index.html" HOME="$WORK/home.html" EXISTING="$WORK/existing-special.html" python - <<'PY'
           import os, pathlib, re, html
 
           special = pathlib.Path(os.environ['SPECIAL'])
           home = pathlib.Path(os.environ['HOME'])
+          existing = pathlib.Path(os.environ['EXISTING'])
           src = special.read_text(encoding='utf-8', errors='strict')
           home_text = home.read_text(encoding='utf-8', errors='ignore')
+          existing_text = existing.read_text(encoding='utf-8', errors='ignore') if existing.exists() else ''
 
           # Find the existing production OpenChat link by its visible label.
           anchor_re = re.compile(r'<a\b[^>]*href=["\']([^"\']+)["\'][^>]*>(.*?)</a>', re.I|re.S)
@@ -69,8 +74,15 @@ jobs:
               if ('LINEオープンチャット' in label or 'オープンチャット' in label) and ('line.me' in href or 'lin.ee' in href):
                   main_url = href
                   break
+          if not main_url and existing_text:
+              main_card = re.search(r'<article\b[^>]*class=["\'][^"\']*\bmain\b[^"\']*["\'][^>]*>(.*?)</article>', existing_text, re.I|re.S)
+              if main_card:
+                  for href, body in anchor_re.findall(main_card.group(1)):
+                      if 'line.me' in href or 'lin.ee' in href:
+                          main_url = href
+                          break
           if not main_url:
-              raise SystemExit('Could not locate current production main OpenChat URL; refusing incomplete deployment.')
+              raise SystemExit('Could not locate current production main OpenChat URL from home or existing special page; refusing incomplete deployment.')
 
           src = src.replace('#TODO-LINE-URL-main', main_url)
           src = src.replace('line-preview-chatgpt-hero.mp4', 'hero.mp4')
