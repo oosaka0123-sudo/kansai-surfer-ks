@@ -1,0 +1,70 @@
+name: Check morning generator patch against production
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'scripts/patch_morning_generator.py'
+      - '.github/workflows/check-morning-generator-patch.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install lftp and PHP
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y lftp php-cli
+
+      - name: Download production morning generator read-only
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          test -n "$FTP_USERNAME"
+          test -n "$FTP_PASSWORD"
+          SRC="$RUNNER_TEMP/auto_wave_today.php"
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          get /kansai/admin/auto_wave_today.php -o "$SRC"
+          bye
+          LFTP_EOF
+
+          sha256sum "$SRC" | sed 's#  .*#  <production-source>#'
+          php -l "$SRC"
+
+      - name: Patch temporary copy and validate
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC="$RUNNER_TEMP/auto_wave_today.php"
+          OUT="$RUNNER_TEMP/auto_wave_today.patched.php"
+
+          python3 scripts/patch_morning_generator.py "$SRC" --check
+          python3 scripts/patch_morning_generator.py "$SRC" --output "$OUT"
+          php -l "$OUT"
+
+          grep -q 'KS_MORNING_BRIEF_POLICY_V2_START' "$OUT"
+          grep -q 'KS_MORNING_BRIEF_POLICY_V2_END' "$OUT"
+          grep -q 'おはようございます、木山です。' "$OUT"
+          grep -q 'https://sleague.rss7.net/' "$OUT"
+
+          # Idempotency: applying again must not duplicate the policy.
+          python3 scripts/patch_morning_generator.py "$OUT" --output "$RUNNER_TEMP/auto_wave_today.twice.php"
+          test "$(grep -c 'KS_MORNING_BRIEF_POLICY_V2_START' "$RUNNER_TEMP/auto_wave_today.twice.php")" -eq 1
+          php -l "$RUNNER_TEMP/auto_wave_today.twice.php"
+
+          echo "Temporary production-source patch check passed. Nothing was uploaded."
