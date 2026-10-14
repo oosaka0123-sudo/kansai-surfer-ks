@@ -53,7 +53,7 @@ REGION_WORDS = [
     "若狭湾","山陰沖東部","山陰沖西部","山陰沖東部及び若狭湾付近"
 ]
 JMA_TITLES = ("津波警報・注意報・予報", "気象警報・注意報", "地方海上警報")
-MARINE_WARNING_WORDS = ("波浪", "高潮", "暴風", "強風", "風")
+MARINE_WARNING_WORDS = ("波浪", "高潮", "暴風", "強風")
 SURF_INCIDENT_WORDS = ("サーファー", "サーフィン", "SUP", "ＳＵＰ")
 INCIDENT_WORDS = ("海難事故", "水難事故", "溺れ", "溺水", "行方不明", "漂流者", "人が漂流", "救助", "死亡", "負傷事故")
 JCG_ALERT_WORDS = ("荒天", "高波", "強風", "暴風", "波浪", "高潮")
@@ -679,8 +679,10 @@ def collect_jma(now, status):
             title = detail["title"] or entry["title"]
             if not detail["regions"]:
                 continue
-            if "気象警報・注意報" in title and not any(w in detail["text"] for w in MARINE_WARNING_WORDS):
-                continue
+            if "気象警報・注意報" in title:
+                marine_text = f"{title} {detail['headline']}"
+                if not any(w in marine_text for w in MARINE_WARNING_WORDS):
+                    continue
             published = parse_iso_any(detail["report_time"]) or parse_iso_any(entry["updated"])
             if not published:
                 continue
@@ -814,8 +816,26 @@ def empty_spots():
 
 def build(now, previous=None):
     source_status = {}
+    osaka_weather = collect_osaka_weather(now, source_status)
+    spots, ranking = collect_spot_forecasts(now, source_status)
     fallbacks = build_sleague_fallbacks(now, previous, source_status)
     safety = collect_jma(now, source_status) + collect_jcg(now, source_status)
+
+    published_fallback = next((x for x in fallbacks if x.get("publish") is True), None)
+    topic = {"text": None, "source": None, "published_at": None, "checked_at": None}
+    if published_fallback:
+        topic = {
+            "text": published_fallback.get("title"),
+            "source": published_fallback.get("source"),
+            "published_at": None,
+            "checked_at": published_fallback.get("checked_at"),
+        }
+
+    headline = None
+    if ranking:
+        headline = f"9スポットのAPI予報を比較。今日の予報ランキング1位は{ranking[0]['spot']}。"
+    closing = "ランキングはAPI予報データ基準です。出発前に最新の風・現地状況・安全情報を確認してください。" if ranking else None
+
     return {
         "schema_version": SCHEMA_VERSION,
         "verified": True,
@@ -825,27 +845,26 @@ def build(now, previous=None):
         "generated_at": iso(now),
         "opening": {
             "greeting": "おはようございます、木山です。",
-            "osaka_weather": {"current": None, "forecast": None, "source": None, "observed_at": None, "checked_at": None, "forecast_at": None},
-            "topic": {"text": None, "source": None, "published_at": None, "checked_at": None},
+            "osaka_weather": osaka_weather,
+            "topic": topic,
             "transition": "では今日の波を見ていきましょう。",
         },
-        "headline": None,
-        "ranking": [],
-        "spots": empty_spots(),
+        "headline": headline,
+        "ranking": ranking,
+        "spots": spots,
         "competition_news": [],
         "competition_fallback": fallbacks,
         "surf_news": [],
         "safety_news": safety,
         "safety_status": {"summary": None, "checked_at": None, "sources": []},
-        "closing": None,
-        "sources_note": "Official-source candidate: S.LEAGUE / 気象庁防災情報XML / 海上保安庁 海の安全情報。取得失敗項目は推測で補完しません。",
+        "closing": closing,
+        "sources_note": "Official-source candidate: Open-Meteo / KS公開9スポットAPI / S.LEAGUE / 気象庁防災情報XML / 海上保安庁 海の安全情報。現在観測とAPI予報を混同せず、取得失敗項目は推測で補完しません。",
         "collection_meta": {
-            "collector": "ks-morning-official-v1",
+            "collector": "ks-morning-official-v2",
             "checked_at": iso(now),
             "sources": source_status,
         },
     }
-
 
 def main():
     parser = argparse.ArgumentParser()
