@@ -208,9 +208,12 @@ def validate(data, mode="preview"):
     if safety_news and not generated_at:
         errors.append("safety_news requires valid generated_at")
     for item in safety_news:
-        for key in ("source_name", "source_url", "source_type", "published_at", "checked_at", "status"):
+        for key in ("kind", "source_name", "source_url", "source_type", "published_at", "checked_at", "status"):
             if not item.get(key):
                 errors.append(f"safety_news entry missing {key}")
+        kind = item.get("kind")
+        if kind not in ("alert", "incident"):
+            errors.append("safety_news kind must be alert or incident")
         if item.get("source_url") and not str(item["source_url"]).startswith("https://"):
             errors.append("safety source_url must use https")
         if item.get("source_type") != "primary":
@@ -218,8 +221,10 @@ def validate(data, mode="preview"):
         host = urlparse(str(item.get("source_url") or "")).hostname or ""
         if host.lower() in SOCIAL_ONLY_HOSTS:
             errors.append("social-media-only safety sources are not allowed")
-        if item.get("status") != "active":
-            errors.append("only active safety_news items may be published as current")
+        if kind == "alert" and item.get("status") != "active":
+            errors.append("safety alert status must be active")
+        if kind == "incident" and item.get("status") != "reported":
+            errors.append("safety incident status must be reported")
 
         published_at = parse_dt(item.get("published_at"))
         checked_at = parse_dt(item.get("checked_at"))
@@ -229,17 +234,23 @@ def validate(data, mode="preview"):
             errors.append("safety_news checked_at must be timezone-aware ISO")
         if generated_at and checked_at:
             age = (generated_at - checked_at).total_seconds()
-            if age < 0:
-                errors.append("safety_news checked_at cannot be later than generated_at")
+            if age < -300:
+                errors.append("safety_news checked_at cannot be materially later than generated_at")
             elif age > 5400:
                 errors.append("safety_news checked_at must be within 90 minutes of generated_at")
+        if generated_at and published_at:
+            publication_age = (generated_at - published_at).total_seconds()
+            if publication_age < -300:
+                errors.append("safety_news published_at cannot be materially later than generated_at")
+            elif kind == "incident" and publication_age > 172800:
+                errors.append("safety incident must be published within 48 hours of generated_at")
 
         if item.get("valid_until"):
             valid_until = parse_dt(item.get("valid_until"))
             if not valid_until:
                 errors.append("safety_news valid_until must be timezone-aware ISO")
-            elif generated_at and valid_until < generated_at:
-                errors.append("expired safety_news item must not be published as current")
+            elif kind == "alert" and generated_at and valid_until < generated_at:
+                errors.append("expired safety alert must not be published as current")
 
     safety_status = data.get("safety_status") or {}
     summary = str(safety_status.get("summary") or "")
@@ -373,7 +384,7 @@ def self_test(base):
     assert_no_error("suppressed fallback ignores cooldown", suppressed, "violates repeat interval")
 
     safety_base = {
-        "title":"test","body":"test","source_name":"JMA","source_url":"https://www.jma.go.jp/","source_type":"primary",
+        "kind":"alert","title":"test","body":"test","source_name":"JMA","source_url":"https://www.jma.go.jp/","source_type":"primary",
         "published_at":"2026-10-13T06:00:00+09:00","checked_at":"2026-10-13T06:10:00+09:00","status":"active","valid_until":"2026-10-13T08:00:00+09:00"
     }
 
@@ -387,19 +398,26 @@ def self_test(base):
     add("safety https", bad, "must use https")
 
     bad = copy.deepcopy(base); bad["generated_at"]="2026-10-13T06:30:00+09:00"; item=copy.deepcopy(safety_base); item["status"]="lifted"; bad["safety_news"]=[item]
-    add("safety active status", bad, "active safety_news items may be published as current")
+    add("safety active status", bad, "safety alert status must be active")
 
     bad = copy.deepcopy(base); bad["generated_at"]="2026-10-13T06:30:00+09:00"; item=copy.deepcopy(safety_base); item["valid_until"]="2026-10-13T06:20:00+09:00"; bad["safety_news"]=[item]
-    add("safety expiry", bad, "expired safety_news")
+    add("safety expiry", bad, "expired safety alert")
 
     bad = copy.deepcopy(base); bad["generated_at"]="2026-10-13T06:30:00+09:00"; item=copy.deepcopy(safety_base); item["checked_at"]="2026-10-13T06:40:00+09:00"; bad["safety_news"]=[item]
-    add("future safety check", bad, "cannot be later than generated_at")
+    add("future safety check", bad, "cannot be materially later than generated_at")
 
     bad = copy.deepcopy(base); bad["generated_at"]="2026-10-13T06:30:00+09:00"; item=copy.deepcopy(safety_base); item["source_type"]="social"; bad["safety_news"]=[item]
     add("safety nonprimary source", bad, "source_type must be primary")
 
     bad = copy.deepcopy(base); bad["generated_at"]="2026-10-13T06:30:00+09:00"; item=copy.deepcopy(safety_base); item["source_url"]="https://x.com/example"; bad["safety_news"]=[item]
     add("social host with primary label", bad, "social-media-only safety sources are not allowed")
+
+    incident = copy.deepcopy(base); incident["generated_at"]="2026-10-13T06:30:00+09:00"; item=copy.deepcopy(safety_base); item.pop("valid_until", None); item.update({"kind":"incident","status":"reported","source_name":"Japan Coast Guard","source_url":"https://www6.kaiho.mlit.go.jp/","published_at":"2026-10-12T18:00:00+09:00"}); incident["safety_news"]=[item]
+    assert_no_error("recent primary incident", incident, "safety incident")
+
+    bad = copy.deepcopy(incident); bad["safety_news"][0]["published_at"]="2026-10-10T06:00:00+09:00"
+    add("stale incident", bad, "within 48 hours")
+
 
     bad = copy.deepcopy(base); bad["generated_at"]="2026-10-13T06:30:00+09:00"; bad["safety_status"]={"summary":None,"checked_at":"2026-10-13T06:10:00+09:00","sources":[{"name":"JMA","url":"https://www.jma.go.jp/","type":"primary"}]}
     add("safety status missing summary", bad, "non-empty summary")

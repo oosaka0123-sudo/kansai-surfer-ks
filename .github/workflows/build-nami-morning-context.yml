@@ -1,0 +1,131 @@
+name: Build NAMI morning official context
+
+on:
+  workflow_dispatch:
+  issue_comment:
+    types:
+      - created
+
+permissions:
+  contents: read
+  issues: read
+
+concurrency:
+  group: ks-nami-morning-official-context
+  cancel-in-progress: false
+
+jobs:
+  build-and-publish-nami:
+    if: >-
+      ${{
+        github.event_name == 'workflow_dispatch' ||
+        (
+          github.event_name == 'issue_comment' &&
+          github.event.action == 'created' &&
+          github.event.comment.author_association == 'OWNER' &&
+          github.event.comment.user.type != 'Bot' &&
+          github.event.issue.pull_request == null &&
+          contains(github.event.comment.body, '@build-nami-morning-context')
+        )
+      }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DEPLOY_HOST: ftp.lolipop.jp
+      DEPLOY_PORT: "21"
+      DEPLOY_DIR: /nami/ks-redesign/data
+      FILE_NAME: morning-external-candidate.json
+      PUBLIC_URL: https://nami.rss7.net/ks-redesign/data/morning-external-candidate.json
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Load previous NAMI candidate if available
+        shell: bash
+        run: |
+          set -euo pipefail
+          if curl --fail --silent --show-error --location --max-time 15 "$PUBLIC_URL" -o /tmp/previous-morning-context.json; then
+            echo "Previous candidate loaded for cooldown state."
+          else
+            rm -f /tmp/previous-morning-context.json
+            echo "No previous candidate; starting with empty cooldown state."
+          fi
+
+      - name: Build from official sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          args=(--output /tmp/morning-external-candidate.json)
+          if [[ -f /tmp/previous-morning-context.json ]]; then
+            args+=(--previous /tmp/previous-morning-context.json)
+          fi
+          python3 scripts/build_morning_official_context.py "${args[@]}"
+
+      - name: Validate production-mode schema and required source checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/validate_morning_brief.py --mode production --file /tmp/morning-external-candidate.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          data = json.loads(Path('/tmp/morning-external-candidate.json').read_text(encoding='utf-8'))
+          sources = data['collection_meta']['sources']
+          assert sources['sleague_schedule']['ok'] is True, sources['sleague_schedule']
+          assert sources['sleague_ranking']['ok'] is True, sources['sleague_ranking']
+          assert all(v['ok'] for v in sources['jma']['feeds'].values()), sources['jma']
+          assert sources['jcg']['ok'] is True, sources['jcg']
+          assert data['preview'] is False and data['verified'] is True
+          assert data['schema_version'] == 'ks-morning-brief-v2'
+          print('Required official source checks passed.')
+          PY
+
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y lftp
+
+      - name: Upload candidate to NAMI only
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          test -n "$FTP_USERNAME"
+          test -n "$FTP_PASSWORD"
+          [[ "$DEPLOY_HOST" == "ftp.lolipop.jp" ]]
+          [[ "$DEPLOY_PORT" == "21" ]]
+          [[ "$DEPLOY_DIR" == "/nami/ks-redesign/data" ]]
+          [[ "$PUBLIC_URL" == "https://nami.rss7.net/ks-redesign/data/morning-external-candidate.json" ]]
+
+          lftp <<LFTP
+          set cmd:fail-exit yes
+          set net:max-retries 2
+          set net:timeout 20
+          set ssl:verify-certificate yes
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$DEPLOY_HOST:$DEPLOY_PORT"
+          cd "$DEPLOY_DIR"
+          put /tmp/morning-external-candidate.json -o "$FILE_NAME"
+          bye
+          LFTP
+          echo "NAMI candidate uploaded. Production write: none."
+
+      - name: Verify public NAMI candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "$PUBLIC_URL" -o /tmp/public-candidate.json
+          python3 scripts/validate_morning_brief.py --mode production --file /tmp/public-candidate.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path('/tmp/public-candidate.json').read_text(encoding='utf-8'))
+          assert data['schema_version'] == 'ks-morning-brief-v2'
+          assert data['verified'] is True and data['preview'] is False
+          print('NAMI official-context live verification passed.')
+          print('Fallbacks:', [x['kind'] for x in data['competition_fallback'] if x.get('publish')])
+          print('Safety items:', len(data['safety_news']))
+          PY
