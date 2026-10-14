@@ -227,6 +227,9 @@ Normal days should remain concise. Major typhoon, earthquake, tsunami, high-wave
 - Deterministic overlap example: `腹〜胸` + `胸〜肩` => `胸前後`.
 - If independent search ranges do not overlap, leave current size unconfirmed rather than guessing.
 - NAMI is the test surface for this hybrid pipeline. Production remains unchanged until explicit owner approval.
+- NAMI search-wave data is refreshed automatically every hour from the allowlisted public pages; the API/official context is also refreshed hourly.
+- Scheduled refreshes write only to the isolated NAMI runtime JSON and must never write production.
+- A NAMI site redeploy must not overwrite the runtime `data/current-search-observations.json`; that file is owned by the refresh workflow.
 
 ### Data and generation guardrails
 - Current observations, forecasts, alerts, and news must remain separate fields in source data.
