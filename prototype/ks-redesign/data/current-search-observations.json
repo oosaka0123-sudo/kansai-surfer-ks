@@ -14,7 +14,12 @@
       "wind": "北西 8.3m/s",
       "observed_at": "2026-10-14T10:00:00+09:00",
       "source_url": "https://www.1173life.com/wakayama-wave-info",
-      "source_checked_at": "2026-10-14T11:51:00+09:00"
+      "source_checked_at": "2026-10-14T11:51:00+09:00",
+      "source_name": "1173life",
+      "source_kind": "free_public_wave_search",
+      "confidence": "single_source_reference",
+      "normalized_low": 2,
+      "normalized_high": 3
     },
     {
       "spot": "伊良湖",
@@ -24,7 +29,12 @@
       "wind": "西 4.3m/s",
       "observed_at": "2026-10-14T10:00:00+09:00",
       "source_url": "https://www.1173life.com/irako-wave-info",
-      "source_checked_at": "2026-10-14T11:51:00+09:00"
+      "source_checked_at": "2026-10-14T11:51:00+09:00",
+      "source_name": "1173life",
+      "source_kind": "free_public_wave_search",
+      "confidence": "single_source_reference",
+      "normalized_low": 4,
+      "normalized_high": 7
     },
     {
       "spot": "静波",
@@ -34,7 +44,20 @@
       "wind": "西 4.2m/s",
       "observed_at": "2026-10-14T10:00:00+09:00",
       "source_url": "https://www.1173life.com/shizunami-wave-info",
-      "source_checked_at": "2026-10-14T11:51:00+09:00"
+      "source_checked_at": "2026-10-14T11:51:00+09:00",
+      "source_name": "1173life",
+      "source_kind": "free_public_wave_search",
+      "confidence": "single_source_reference",
+      "normalized_low": 4,
+      "normalized_high": 7
     }
-  ]
+  ],
+  "consensus_policy": {
+    "fresh_minutes": 90,
+    "aging_minutes": 180,
+    "minimum_independent_sources": 2,
+    "rule": "fresh/aging observations from at least two independent sources must overlap after body-size normalization before current is confirmed",
+    "single_source": "reference_only",
+    "source_visibility": "backend_only"
+  }
 }
