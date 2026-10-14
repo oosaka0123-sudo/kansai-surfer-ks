@@ -3,21 +3,25 @@
    Direction: KS Design Master — transparent header, restrained motion, mobile first.
 */
 .top-bar{
+  position:absolute!important;
+  inset:0 0 auto 0!important;
+  z-index:30!important;
   min-height:68px!important;
   padding:10px clamp(12px,2.2vw,28px)!important;
-  border-bottom:1px solid rgba(255,255,255,.10)!important;
-  background:linear-gradient(180deg,rgba(3,12,21,.38),rgba(3,12,21,.16))!important;
-  backdrop-filter:blur(9px) saturate(128%)!important;
-  -webkit-backdrop-filter:blur(9px) saturate(128%)!important;
-  box-shadow:0 10px 34px rgba(0,0,0,.08);
+  border-bottom:0!important;
+  background:transparent!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  box-shadow:none!important;
 }
 .top-bar.scrolled,
 .top-bar:has(.hamburger.active){
+  position:fixed!important;
   background:rgba(5,17,30,.82)!important;
   backdrop-filter:blur(16px) saturate(138%)!important;
   -webkit-backdrop-filter:blur(16px) saturate(138%)!important;
-  border-bottom-color:rgba(255,255,255,.14)!important;
-  box-shadow:0 10px 34px rgba(0,0,0,.18);
+  border-bottom:1px solid rgba(255,255,255,.14)!important;
+  box-shadow:0 10px 34px rgba(0,0,0,.18)!important;
 }
 .top-bar .logo{
   min-width:0;
@@ -113,7 +117,7 @@
   transform-origin:center center;
   backface-visibility:hidden;
   will-change:transform;
-  animation:ks-line-video-pan 10s cubic-bezier(.45,0,.55,1) infinite alternate;
+  animation:ks-line-video-pan 7s cubic-bezier(.45,0,.55,1) infinite alternate;
 }
 @keyframes ks-line-video-pan{
   from{transform:translate3d(-36.25%,0,0)}
@@ -192,8 +196,10 @@
   .top-bar{
     min-height:64px!important;
     padding:8px 12px!important;
-    backdrop-filter:blur(8px) saturate(124%)!important;
-    -webkit-backdrop-filter:blur(8px) saturate(124%)!important;
+    background:transparent!important;
+    backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important;
+    box-shadow:none!important;
   }
   .top-bar .logo img{height:38px!important}
   .top-bar .logo .en{font-size:.66rem!important;letter-spacing:.15em}
@@ -205,7 +211,7 @@
 
   .hero-bg-video{
     width:150%!important;
-    animation-duration:11s;
+    animation-duration:6s;
   }
   @keyframes ks-line-video-pan{
     from{transform:translate3d(-33.35%,0,0)}
@@ -277,6 +283,7 @@
 }
 
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
-  .top-bar{background:rgba(5,17,30,.72)!important}
+  .top-bar.scrolled,
+  .top-bar:has(.hamburger.active){background:rgba(5,17,30,.92)!important}
 }
 /* KS LINE Hero v2:end */
