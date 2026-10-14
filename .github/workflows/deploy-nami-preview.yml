@@ -184,10 +184,13 @@ jobs:
           assert external.get('verified') is True and external.get('preview') is False
           assert (external.get('opening') or {}).get('osaka_weather', {}).get('current')
           assert len(external.get('ranking') or []) == 5
-          assert all(x.get('basis') == 'forecast' for x in external.get('ranking', []))
+          assert all(x.get('basis') in ('current','forecast') for x in external.get('ranking', []))
           assert sum(1 for x in external.get('spots', []) if x.get('forecast')) == 9
+          assert all('search_wave' in x for x in external.get('spots', []))
+          assert external['collection_meta']['hybrid_search']['source_visibility'] == 'backend_only'
           print('Morning brief public JSON verification passed.')
-          print('Live TOP5:', [(x['rank'], x['spot'], x['size']) for x in external['ranking']])
+          print('Live TOP5:', [(x['rank'], x['spot'], x['size'], x['basis']) for x in external['ranking']])
+          print('Hybrid search:', external['collection_meta']['hybrid_search'])
           PY
 
           python3 scripts/validate_morning_brief.py --mode production --file /tmp/ks-preview-external.json
@@ -217,8 +220,11 @@ jobs:
           text = re.sub(r'<[^>]+>', ' ', visible)
           text = re.sub(r'\s+', ' ', text)
 
-          for hidden_label in ('天気ソース','話題ソース','出典','発表元','一次情報','確認元：','公式外部ソース接続済み'):
+          for hidden_label in ('天気ソース','話題ソース','出典','発表元','一次情報','確認元：','公式外部ソース接続済み','SURFAREA','1173life','Surf life'):
               assert hidden_label not in text, hidden_label
+          assert 'API予報＋Web検索の2系統で表示' in text
+          assert '検索サイズ' in text
+          assert 'API予報' in text
           weather = candidate['opening']['osaka_weather']['current']
           assert weather in text, weather
           for item in candidate['ranking']:
