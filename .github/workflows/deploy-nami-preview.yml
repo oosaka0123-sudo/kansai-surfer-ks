@@ -213,7 +213,7 @@ jobs:
 
           candidate = json.loads(Path('/tmp/render-candidate.json').read_text(encoding='utf-8'))
           rendered = html.unescape(Path('/tmp/rendered-morning.html').read_text(encoding='utf-8'))
-          visible = re.sub(r'(?is)<(script|style)[^>]*>.*?</\\1>', ' ', rendered)
+          visible = re.sub(r'(?is)<(script|style)[^>]*>.*?</\1>', ' ', rendered)
           text = re.sub(r'<[^>]+>', ' ', visible)
           text = re.sub(r'\s+', ' ', text)
 
