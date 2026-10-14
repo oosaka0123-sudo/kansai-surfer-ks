@@ -52,15 +52,24 @@ jobs:
             echo "No previous candidate; starting with empty cooldown state."
           fi
 
-      - name: Build from official sources
+      - name: Build API and official context
         shell: bash
         run: |
           set -euo pipefail
-          args=(--output /tmp/morning-external-candidate.json)
+          args=(--output /tmp/morning-api-context.json)
           if [[ -f /tmp/previous-morning-context.json ]]; then
             args+=(--previous /tmp/previous-morning-context.json)
           fi
           python3 scripts/build_morning_official_context.py "${args[@]}"
+
+      - name: Merge GPT web-search wave snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/apply_search_wave_snapshot.py \
+            --context /tmp/morning-api-context.json \
+            --search prototype/ks-redesign/data/search-wave-snapshot.json \
+            --output /tmp/morning-external-candidate.json
 
       - name: Validate production-mode schema and required source checks
         shell: bash
@@ -83,15 +92,20 @@ jobs:
           assert src_or_sources['spot_forecasts']['ok'] is True, src_or_sources['spot_forecasts']
           assert src_or_sources['spot_forecasts']['available'] == 9
           assert len(data['ranking']) == 5
-          assert all(x.get('basis') == 'forecast' for x in data['ranking'])
-          assert all(x.get('size','').startswith('波高') for x in data['ranking'])
-          assert all(x.get('current') is None for x in data['spots'])
+          assert all(x.get('basis') in ('current','forecast') for x in data['ranking'])
+          assert all(x.get('size') for x in data['ranking'])
           assert sum(1 for x in data['spots'] if x.get('forecast')) == 9
+          assert all('search_wave' in x for x in data['spots'])
+          hybrid = data['collection_meta']['hybrid_search']
+          assert hybrid['source_visibility'] == 'backend_only'
+          assert hybrid['reference_current_spots'] >= 1
+          assert hybrid['search_forecast_spots'] >= 1
           assert (data.get('opening') or {}).get('osaka_weather',{}).get('current')
           assert data['schema_version'] == 'ks-morning-brief-v2'
           print('Required official source checks passed.')
           print('Osaka weather:', data['opening']['osaka_weather']['current'])
-          print('TOP5:', [(x['rank'], x['spot'], x['size']) for x in data['ranking']])
+          print('TOP5:', [(x['rank'], x['spot'], x['size'], x['basis']) for x in data['ranking']])
+          print('Hybrid search:', data['collection_meta']['hybrid_search'])
           PY
 
       - name: Install lftp
@@ -141,8 +155,10 @@ jobs:
           assert data['verified'] is True and data['preview'] is False
           assert (data.get('opening') or {}).get('osaka_weather', {}).get('current')
           assert len(data.get('ranking') or []) == 5
-          assert all(x.get('basis') == 'forecast' for x in data.get('ranking', []))
+          assert all(x.get('basis') in ('current','forecast') for x in data.get('ranking', []))
           assert sum(1 for x in data.get('spots', []) if x.get('forecast')) == 9
+          assert all('search_wave' in x for x in data.get('spots', []))
+          assert data['collection_meta']['hybrid_search']['source_visibility'] == 'backend_only'
           print('NAMI official-context live verification passed.')
           print('Fallbacks:', [x['kind'] for x in data['competition_fallback'] if x.get('publish')])
           print('Safety items:', len(data['safety_news']))
