@@ -40,6 +40,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Test hybrid API plus search merge
+        run: python3 scripts/test_apply_search_wave_snapshot.py
+
       - name: Load previous NAMI candidate if available
         shell: bash
         run: |
