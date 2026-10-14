@@ -1,0 +1,149 @@
+{
+  "schema_version": "ks-search-wave-v1",
+  "generated_at": "2026-10-14T11:50:00+09:00",
+  "policy": {
+    "current_fresh_minutes": 90,
+    "current_aging_minutes": 180,
+    "stale_after_minutes": 180,
+    "source_visibility": "backend_only",
+    "body_scale": {
+      "スネ": 1,
+      "ヒザ": 2,
+      "モモ": 3,
+      "腰": 4,
+      "腹": 5,
+      "胸": 6,
+      "肩": 7,
+      "頭": 8
+    }
+  },
+  "spots": [
+    {
+      "name": "磯ノ浦",
+      "current_observations": [
+        {
+          "observed_at": "2026-10-13T06:05:00+09:00",
+          "raw_size": "スネ、たまにヒザ",
+          "normalized_label": "スネ〜ヒザ",
+          "normalized_low": 1,
+          "normalized_high": 2,
+          "source_name": "SURFAREA",
+          "source_url": "https://surfarea.info/wave/wakayama/isonoura/",
+          "source_kind": "free_wave_search"
+        }
+      ],
+      "forecast_observations": []
+    },
+    {
+      "name": "国府の浜",
+      "current_observations": [],
+      "forecast_observations": [
+        {
+          "forecast_at": "2026-10-14T11:00:00+09:00",
+          "raw_size": null,
+          "normalized_label": null,
+          "wave_height_m": 1,
+          "period_s": 10.1,
+          "source_name": "Surf life",
+          "source_url": "https://www.surf-life.blue/surf/spots/%E4%B8%89%E9%87%8D%E7%9C%8C/%E4%BC%8A%E5%8B%A2/321/",
+          "source_kind": "free_wave_search"
+        }
+      ]
+    },
+    {
+      "name": "生見",
+      "current_observations": [],
+      "forecast_observations": [
+        {
+          "forecast_at": "2026-10-14T06:00:00+09:00",
+          "raw_size": "ムネ〜カタ前後",
+          "normalized_label": "胸〜肩",
+          "normalized_low": 6,
+          "normalized_high": 7,
+          "source_name": "SURFAREA",
+          "source_url": "https://surfarea.info/wave-forecast/shikoku/",
+          "source_kind": "free_wave_search"
+        }
+      ]
+    },
+    {
+      "name": "小松海岸",
+      "current_observations": [],
+      "forecast_observations": [],
+      "search_evidence": [
+        {
+          "checked_at": "2026-10-14T11:50:00+09:00",
+          "source_name": "1173life",
+          "source_url": "https://www.1173life.com/wavecam_tokushima",
+          "kind": "live_camera_index"
+        }
+      ]
+    },
+    {
+      "name": "伊良湖",
+      "current_observations": [
+        {
+          "observed_at": "2026-10-14T07:00:00+09:00",
+          "raw_size": "腰〜胸肩",
+          "normalized_label": "腰〜肩",
+          "normalized_low": 4,
+          "normalized_high": 7,
+          "source_name": "1173life",
+          "source_url": "https://www.1173life.com/irako-wave-info",
+          "source_kind": "free_wave_search"
+        }
+      ],
+      "forecast_observations": [
+        {
+          "forecast_at": "2026-10-14T06:00:00+09:00",
+          "raw_size": "コシ〜ハラ前後、セットはカタ近く",
+          "normalized_label": "腰〜腹、セット肩",
+          "normalized_low": 4,
+          "normalized_high": 7,
+          "source_name": "SURFAREA",
+          "source_url": "https://surfarea.info/wave-forecast/irago/",
+          "source_kind": "free_wave_search"
+        }
+      ]
+    },
+    {
+      "name": "静波",
+      "current_observations": [],
+      "forecast_observations": [],
+      "search_evidence": [
+        {
+          "checked_at": "2026-10-14T11:50:00+09:00",
+          "source_name": "1173life",
+          "source_url": "https://www.1173life.com/wavecam_shizuoka",
+          "kind": "live_camera_index"
+        }
+      ]
+    },
+    {
+      "name": "浜詰",
+      "current_observations": [],
+      "forecast_observations": []
+    },
+    {
+      "name": "高浜",
+      "current_observations": [],
+      "forecast_observations": [
+        {
+          "forecast_at": "2026-10-14T11:00:00+09:00",
+          "raw_size": null,
+          "normalized_label": null,
+          "wave_height_m": 1.9,
+          "period_s": 6.1,
+          "source_name": "Surf life",
+          "source_url": "https://www.surf-life.blue/surf/spots/%E7%A6%8F%E4%BA%95%E7%9C%8C/368/",
+          "source_kind": "free_wave_search"
+        }
+      ]
+    },
+    {
+      "name": "白兎",
+      "current_observations": [],
+      "forecast_observations": []
+    }
+  ]
+}
