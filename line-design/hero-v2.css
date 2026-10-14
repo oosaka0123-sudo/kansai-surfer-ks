@@ -107,8 +107,8 @@
 }
 
 .hero-video-ks{
-  height:100svh;
-  min-height:100svh;
+  height:92svh;
+  min-height:92svh;
   overflow:hidden;
   background:#061220!important;
 }
@@ -136,11 +136,11 @@
 .hero-video-content{
   position:absolute!important;
   left:50%;
-  top:51%;
+  top:50%;
   transform:translate(-50%,-50%);
   z-index:2;
   width:100%;
-  max-width:1040px!important;
+  max-width:980px!important;
   margin:0!important;
   padding:0 clamp(20px,4vw,48px)!important;
 }
@@ -148,7 +148,7 @@
   display:flex;
   align-items:center;
   gap:10px;
-  margin:0 0 13px!important;
+  margin:0 0 10px!important;
   color:rgba(255,255,255,.72)!important;
   font-size:.69rem!important;
   letter-spacing:.20em!important;
@@ -162,9 +162,9 @@
   background:rgba(8,232,121,.78);
 }
 .hero-video-ks .hero-title{
-  max-width:940px;
-  margin:0 0 18px!important;
-  font-size:clamp(3rem,6.6vw,5.25rem)!important;
+  max-width:900px;
+  margin:0 0 12px!important;
+  font-size:clamp(2.8rem,6vw,5rem)!important;
   line-height:1.035!important;
   letter-spacing:-.035em!important;
   text-wrap:balance;
@@ -179,7 +179,7 @@
   margin:0!important;
   color:rgba(255,255,255,.84)!important;
   font-size:clamp(.92rem,1.45vw,1rem)!important;
-  line-height:1.9!important;
+  line-height:1.72!important;
   letter-spacing:.01em;
   text-wrap:pretty;
   text-shadow:0 2px 16px rgba(0,0,0,.58);
@@ -197,7 +197,54 @@
   background:linear-gradient(90deg,rgba(255,255,255,.58),rgba(255,255,255,.18))!important;
 }
 
+.hero-share{
+  position:absolute;
+  right:clamp(16px,3vw,28px);
+  bottom:clamp(18px,4vh,28px);
+  z-index:4;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:10px 13px;
+  border:1px solid rgba(255,255,255,.16);
+  border-radius:999px;
+  background:rgba(5,17,30,.42);
+  color:#fff!important;
+  font:inherit;
+  cursor:pointer;
+  backdrop-filter:blur(10px) saturate(140%);
+  -webkit-backdrop-filter:blur(10px) saturate(140%);
+  box-shadow:0 10px 24px rgba(0,0,0,.20);
+  transition:transform .2s ease,background .2s ease,border-color .2s ease;
+}
+.hero-share:hover{
+  transform:translateY(-1px);
+  background:rgba(5,17,30,.58);
+  border-color:rgba(255,255,255,.24);
+}
+.hero-share:active{transform:translateY(0)}
+.hero-share:focus-visible{
+  outline:2px solid rgba(8,232,121,.95);
+  outline-offset:2px;
+}
+.hero-share svg{
+  width:17px;
+  height:17px;
+  flex:0 0 auto;
+}
+.hero-share-label{
+  font-size:.72rem;
+  letter-spacing:.08em;
+  white-space:nowrap;
+}
+
+
 @media(max-width:600px){
+  .hero-video-ks{
+    height:88svh;
+    min-height:88svh;
+  }
+
   .top-bar{
     min-height:64px!important;
     padding:8px 12px!important;
@@ -228,31 +275,37 @@
       linear-gradient(90deg,rgba(2,8,14,.50) 0%,rgba(2,8,14,.18) 100%)!important;
   }
   .hero-video-content{
-    top:47%;
+    top:46%;
     padding:0 18px!important;
   }
   .hero-video-ks .hero-kicker{
-    margin-bottom:11px!important;
+    margin-bottom:8px!important;
     font-size:.63rem!important;
     letter-spacing:.17em!important;
   }
   .hero-video-ks .hero-kicker::before{width:20px}
   .hero-video-ks .hero-title{
-    margin-bottom:15px!important;
-    font-size:clamp(2.15rem,9.6vw,3.35rem)!important;
-    line-height:1.07!important;
+    margin-bottom:10px!important;
+    font-size:clamp(2rem,9vw,3.15rem)!important;
+    line-height:1.06!important;
     letter-spacing:-.035em!important;
   }
   .hero-video-ks .hero-lead{
     max-width:34rem!important;
-    font-size:.89rem!important;
-    line-height:1.82!important;
+    font-size:.87rem!important;
+    line-height:1.68!important;
   }
   .hero-scroll{
     left:18px!important;
     right:auto!important;
-    bottom:22px!important;
+    bottom:20px!important;
   }
+  .hero-share{
+    right:16px;
+    bottom:18px;
+    padding:10px 12px;
+  }
+  .hero-share-label{font-size:.70rem}
 }
 
 @media(max-width:350px){
@@ -264,10 +317,10 @@
   .ks-social-link svg{width:18px;height:18px}
   .ks-header-actions{gap:0}
   .hamburger{width:38px!important}
-  .hero-video-content{top:46%;padding:0 15px!important}
+  .hero-video-content{top:45%;padding:0 15px!important}
   .hero-video-ks .hero-title{font-size:clamp(2.05rem,9.7vw,2.7rem)!important}
   .hero-video-ks .hero-title .green{font-size:.80em;letter-spacing:-.04em!important}
-  .hero-video-ks .hero-lead{font-size:.84rem!important}
+  .hero-video-ks .hero-lead{font-size:.83rem!important;line-height:1.64!important}
   .hero-scroll{left:15px!important}
 }
 
