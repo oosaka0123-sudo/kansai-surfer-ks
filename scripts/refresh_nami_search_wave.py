@@ -114,27 +114,37 @@ def parse_source(source, now, source_dir=None):
     if not text:
         text=fetch_text(source["url"])
 
-    markers=["いまの波","今の波","現在の波","現在"]
-    marker=-1
+    markers=["いまの波","今の波","現在の波"]
+    windows=[]
     for token in markers:
-        marker=text.find(token)
-        if marker>=0:
-            break
-    window=text[marker:marker+900] if marker>=0 else text[:2400]
+        for match in re.finditer(token,text):
+            windows.append(text[match.start():match.start()+12000])
+    if not windows:
+        windows=[text]
 
-    size_match=re.search(BODY_PATTERN,window)
-    if not size_match:
-        raise ValueError("current size expression not found")
-    raw_size=size_match.group(0)
+    window=None
+    combined=None
+    for candidate in windows:
+        combined=re.search(r"([0-9]+(?:\\.[0-9]+)?)\\s*m\\b.{0,2500}?("+BODY_PATTERN+r")",candidate)
+        if combined:
+            window=candidate
+            break
+    if window is None:
+        window=max(windows,key=len)
+        size_match=re.search(BODY_PATTERN,window)
+        if not size_match:
+            body_terms=[term for term in BODY_VALUES if term in text]
+            raise ValueError("current size expression not found; body terms="+",".join(body_terms[:8]))
+        raw_size=size_match.group(0)
+        wave_m=None
+    else:
+        wave_m=float(combined.group(1))
+        raw_size=combined.group(2)
+
     normalized=canonical_size(raw_size)
     low,high=size_bounds(normalized)
     if low is None:
         raise ValueError("size normalization failed")
-
-    wave_m=None
-    m=re.search(r"([0-9]+(?:\.[0-9]+)?)\s*m\b",window)
-    if m:
-        wave_m=float(m.group(1))
 
     wind=None
     wm=re.search(r"風\s*([^。\n]{0,55}?[0-9]+(?:\.[0-9]+)?\s*m/s)",window)
