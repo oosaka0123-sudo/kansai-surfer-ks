@@ -157,6 +157,8 @@ jobs:
           grep -q 'サーフィン関連ニュース' /tmp/ks-preview-morning.html
           grep -q '海の事故・安全情報' /tmp/ks-preview-morning.html
           grep -q 'https://sleague.rss7.net/' /tmp/ks-preview-morning.html
+          grep -q 'MORNING BRIEF v2' /tmp/ks-preview-morning.html
+          grep -q 'morning-external-candidate.json' /tmp/ks-preview-morning.html
 
           python - <<'PY'
           import json
