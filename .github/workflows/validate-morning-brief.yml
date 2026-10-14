@@ -10,6 +10,9 @@ on:
       - 'prototype/ks-redesign/data/morning-brief.json'
       - 'prototype/ks-redesign/data/current-search-observations.json'
       - 'scripts/validate_morning_brief.py'
+      - 'scripts/refresh_nami_search_wave.py'
+      - 'scripts/test_refresh_nami_search_wave.py'
+      - '.github/workflows/refresh-nami-search-wave.yml'
       - '.github/workflows/validate-morning-brief.yml'
   pull_request:
     paths:
@@ -18,6 +21,9 @@ on:
       - 'prototype/ks-redesign/data/morning-brief.json'
       - 'prototype/ks-redesign/data/current-search-observations.json'
       - 'scripts/validate_morning_brief.py'
+      - 'scripts/refresh_nami_search_wave.py'
+      - 'scripts/test_refresh_nami_search_wave.py'
+      - '.github/workflows/refresh-nami-search-wave.yml'
       - '.github/workflows/validate-morning-brief.yml'
   workflow_dispatch:
 
@@ -34,6 +40,8 @@ jobs:
         run: |
           python3 scripts/validate_morning_brief.py
           python3 scripts/validate_morning_brief.py --self-test
+      - name: Test hourly NAMI search refresh parser
+        run: python3 scripts/test_refresh_nami_search_wave.py
       - name: Validate search-consensus data policy
         run: |
           python3 - <<'PY'

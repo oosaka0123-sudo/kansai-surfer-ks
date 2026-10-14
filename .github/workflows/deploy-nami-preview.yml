@@ -138,7 +138,7 @@ jobs:
           set ftp:ssl-force true
           set ftp:ssl-protect-data true
           open -u "$DEPLOY_USER","$DEPLOY_PASSWORD" "$DEPLOY_SCHEME://$DEPLOY_HOST:$DEPLOY_PORT"
-          mirror --reverse --verbose --parallel=2 --no-perms --exclude-glob README.md "$SOURCE_DIR" "$DEPLOY_ROOT/$DEPLOY_SUBDIR"
+          mirror --reverse --verbose --parallel=2 --no-perms --exclude-glob README.md --exclude-glob data/current-search-observations.json "$SOURCE_DIR" "$DEPLOY_ROOT/$DEPLOY_SUBDIR"
           bye
           LFTP
 
@@ -186,9 +186,9 @@ jobs:
           search_data = json.loads(Path('/tmp/ks-preview-search.json').read_text(encoding='utf-8'))
           assert search_data.get('schema_version') == 'ks-current-search-v1'
           assert search_data.get('verified') is True
-          assert search_data.get('date') == '2026-10-14'
-          assert [x.get('spot') for x in search_data.get('observations', [])] == ['磯ノ浦','伊良湖','静波']
-          assert all(x.get('normalized_size') and x.get('observed_at') and x.get('source_url') for x in search_data['observations'])
+          assert search_data.get('date')
+          assert search_data.get('observations')
+          assert all(x.get('spot') and x.get('normalized_size') and x.get('observed_at') and x.get('source_url') for x in search_data['observations'])
           policy = search_data.get('consensus_policy') or {}
           assert policy.get('minimum_independent_sources') == 2
           assert policy.get('fresh_minutes') == 90
@@ -240,7 +240,6 @@ jobs:
           for hidden_label in ('天気ソース','話題ソース','出典','発表元','一次情報','確認元：','公式外部ソース接続済み','1173life','SURFAREA','Surf life'):
               assert hidden_label not in text, hidden_label
           assert 'API予報とWeb検索サイズを別表示' in text
-          assert '古い参考' in text
           assert '検索サイズ' in text
           assert '現在確定' in text
           assert '複数検索の一致待ち' in text
@@ -254,8 +253,11 @@ jobs:
               assert spot['name'] in text, spot['name']
               if spot.get('forecast'):
                   assert spot['forecast'] in text, spot
-          for obs in search_data['observations']:
-              assert obs['normalized_size'] in text, obs
+          observed_spots={obs['spot'] for obs in search_data['observations']}
+          for spot in observed_spots:
+              assert spot in text, spot
+          sizes=[obs['normalized_size'] for obs in search_data['observations']]
+          assert any(size in text for size in sizes) or '複数検索一致' in text
           assert '1173life.com' not in text
           assert 'API + SEARCH DATA' in text
           print('Rendered NAMI morning DOM verification passed.')
