@@ -66,6 +66,9 @@ jobs:
           grep -q '海でつながる。' "$W/index.live.html"
           grep -q '関西サーファーLINE' "$W/index.live.html"
           grep -q 'member_counts.php' "$W/index.live.html"
+          grep -q 'id="ks-line-hero-share"' "$W/index.live.html"
+          grep -q 'ksHeroShare' "$W/index.live.html"
+          grep -q 'navigator.share' "$W/index.live.html"
 
           curl --fail --silent --show-error --location "https://kansai.rss7.net/img/logo-ks-white.png?v=$GITHUB_RUN_ID" -o "$W/logo.png"
           file "$W/logo.png" | grep -q 'RGBA'
