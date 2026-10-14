@@ -213,10 +213,12 @@ jobs:
 
           candidate = json.loads(Path('/tmp/render-candidate.json').read_text(encoding='utf-8'))
           rendered = html.unescape(Path('/tmp/rendered-morning.html').read_text(encoding='utf-8'))
-          text = re.sub(r'<[^>]+>', ' ', rendered)
+          visible = re.sub(r'(?is)<(script|style)[^>]*>.*?</\\1>', ' ', rendered)
+          text = re.sub(r'<[^>]+>', ' ', visible)
           text = re.sub(r'\s+', ' ', text)
 
-          assert '公式外部ソース接続済み' in text, text[:1000]
+          for hidden_label in ('天気ソース','話題ソース','出典','発表元','一次情報','確認元：','公式外部ソース接続済み'):
+              assert hidden_label not in text, hidden_label
           weather = candidate['opening']['osaka_weather']['current']
           assert weather in text, weather
           for item in candidate['ranking']:
