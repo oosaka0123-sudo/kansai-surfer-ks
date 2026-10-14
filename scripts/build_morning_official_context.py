@@ -679,8 +679,11 @@ def collect_jma(now, status):
             title = detail["title"] or entry["title"]
             if not detail["regions"]:
                 continue
-            if "気象警報・注意報" in title:
-                marine_text = f"{title} {detail['headline']}"
+            if "気象警報・注意報" in entry["title"]:
+                # JMA detail Title can be a specific alert such as 雷注意報.
+                # When it is specific, require the title itself to be marine-relevant;
+                # only fall back to the headline for the generic aggregate title.
+                marine_text = detail["headline"] if title == "気象警報・注意報" else title
                 if not any(w in marine_text for w in MARINE_WARNING_WORDS):
                     continue
             published = parse_iso_any(detail["report_time"]) or parse_iso_any(entry["updated"])
