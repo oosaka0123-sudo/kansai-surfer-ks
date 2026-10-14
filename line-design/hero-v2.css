@@ -105,7 +105,7 @@
 }
 .hero-bg-video{
   inset:0 auto 0 50%!important;
-  width:118%!important;
+  width:138%!important;
   height:100%!important;
   max-width:none!important;
   object-fit:cover!important;
@@ -113,11 +113,11 @@
   transform-origin:center center;
   backface-visibility:hidden;
   will-change:transform;
-  animation:ks-line-video-pan 22s cubic-bezier(.45,.05,.55,.95) infinite alternate;
+  animation:ks-line-video-pan 10s cubic-bezier(.45,0,.55,1) infinite alternate;
 }
 @keyframes ks-line-video-pan{
-  from{transform:translate3d(-53%,0,0) scale(1.025)}
-  to{transform:translate3d(-47%,0,0) scale(1.025)}
+  from{transform:translate3d(-36.25%,0,0)}
+  to{transform:translate3d(-63.75%,0,0)}
 }
 .hero-video-shade{
   background:
@@ -204,12 +204,12 @@
   .hamburger span{width:24px!important}
 
   .hero-bg-video{
-    width:124%!important;
-    animation-duration:26s;
+    width:150%!important;
+    animation-duration:11s;
   }
   @keyframes ks-line-video-pan{
-    from{transform:translate3d(-54%,0,0) scale(1.025)}
-    to{transform:translate3d(-46%,0,0) scale(1.025)}
+    from{transform:translate3d(-33.35%,0,0)}
+    to{transform:translate3d(-66.65%,0,0)}
   }
   .hero-video-shade{
     background:
@@ -270,7 +270,7 @@
 @media(prefers-reduced-motion:reduce){
   .hero-bg-video{
     animation:none!important;
-    transform:translate3d(-50%,0,0) scale(1.025)!important;
+    transform:translate3d(-50%,0,0)!important;
     will-change:auto;
   }
   .ks-social-link{transition:none!important}
