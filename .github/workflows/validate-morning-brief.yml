@@ -8,6 +8,9 @@ on:
       - 'PROJECT_SPEC.md'
       - 'prototype/ks-redesign/morning-brief.html'
       - 'prototype/ks-redesign/data/morning-brief.json'
+      - 'prototype/ks-redesign/data/search-wave-snapshot.json'
+      - 'scripts/apply_search_wave_snapshot.py'
+      - 'scripts/test_apply_search_wave_snapshot.py'
       - 'scripts/validate_morning_brief.py'
       - '.github/workflows/validate-morning-brief.yml'
   pull_request:
