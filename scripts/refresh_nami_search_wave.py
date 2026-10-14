@@ -125,7 +125,7 @@ def parse_source(source, now, source_dir=None):
     window=None
     combined=None
     for candidate in windows:
-        combined=re.search(r"([0-9]+(?:\\.[0-9]+)?)\\s*m\\b.{0,2500}?("+BODY_PATTERN+r")",candidate)
+        combined=re.search(r"([0-9]+(?:\.[0-9]+)?)\s*m\b.{0,2500}?("+BODY_PATTERN+r")",candidate)
         if combined:
             window=candidate
             break
