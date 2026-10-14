@@ -34,6 +34,9 @@ jobs:
           grep -q 'class="ks-social-link"' "$W/index.html"
           grep -q '@keyframes ks-line-video-pan' "$W/index.html"
           grep -q 'prefers-reduced-motion' "$W/index.html"
+          grep -q 'id="ks-line-hero-share"' "$W/index.html"
+          grep -q 'ksHeroShare' "$W/index.html"
+          grep -q 'navigator.share' "$W/index.html"
 
           python3 -m http.server 8765 --directory "$W" >/tmp/ks-line-preview.log 2>&1 &
           SERVER_PID=$!
