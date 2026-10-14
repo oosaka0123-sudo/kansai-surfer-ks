@@ -1,6 +1,8 @@
 name: Build NAMI morning official context
 
 on:
+  schedule:
+    - cron: '5 * * * *'
   workflow_dispatch:
   issue_comment:
     types:
@@ -18,6 +20,7 @@ jobs:
   build-and-publish-nami:
     if: >-
       ${{
+        github.event_name == 'schedule' ||
         github.event_name == 'workflow_dispatch' ||
         (
           github.event_name == 'issue_comment' &&
