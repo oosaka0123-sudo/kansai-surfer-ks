@@ -883,6 +883,11 @@ def main():
 
     published = [x["kind"] for x in data["competition_fallback"] if x.get("publish")]
     print("KS_MORNING_OFFICIAL_CONTEXT_BUILT")
+    print(f"OSAKA_WEATHER={'OK' if data['opening']['osaka_weather'].get('current') else 'UNAVAILABLE'}")
+    print(f"SPOT_FORECASTS={sum(1 for x in data['spots'] if x.get('forecast'))}/9")
+    print(f"RANKING_COUNT={len(data['ranking'])}")
+    if data["ranking"]:
+        print("RANKING_TOP=" + " / ".join(f"{x['rank']}位 {x['spot']} {x['size']}" for x in data["ranking"]))
     print("PUBLISHED_FALLBACKS=" + (",".join(published) if published else "(none)"))
     for item in data["competition_fallback"]:
         if item.get("publish"):
