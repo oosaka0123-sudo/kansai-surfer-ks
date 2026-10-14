@@ -96,7 +96,10 @@ const applySearchObservations=(data,searchData)=>{
   let referenceCount=0, confirmedCount=0;
   const spots=(data.spots||[]).map(spot=>{
     const rows=(bySpot.get(spot.name)||[]).sort((a,b)=>Date.parse(b.observed_at)-Date.parse(a.observed_at));
-    const references=rows.filter(o=>o._freshness==='fresh'||o._freshness==='aging');
+    // NAMI is a staging/data-preview surface: keep the latest valid search
+    // observation visible even when stale, but never promote stale data to
+    // confirmed current size.
+    const references=rows.filter(o=>o._freshness!=='invalid');
     const latest=references[0]||null;
     if(latest)referenceCount++;
 
@@ -166,7 +169,7 @@ Promise.all([
   const surf=(d.surf_news||[]).filter(x=>x?.title||x?.body).length?(d.surf_news||[]).filter(x=>x?.title||x?.body).map(x=>`<article class="news-row"><h3>${sleagueText(x.title)}</h3><p>${sleagueText(x.body)}</p>${x.published_at?`<p class="brief-meta">発表 ${esc(x.published_at)}｜確認 ${esc(x.checked_at||'')}</p>`:''}</article>`).join(''):'<p class="empty">本日、掲載するサーフィン関連ニュースはありません。</p>';
   const safetyStatus=d.safety_status||{};
   const safety=(d.safety_news||[]).length?d.safety_news.map(x=>`<article class="news-row alert"><h3>${sleagueText(x.title)}</h3><p>${sleagueText(x.body)}</p><p><span class="label">発表時刻</span>${esc(x.published_at||'')}</p><p><span class="label">確認時刻</span>${esc(x.checked_at||'')}</p></article>`).join(''):(safetyStatus.summary&&safetyStatus.checked_at?`<p class="empty">${sleagueText(safetyStatus.summary)}（${esc(safetyStatus.checked_at)}時点）</p>`:(d._external?'<p class="empty">現在、掲載対象の安全情報はありません。</p>':'<p class="empty">安全情報は準備中です。</p>'));
-  document.querySelector('#brief').innerHTML=`<p class="brief-kicker">NAMI TEST / API + SEARCH DATA</p><h1 class="brief-title">${title}</h1><p class="brief-meta">記事生成時刻：${d.generated_at?esc(d.generated_at):'未生成'}</p><div class="hybrid-note">API予報とWeb検索サイズを別表示。検索1件だけでは「現在確定」にせず、90分以内の独立2ソース以上が重なった場合だけ確定します。</div>${opening}<p class="brief-lead">${d.headline?sleagueText(d.headline):'<span class="empty">朝刊見出しは未生成です。</span>'}</p><section class="brief-section"><h2>今日の関西 波ランキングTOP5</h2><div class="rank-list">${ranking}</div></section><section class="brief-section"><h2>各スポットの波情報</h2><div class="spot-list">${spots}</div></section><section class="brief-section"><h2>今日のコンペニュース</h2><div class="news-list">${comp}</div></section><section class="brief-section"><h2>サーフィン関連ニュース</h2><div class="news-list">${surf}</div></section><section class="brief-section"><h2>海の事故・安全情報</h2><div class="news-list">${safety}</div></section><section class="brief-section"><h2>今日のひとこと</h2><p>${d.closing?sleagueText(d.closing):'<span class="empty">未生成</span>'}</p></section><footer class="brief-footer">現在値・予報・ニュース・警報を分離し、未確認の現地体験や人物証言は生成しません。</footer>`;
+  document.querySelector('#brief').innerHTML=`<p class="brief-kicker">NAMI TEST / API + SEARCH DATA</p><h1 class="brief-title">${title}</h1><p class="brief-meta">記事生成時刻：${d.generated_at?esc(d.generated_at):'未生成'}</p><div class="hybrid-note">API予報とWeb検索サイズを別表示。NAMIでは古い検索結果もテスト確認用に参考表示しますが、「現在確定」は90分以内の独立2ソース以上が重なった場合だけです。</div>${opening}<p class="brief-lead">${d.headline?sleagueText(d.headline):'<span class="empty">朝刊見出しは未生成です。</span>'}</p><section class="brief-section"><h2>今日の関西 波ランキングTOP5</h2><div class="rank-list">${ranking}</div></section><section class="brief-section"><h2>各スポットの波情報</h2><div class="spot-list">${spots}</div></section><section class="brief-section"><h2>今日のコンペニュース</h2><div class="news-list">${comp}</div></section><section class="brief-section"><h2>サーフィン関連ニュース</h2><div class="news-list">${surf}</div></section><section class="brief-section"><h2>海の事故・安全情報</h2><div class="news-list">${safety}</div></section><section class="brief-section"><h2>今日のひとこと</h2><p>${d.closing?sleagueText(d.closing):'<span class="empty">未生成</span>'}</p></section><footer class="brief-footer">現在値・予報・ニュース・警報を分離し、未確認の現地体験や人物証言は生成しません。</footer>`;
 })
 .catch(()=>{const root=document.querySelector('#brief');if(root)root.innerHTML='<p class="alert">データを読み込めませんでした。推測値は表示しません。</p>';});
 </script>
