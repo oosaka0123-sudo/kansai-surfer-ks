@@ -1,0 +1,73 @@
+name: Test morning official context
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/build_morning_official_context.py'
+      - 'scripts/test_build_morning_official_context.py'
+      - 'scripts/validate_morning_brief.py'
+      - '.github/workflows/test-morning-official-context.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'scripts/build_morning_official_context.py'
+      - 'scripts/test_build_morning_official_context.py'
+      - 'scripts/validate_morning_brief.py'
+      - '.github/workflows/test-morning-official-context.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run deterministic parser tests
+        run: python3 scripts/test_build_morning_official_context.py
+      - name: Re-run morning schema guardrail tests
+        run: |
+          python3 scripts/validate_morning_brief.py
+          python3 scripts/validate_morning_brief.py --self-test
+
+  live-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build context from live official sources
+        run: python3 scripts/build_morning_official_context.py --output /tmp/morning-official.json
+      - name: Validate production-mode candidate
+        run: python3 scripts/validate_morning_brief.py --mode production --file /tmp/morning-official.json
+      - name: Assert core official adapters
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          data = json.loads(Path('/tmp/morning-official.json').read_text(encoding='utf-8'))
+          src = data['collection_meta']['sources']
+          assert data['schema_version'] == 'ks-morning-brief-v2'
+          assert data['preview'] is False and data['verified'] is True
+          assert src['sleague_ranking']['ok'] is True, src['sleague_ranking']
+          assert src['sleague_schedule']['ok'] is True, src['sleague_schedule']
+          fallback = {x['kind']: x for x in data['competition_fallback']}
+          top3 = fallback['sleague_top3']
+          assert top3['source'] == 'https://sleague.jp/ranking/?league=s1'
+          assert all(label in (top3['body'] or '') for label in ('1位', '2位', '3位')), top3
+          assert 'Image' not in (top3['body'] or ''), top3
+          schedule = fallback['monthly_schedule']
+          if schedule['title']:
+              assert schedule['source'] == 'https://sleague.jp/schedule/'
+              assert f"{data['date'][5:7].lstrip('0')}月" in schedule['title'], schedule
+          assert all(v['ok'] for v in src['jma']['feeds'].values()), src['jma']
+          assert src['jcg']['ok'] is True, src['jcg']
+          assert src['wsl_kanoa']['ok'] is False
+          assert src['wsl_kanoa']['reason'] == 'official_stable_source_not_verified'
+          print('Live official-source smoke checks passed')
+          print('Published fallbacks:', [x['kind'] for x in data['competition_fallback'] if x['publish']])
+          print('Safety items:', len(data['safety_news']))
+          PY
