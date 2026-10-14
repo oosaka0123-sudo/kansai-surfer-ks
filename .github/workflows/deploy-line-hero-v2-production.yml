@@ -2,6 +2,13 @@ name: Deploy LINE Hero v2 to production
 
 on:
   workflow_dispatch: {}
+  push:
+    branches:
+      - main
+    paths:
+      - 'line-design/**'
+      - 'scripts/patch-line-hero-v2.py'
+      - 'line-design/header-v2.html'
 
 permissions:
   contents: read
