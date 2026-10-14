@@ -1,0 +1,140 @@
+name: Refresh NAMI search wave data
+
+on:
+  schedule:
+    - cron: '15 * * * *'
+  workflow_dispatch:
+  issue_comment:
+    types:
+      - created
+
+permissions:
+  contents: read
+  issues: read
+
+concurrency:
+  group: ks-nami-search-wave-refresh
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    if: >-
+      ${{
+        github.event_name == 'schedule' ||
+        github.event_name == 'workflow_dispatch' ||
+        (
+          github.event_name == 'issue_comment' &&
+          github.event.action == 'created' &&
+          github.event.comment.author_association == 'OWNER' &&
+          github.event.comment.user.type != 'Bot' &&
+          github.event.issue.pull_request == null &&
+          contains(github.event.comment.body, '@refresh-nami-search-wave')
+        )
+      }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DEPLOY_HOST: ftp.lolipop.jp
+      DEPLOY_PORT: "21"
+      DEPLOY_DIR: /nami/ks-redesign/data
+      FILE_NAME: current-search-observations.json
+      PUBLIC_URL: https://nami.rss7.net/ks-redesign/data/current-search-observations.json
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Unit test search refresh parser
+        run: python3 scripts/test_refresh_nami_search_wave.py
+
+      - name: Load existing NAMI search data
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="$PUBLIC_URL?v=$(date +%s)"
+          if curl --fail --silent --show-error --location --max-time 15 -H 'Cache-Control: no-cache' "$URL" -o /tmp/base-search.json; then
+            echo "Loaded existing NAMI search data."
+          else
+            cp prototype/ks-redesign/data/current-search-observations.json /tmp/base-search.json
+            echo "Using repository bootstrap search data."
+          fi
+
+      - name: Refresh allowlisted public wave pages
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/refresh_nami_search_wave.py             --input /tmp/base-search.json             --output /tmp/current-search-observations.json
+
+      - name: Validate refreshed search data
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from datetime import datetime
+          from pathlib import Path
+
+          data=json.loads(Path('/tmp/current-search-observations.json').read_text(encoding='utf-8'))
+          assert data['schema_version']=='ks-current-search-v1'
+          assert data['verified'] is True and data['preview'] is True
+          assert data['refresh_mode']=='hourly_allowlist_plus_gpt_search_enrichment'
+          assert data['consensus_policy']['minimum_independent_sources'] >= 2
+          assert data['consensus_policy']['single_source']=='reference_only'
+          status=data['source_fetch_status']
+          ok=sum(1 for x in status.values() if x.get('ok'))
+          assert ok >= 1, status
+          assert data['observations'], 'no observations'
+          assert all(str(x.get('source_url','')).startswith('https://') for x in data['observations'])
+          assert datetime.fromisoformat(data['checked_at']).tzinfo is not None
+          print('Refresh validation passed:', ok, '/', len(status), 'sources')
+          print('Observations:', [(x['spot'],x['normalized_size'],x['observed_at']) for x in data['observations']])
+          PY
+
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y lftp
+
+      - name: Upload refreshed search data to NAMI only
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          test -n "$FTP_USERNAME"
+          test -n "$FTP_PASSWORD"
+          [[ "$DEPLOY_HOST" == "ftp.lolipop.jp" ]]
+          [[ "$DEPLOY_PORT" == "21" ]]
+          [[ "$DEPLOY_DIR" == "/nami/ks-redesign/data" ]]
+          [[ "$PUBLIC_URL" == "https://nami.rss7.net/ks-redesign/data/current-search-observations.json" ]]
+
+          lftp <<LFTP
+          set cmd:fail-exit yes
+          set net:max-retries 2
+          set net:timeout 20
+          set ssl:verify-certificate yes
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$DEPLOY_HOST:$DEPLOY_PORT"
+          cd "$DEPLOY_DIR"
+          put /tmp/current-search-observations.json -o "$FILE_NAME"
+          bye
+          LFTP
+          echo "NAMI search data uploaded. Production write: none."
+
+      - name: Verify public refreshed JSON
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="$PUBLIC_URL?v=$(date +%s)"
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 -H 'Cache-Control: no-cache' "$URL" -o /tmp/public-search.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          expected=json.loads(Path('/tmp/current-search-observations.json').read_text(encoding='utf-8'))
+          actual=json.loads(Path('/tmp/public-search.json').read_text(encoding='utf-8'))
+          assert actual['schema_version']=='ks-current-search-v1'
+          assert actual['checked_at']==expected['checked_at']
+          assert actual['refresh_mode']=='hourly_allowlist_plus_gpt_search_enrichment'
+          print('Public NAMI search refresh verified:', actual['checked_at'])
+          print('Visible-data candidates:', [(x['spot'],x['normalized_size'],x['observed_at']) for x in actual['observations']])
+          PY
