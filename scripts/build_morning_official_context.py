@@ -87,6 +87,297 @@ def fetch(url, timeout=20, max_bytes=3_000_000, attempts=3):
     raise last_error
 
 
+def fetch_json(url):
+    return json.loads(fetch(url).decode("utf-8"))
+
+
+def weather_label(code):
+    try:
+        code = int(code)
+    except (TypeError, ValueError):
+        return "天気不明"
+    if code == 0:
+        return "晴れ"
+    if code in (1, 2, 3):
+        return "晴れ時々くもり" if code == 1 else "くもり"
+    if code in (45, 48):
+        return "霧"
+    if 51 <= code <= 57:
+        return "霧雨"
+    if 61 <= code <= 67 or 80 <= code <= 82:
+        return "雨"
+    if 71 <= code <= 77 or 85 <= code <= 86:
+        return "雪"
+    if code >= 95:
+        return "雷雨"
+    return "くもり"
+
+
+def dir_jp(deg):
+    try:
+        deg = float(deg)
+    except (TypeError, ValueError):
+        return None
+    return DIRS_JP[round(deg / 22.5) % 16]
+
+
+def number(value):
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def local_time(value):
+    if not value:
+        return None
+    text = str(value)
+    dt = parse_iso_any(text)
+    if not dt:
+        try:
+            dt = datetime.fromisoformat(text)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=JST)
+            dt = dt.astimezone(JST)
+        except ValueError:
+            return text
+    return iso(dt)
+
+
+def nearest_hour_idx(times, now):
+    if not isinstance(times, list) or not times:
+        return None
+    best = None
+    for i, value in enumerate(times):
+        dt = parse_iso_any(str(value))
+        if not dt:
+            try:
+                dt = datetime.fromisoformat(str(value))
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=JST)
+            except ValueError:
+                continue
+        dt = dt.astimezone(JST)
+        if dt <= now:
+            best = i
+        elif best is None:
+            best = i
+            break
+        else:
+            break
+    return best
+
+
+def is_offshore(cfg, deg):
+    if deg is None:
+        return False
+    start, end = cfg["offshore_start"], cfg["offshore_end"]
+    if start > end:
+        return deg >= start or deg <= end
+    return start <= deg <= end
+
+
+def is_onshore(cfg, deg):
+    if deg is None:
+        return False
+    start, end = cfg["offshore_start"], cfg["offshore_end"]
+    center = ((start + end + 360) / 2) % 360 if start > end else (start + end) / 2
+    onshore = (center + 180) % 360
+    diff = abs(deg - onshore)
+    if diff > 180:
+        diff = 360 - diff
+    return diff <= 60
+
+
+def swell_dir_score(cfg, deg):
+    if deg is None:
+        return 0.7
+    low, high = cfg["swell_min"], cfg["swell_max"]
+    if low <= deg <= high:
+        return 1.0
+    if low - 30 <= deg <= high + 30:
+        return 0.7
+    return 0.4
+
+
+def site_score(cfg, h, p, ws, wd, sd):
+    if h is None or h < 0.2:
+        return 0.5
+    if h < 0.3:
+        return min(1.5, h * 4)
+    if h < 0.4:
+        size_score = 1.5
+    elif h < 0.6:
+        size_score = 2.5
+    elif h < 1.0:
+        size_score = 4.0
+    elif h < 1.5:
+        size_score = 5.0
+    elif h < 2.0:
+        size_score = 4.5
+    elif h < 2.5:
+        size_score = 3.5
+    else:
+        size_score = 2.5
+
+    period_score = 1.0
+    if p is not None:
+        if p < 5:
+            period_score = 0.3
+        elif p < 7:
+            period_score = 0.8
+        elif p < 9:
+            period_score = 1.3
+        elif p < 11:
+            period_score = 1.7
+        else:
+            period_score = 2.0
+
+    ws_ = 5 if ws is None else ws
+    if ws_ < 1.5:
+        wind_mult = 1.0
+    elif is_offshore(cfg, wd):
+        wind_mult = 1.0 if ws_ < 4 else 0.95 if ws_ < 7 else 0.85 if ws_ < 10 else 0.7
+    elif is_onshore(cfg, wd):
+        wind_mult = 0.85 if ws_ < 3 else 0.65 if ws_ < 5 else 0.4 if ws_ < 8 else 0.2
+    else:
+        wind_mult = 0.95 if ws_ < 3 else 0.8 if ws_ < 6 else 0.6 if ws_ < 9 else 0.4
+
+    score = (size_score + period_score) * wind_mult * swell_dir_score(cfg, sd)
+    if h >= 1.5 and is_onshore(cfg, wd) and ws_ >= 4:
+        score *= 0.5
+    return min(10, max(0, score))
+
+
+def collect_osaka_weather(now, status):
+    checked = iso(now)
+    try:
+        data = fetch_json(OPEN_METEO_OSAKA_URL)
+        current = data.get("current") or {}
+        daily = data.get("daily") or {}
+        temp = number(current.get("temperature_2m"))
+        wind = number(current.get("wind_speed_10m"))
+        wind_dir = dir_jp(current.get("wind_direction_10m"))
+        current_time = local_time(current.get("time")) or checked
+        current_text = weather_label(current.get("weather_code"))
+        parts = [f"大阪は{current_text}"]
+        if temp is not None:
+            parts.append(f"気温{temp:.1f}℃")
+        if wind is not None and wind_dir:
+            parts.append(f"{wind_dir}の風{wind:.1f}m/s")
+
+        max_t = number((daily.get("temperature_2m_max") or [None])[0])
+        min_t = number((daily.get("temperature_2m_min") or [None])[0])
+        pop = number((daily.get("precipitation_probability_max") or [None])[0])
+        day_code = (daily.get("weather_code") or [None])[0]
+        forecast_parts = [f"今日の予想は{weather_label(day_code)}"]
+        if max_t is not None and min_t is not None:
+            forecast_parts.append(f"最高{max_t:.0f}℃・最低{min_t:.0f}℃")
+        if pop is not None:
+            forecast_parts.append(f"降水確率最大{pop:.0f}%")
+
+        status["open_meteo_osaka"] = {"ok": True, "source": OPEN_METEO_SOURCE}
+        return {
+            "current": "、".join(parts) + "。",
+            "forecast": "、".join(forecast_parts) + "。",
+            "source": OPEN_METEO_SOURCE,
+            "observed_at": current_time,
+            "checked_at": checked,
+            "forecast_at": now.strftime("%Y-%m-%d"),
+        }
+    except Exception as exc:
+        status["open_meteo_osaka"] = {"ok": False, "error": type(exc).__name__}
+        return {"current": None, "forecast": None, "source": None, "observed_at": None, "checked_at": None, "forecast_at": None}
+
+
+def collect_spot_forecasts(now, status):
+    checked = iso(now)
+    spots = []
+    ranked = []
+    source_items = {}
+    for cfg in SPOT_CONFIGS:
+        url = f"{PROD_SPOT_BASE}/spot_{cfg['key']}.json"
+        empty = {
+            "name": cfg["name"], "current": None, "current_at": None,
+            "wind_current": None, "wind_current_at": None,
+            "forecast": None, "forecast_at": None,
+            "wind_forecast": None, "wind_forecast_at": None,
+        }
+        try:
+            data = fetch_json(url)
+            marine = data.get("marine") or {}
+            weather = data.get("weather") or {}
+            mh = marine.get("hourly") or {}
+            wh = weather.get("hourly") or {}
+            m_idx = nearest_hour_idx(mh.get("time"), now)
+            w_idx = nearest_hour_idx(wh.get("time"), now)
+            if m_idx is None:
+                raise ValueError("marine hourly time missing")
+
+            def at(values, idx):
+                return values[idx] if isinstance(values, list) and idx is not None and idx < len(values) else None
+
+            wave_h = number(at(mh.get("wave_height"), m_idx))
+            wave_p = number(at(mh.get("wave_period"), m_idx))
+            swell_d = number(at(mh.get("swell_wave_direction"), m_idx))
+            wind_s = number(at(wh.get("wind_speed_10m"), w_idx))
+            wind_d = number(at(wh.get("wind_direction_10m"), w_idx))
+            if wind_s is None or wind_d is None:
+                wc = weather.get("current") or {}
+                wind_s = number(wc.get("wind_speed_10m"))
+                wind_d = number(wc.get("wind_direction_10m"))
+
+            if wave_h is None:
+                raise ValueError("wave_height missing")
+            forecast_at = local_time(at(mh.get("time"), m_idx)) or checked
+            wind_at = local_time(at(wh.get("time"), w_idx)) or forecast_at
+            wave_parts = [f"波高{wave_h:.1f}m"]
+            if wave_p is not None:
+                wave_parts.append(f"周期{wave_p:.0f}秒")
+            wind_name = dir_jp(wind_d)
+            wind_text = f"{wind_name} {wind_s:.1f}m/s" if wind_name and wind_s is not None else None
+            spot = dict(empty)
+            spot.update({
+                "forecast": "・".join(wave_parts),
+                "forecast_at": forecast_at,
+                "wind_forecast": wind_text,
+                "wind_forecast_at": wind_at if wind_text else None,
+            })
+            spots.append(spot)
+            score = site_score(cfg, wave_h, wave_p, wind_s, wind_d, swell_d)
+            ranked.append({
+                "spot": cfg["name"], "wave_h": wave_h, "wave_p": wave_p,
+                "wind": wind_text, "score": score,
+            })
+            source_items[cfg["key"]] = {
+                "ok": True, "source": url, "updated_at": data.get("updated_at"),
+                "forecast_at": forecast_at,
+            }
+        except Exception as exc:
+            spots.append(empty)
+            source_items[cfg["key"]] = {"ok": False, "source": url, "error": type(exc).__name__}
+
+    ranked.sort(key=lambda x: (-x["score"], x["spot"]))
+    ranking = []
+    for idx, item in enumerate(ranked[:5], start=1):
+        ranking.append({
+            "rank": idx,
+            "spot": item["spot"],
+            "size": f"波高{item['wave_h']:.1f}m",
+            "wind": item["wind"] or "風データなし",
+            "note": f"既存KS評価ロジック {item['score']:.1f}/10",
+            "basis": "forecast",
+        })
+    status["spot_forecasts"] = {
+        "ok": len(ranked) == len(SPOT_CONFIGS),
+        "available": len(ranked),
+        "expected": len(SPOT_CONFIGS),
+        "checked_at": checked,
+        "items": source_items,
+    }
+    return spots, ranking
+
+
 class TextParser(HTMLParser):
     BLOCKS = {"tr","li","p","h1","h2","h3","h4","div","section","article","td","th","br"}
 
