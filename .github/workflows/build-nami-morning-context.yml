@@ -72,13 +72,25 @@ jobs:
 
           data = json.loads(Path('/tmp/morning-external-candidate.json').read_text(encoding='utf-8'))
           sources = data['collection_meta']['sources']
+          src_or_sources = sources
           assert sources['sleague_schedule']['ok'] is True, sources['sleague_schedule']
           assert sources['sleague_ranking']['ok'] is True, sources['sleague_ranking']
           assert all(v['ok'] for v in sources['jma']['feeds'].values()), sources['jma']
           assert sources['jcg']['ok'] is True, sources['jcg']
           assert data['preview'] is False and data['verified'] is True
+          assert src_or_sources['open_meteo_osaka']['ok'] is True, src_or_sources['open_meteo_osaka']
+          assert src_or_sources['spot_forecasts']['ok'] is True, src_or_sources['spot_forecasts']
+          assert src_or_sources['spot_forecasts']['available'] == 9
+          assert len(data['ranking']) == 5
+          assert all(x.get('basis') == 'forecast' for x in data['ranking'])
+          assert all(x.get('size','').startswith('波高') for x in data['ranking'])
+          assert all(x.get('current') is None for x in data['spots'])
+          assert sum(1 for x in data['spots'] if x.get('forecast')) == 9
+          assert (data.get('opening') or {}).get('osaka_weather',{}).get('current')
           assert data['schema_version'] == 'ks-morning-brief-v2'
           print('Required official source checks passed.')
+          print('Osaka weather:', data['opening']['osaka_weather']['current'])
+          print('TOP5:', [(x['rank'], x['spot'], x['size']) for x in data['ranking']])
           PY
 
       - name: Install lftp
@@ -128,4 +140,5 @@ jobs:
           print('NAMI official-context live verification passed.')
           print('Fallbacks:', [x['kind'] for x in data['competition_fallback'] if x.get('publish')])
           print('Safety items:', len(data['safety_news']))
+          print('Spot forecasts:', sum(1 for x in data['spots'] if x.get('forecast')), '/ 9')
           PY
