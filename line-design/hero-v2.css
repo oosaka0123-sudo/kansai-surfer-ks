@@ -164,13 +164,15 @@
 .hero-video-ks .hero-title{
   max-width:900px;
   margin:0 0 12px!important;
-  font-size:clamp(2.8rem,6vw,5rem)!important;
+  font-size:clamp(3.05rem,6.6vw,5.45rem)!important;
   line-height:1.035!important;
   letter-spacing:-.035em!important;
   text-wrap:balance;
   text-shadow:0 4px 26px rgba(0,0,0,.58);
 }
 .hero-video-ks .hero-title .green{
+  display:inline-block;
+  font-size:1.12em;
   color:#08e879!important;
   text-shadow:0 4px 28px rgba(0,0,0,.52),0 0 24px rgba(8,232,121,.08);
 }
@@ -286,7 +288,7 @@
   .hero-video-ks .hero-kicker::before{width:20px}
   .hero-video-ks .hero-title{
     margin-bottom:10px!important;
-    font-size:clamp(2rem,9vw,3.15rem)!important;
+    font-size:clamp(2.2rem,9.9vw,3.45rem)!important;
     line-height:1.06!important;
     letter-spacing:-.035em!important;
   }
@@ -318,8 +320,8 @@
   .ks-header-actions{gap:0}
   .hamburger{width:38px!important}
   .hero-video-content{top:45%;padding:0 15px!important}
-  .hero-video-ks .hero-title{font-size:clamp(2.05rem,9.7vw,2.7rem)!important}
-  .hero-video-ks .hero-title .green{font-size:.80em;letter-spacing:-.04em!important}
+  .hero-video-ks .hero-title{font-size:clamp(2.12rem,10vw,2.9rem)!important}
+  .hero-video-ks .hero-title .green{font-size:.92em;letter-spacing:-.045em!important}
   .hero-video-ks .hero-lead{font-size:.83rem!important;line-height:1.64!important}
   .hero-scroll{left:15px!important}
 }
