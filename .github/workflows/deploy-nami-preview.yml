@@ -240,6 +240,7 @@ jobs:
           for hidden_label in ('天気ソース','話題ソース','出典','発表元','一次情報','確認元：','公式外部ソース接続済み','1173life','SURFAREA','Surf life'):
               assert hidden_label not in text, hidden_label
           assert 'API予報とWeb検索サイズを別表示' in text
+          assert '古い参考' in text
           assert '検索サイズ' in text
           assert '現在確定' in text
           assert '複数検索の一致待ち' in text
