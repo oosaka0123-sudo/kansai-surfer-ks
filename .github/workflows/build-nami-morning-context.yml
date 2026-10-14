@@ -44,7 +44,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if curl --fail --silent --show-error --location --max-time 15 "$PUBLIC_URL" -o /tmp/previous-morning-context.json; then
+          PREVIOUS_URL="$PUBLIC_URL?v=$(date +%s)"
+          if curl --fail --silent --show-error --location --max-time 15 -H 'Cache-Control: no-cache' "$PREVIOUS_URL" -o /tmp/previous-morning-context.json; then
             echo "Previous candidate loaded for cooldown state."
           else
             rm -f /tmp/previous-morning-context.json
@@ -129,7 +130,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "$PUBLIC_URL" -o /tmp/public-candidate.json
+          VERIFY_URL="$PUBLIC_URL?v=$(date +%s)"
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 -H 'Cache-Control: no-cache' "$VERIFY_URL" -o /tmp/public-candidate.json
           python3 scripts/validate_morning_brief.py --mode production --file /tmp/public-candidate.json
           python3 - <<'PY'
           import json
@@ -137,6 +139,10 @@ jobs:
           data = json.loads(Path('/tmp/public-candidate.json').read_text(encoding='utf-8'))
           assert data['schema_version'] == 'ks-morning-brief-v2'
           assert data['verified'] is True and data['preview'] is False
+          assert (data.get('opening') or {}).get('osaka_weather', {}).get('current')
+          assert len(data.get('ranking') or []) == 5
+          assert all(x.get('basis') == 'forecast' for x in data.get('ranking', []))
+          assert sum(1 for x in data.get('spots', []) if x.get('forecast')) == 9
           print('NAMI official-context live verification passed.')
           print('Fallbacks:', [x['kind'] for x in data['competition_fallback'] if x.get('publish')])
           print('Safety items:', len(data['safety_news']))
