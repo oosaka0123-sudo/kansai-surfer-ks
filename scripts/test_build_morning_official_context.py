@@ -63,6 +63,48 @@ JCG_RSS = """<?xml version="1.0" encoding="UTF-8"?>
 </channel></rss>"""
 
 
+OSAKA_WEATHER = {
+    "current": {
+        "time": "2026-10-13T06:15",
+        "temperature_2m": 22.4,
+        "weather_code": 1,
+        "wind_speed_10m": 2.6,
+        "wind_direction_10m": 45,
+    },
+    "daily": {
+        "weather_code": [2],
+        "temperature_2m_max": [26.2],
+        "temperature_2m_min": [19.1],
+        "precipitation_probability_max": [20],
+    },
+}
+
+
+def spot_payload(wave_height, period=8, wind_speed=2, wind_dir=0, swell_dir=180):
+    return {
+        "updated_at": "2026-10-13 06:10:00",
+        "marine": {
+            "hourly": {
+                "time": ["2026-10-13T05:00", "2026-10-13T06:00", "2026-10-13T07:00"],
+                "wave_height": [wave_height, wave_height, wave_height],
+                "wave_period": [period, period, period],
+                "swell_wave_direction": [swell_dir, swell_dir, swell_dir],
+            }
+        },
+        "weather": {
+            "hourly": {
+                "time": ["2026-10-13T05:00", "2026-10-13T06:00", "2026-10-13T07:00"],
+                "wind_speed_10m": [wind_speed, wind_speed, wind_speed],
+                "wind_direction_10m": [wind_dir, wind_dir, wind_dir],
+            },
+            "current": {
+                "wind_speed_10m": wind_speed,
+                "wind_direction_10m": wind_dir,
+            }
+        }
+    }
+
+
 def test_ranking():
     rows = collector.parse_sleague_top3(RANKING_HTML.encode())
     assert [(x["rank"], x["name"], x["points"]) for x in rows] == [
@@ -119,11 +161,64 @@ def test_cooldown():
     assert collector.cooldown_ok("2026-10-10T06:30:00+09:00", now, 3)
 
 
+def test_weather_and_spot_forecasts():
+    now = datetime.fromisoformat("2026-10-13T06:30:00+09:00")
+    real_fetch_json = collector.fetch_json
+    wave_by_key = {
+        "isonoura": 0.6,
+        "kounohama": 0.8,
+        "ikumi": 1.2,
+        "komatsu": 0.7,
+        "irago": 1.0,
+        "shizunami": 0.9,
+        "hamadutu": 0.5,
+        "takahama": 0.4,
+        "hakuto": 0.3,
+    }
+
+    def fake_fetch_json(url):
+        if url == collector.OPEN_METEO_OSAKA_URL:
+            return OSAKA_WEATHER
+        for cfg in collector.SPOT_CONFIGS:
+            if url.endswith(f"spot_{cfg['key']}.json"):
+                return spot_payload(
+                    wave_by_key[cfg["key"]],
+                    period=9,
+                    wind_speed=1,
+                    wind_dir=cfg["offshore_start"],
+                    swell_dir=cfg["swell_min"],
+                )
+        raise AssertionError(url)
+
+    collector.fetch_json = fake_fetch_json
+    try:
+        status = {}
+        weather = collector.collect_osaka_weather(now, status)
+        spots, ranking = collector.collect_spot_forecasts(now, status)
+    finally:
+        collector.fetch_json = real_fetch_json
+
+    assert "大阪は" in weather["current"]
+    assert weather["source"] == collector.OPEN_METEO_SOURCE
+    assert status["open_meteo_osaka"]["ok"] is True
+    assert len(spots) == 9
+    assert all(x["current"] is None for x in spots)
+    assert all(x["forecast"] and x["forecast_at"] for x in spots)
+    assert all(x["wind_forecast"] and x["wind_forecast_at"] for x in spots)
+    assert len(ranking) == 5
+    assert [x["rank"] for x in ranking] == [1, 2, 3, 4, 5]
+    assert all(x["basis"] == "forecast" for x in ranking)
+    assert all(x["size"].startswith("波高") for x in ranking)
+    assert status["spot_forecasts"]["available"] == 9
+    assert status["spot_forecasts"]["ok"] is True
+
+
 def main():
     test_ranking()
     test_schedule()
     test_official_collectors()
     test_cooldown()
+    test_weather_and_spot_forecasts()
     print("Morning official context unit tests passed")
 
 
