@@ -36,7 +36,7 @@ base={
 }
 real_parse=collector.parse_source
 collector.SOURCES=[{"spot":"伊良湖","url":"https://example.com/","name":"test"}]
-collector.parse_source=lambda src,now:item
+collector.parse_source=lambda src,now,source_dir=None:item
 try:
     out=collector.refresh(base,datetime(2026,10,14,19,31,tzinfo=JST))
 finally:
