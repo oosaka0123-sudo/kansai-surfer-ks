@@ -8,6 +8,7 @@ on:
       - 'PROJECT_SPEC.md'
       - 'prototype/ks-redesign/morning-brief.html'
       - 'prototype/ks-redesign/data/morning-brief.json'
+      - 'prototype/ks-redesign/data/current-search-observations.json'
       - 'scripts/validate_morning_brief.py'
       - '.github/workflows/validate-morning-brief.yml'
   pull_request:
@@ -15,6 +16,7 @@ on:
       - 'PROJECT_SPEC.md'
       - 'prototype/ks-redesign/morning-brief.html'
       - 'prototype/ks-redesign/data/morning-brief.json'
+      - 'prototype/ks-redesign/data/current-search-observations.json'
       - 'scripts/validate_morning_brief.py'
       - '.github/workflows/validate-morning-brief.yml'
   workflow_dispatch:
@@ -32,6 +34,26 @@ jobs:
         run: |
           python3 scripts/validate_morning_brief.py
           python3 scripts/validate_morning_brief.py --self-test
+      - name: Validate search-consensus data policy
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path('prototype/ks-redesign/data/current-search-observations.json').read_text(encoding='utf-8'))
+          assert data['schema_version']=='ks-current-search-v1'
+          assert data['verified'] is True and data['preview'] is True
+          policy=data['consensus_policy']
+          assert policy['fresh_minutes']==90
+          assert policy['aging_minutes']==180
+          assert policy['minimum_independent_sources']>=2
+          assert policy['single_source']=='reference_only'
+          assert policy['source_visibility']=='backend_only'
+          for x in data['observations']:
+              assert x['source_url'].startswith('https://')
+              assert x['normalized_low']<=x['normalized_high']
+              assert x['confidence']=='single_source_reference'
+          print('Search consensus data policy passed')
+          PY
       - name: Check embedded JavaScript syntax
         run: |
           python3 - <<'PY'
@@ -51,4 +73,6 @@ jobs:
           grep -q '海の事故・安全情報' prototype/ks-redesign/morning-brief.html
           grep -q "const SLEAGUE_URL='https://sleague.rss7.net/';" prototype/ks-redesign/morning-brief.html
           grep -q 'fallbackEligible' prototype/ks-redesign/morning-brief.html
-          grep -q '安全情報は未確認です' prototype/ks-redesign/morning-brief.html
+          grep -q '安全情報は準備中です' prototype/ks-redesign/morning-brief.html
+          grep -q 'API予報とWeb検索サイズを別表示' prototype/ks-redesign/morning-brief.html
+          grep -q 'minimum_independent_sources' prototype/ks-redesign/data/current-search-observations.json

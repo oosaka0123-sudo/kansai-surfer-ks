@@ -215,6 +215,19 @@ Normal days should remain concise. Major typhoon, earthquake, tsunami, high-wave
 - Unknown-source social posts alone are not sufficient for accident reporting.
 - If no meaningful safety item exists, keep the section brief rather than inventing content.
 
+### Hybrid API + web-search wave data
+- Use API data for the deterministic forecast layer: wave height, period, swell direction and wind.
+- Use GPT/web search to collect publicly visible surf-size expressions such as `ヒザ`, `モモ〜腰`, and `腹〜胸`.
+- Keep search-derived size data and API forecast data separate in storage and on the NAMI test UI.
+- Keep search source names and URLs in backend data only; do not render them in the reader-facing article.
+- A single search source is reference-only and must not be labeled as confirmed current size.
+- Confirm `current` only when at least two independent search sources checked within 90 minutes overlap after normalization.
+- Search data 91–180 minutes old may remain visible as a time-aged reference; older data is stale and must not drive current size.
+- Normalize search sizes using スネ=1 / ヒザ=2 / モモ=3 / 腰=4 / 腹=5 / 胸=6 / 肩=7 / 頭=8.
+- Deterministic overlap example: `腹〜胸` + `胸〜肩` => `胸前後`.
+- If independent search ranges do not overlap, leave current size unconfirmed rather than guessing.
+- NAMI is the test surface for this hybrid pipeline. Production remains unchanged until explicit owner approval.
+
 ### Data and generation guardrails
 - Current observations, forecasts, alerts, and news must remain separate fields in source data.
 - Show observation/issue times where relevant.

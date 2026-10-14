@@ -11,7 +11,7 @@
   <title>KS 朝刊プレビュー｜NAMI TEST</title>
   <link rel="stylesheet" href="styles.css">
   <style>
-    .brief-wrap{width:min(100% - 32px,980px);margin:0 auto;padding:120px 0 72px}.brief-kicker{font-size:.72rem;letter-spacing:.16em;color:#8fd7d1}.brief-title{font-size:clamp(1.8rem,5vw,3.2rem);line-height:1.25;margin:.5rem 0}.brief-meta,.brief-note,.opening-meta{color:#b7b6b1;font-size:.82rem}.brief-lead{font-size:1.02rem;line-height:1.9;margin:22px 0 34px}.opening-box{padding:18px 20px;margin:20px 0 34px;border:1px solid rgba(255,255,255,.1);border-radius:14px;background:rgba(255,255,255,.04)}.opening-box p{margin:6px 0;line-height:1.75}.brief-section{padding:28px 0;border-top:1px solid rgba(255,255,255,.12)}.brief-section h2{margin:0 0 18px;font-size:1.35rem}.rank-list,.spot-list,.news-list{display:grid;gap:10px}.rank-row,.spot-row,.news-row{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09);border-radius:14px;padding:14px 16px}.rank-row{display:grid;grid-template-columns:54px 1.1fr .9fr .9fr 1.4fr;gap:10px;align-items:center}.rank-no{font-size:1.25rem;font-weight:800}.spot-row h3,.news-row h3{margin:0 0 8px;font-size:1rem}.spot-row p,.news-row p{margin:4px 0;line-height:1.65;color:#d7d3ca}.label{display:inline-block;min-width:70px;color:#8fd7d1;font-size:.76rem;font-weight:700}.alert{border-color:rgba(255,130,90,.45);background:rgba(255,105,70,.08)}.sleague-link,.source-link{color:#8fd7d1;text-decoration:underline;text-underline-offset:3px}.empty{color:#b7b6b1}.source-state{display:inline-block;margin:10px 0 0;padding:6px 9px;border-radius:999px;font-size:.75rem;border:1px solid rgba(255,255,255,.12)}.source-state.ok{color:#8fd7d1}.source-state.pending{color:#f5c58a}.brief-footer{padding-top:26px;border-top:1px solid rgba(255,255,255,.12);color:#9c9a95;font-size:.78rem;line-height:1.7}@media(max-width:760px){.brief-wrap{width:min(100% - 24px,980px);padding-top:96px}.rank-row{grid-template-columns:44px 1fr}.rank-row span:nth-child(n+3){grid-column:2}.brief-section{padding:24px 0}}
+    .brief-wrap{width:min(100% - 32px,980px);margin:0 auto;padding:120px 0 72px}.brief-kicker{font-size:.72rem;letter-spacing:.16em;color:#8fd7d1}.brief-title{font-size:clamp(1.8rem,5vw,3.2rem);line-height:1.25;margin:.5rem 0}.brief-meta,.brief-note,.opening-meta{color:#b7b6b1;font-size:.82rem}.brief-lead{font-size:1.02rem;line-height:1.9;margin:22px 0 34px}.opening-box{padding:18px 20px;margin:20px 0 34px;border:1px solid rgba(255,255,255,.1);border-radius:14px;background:rgba(255,255,255,.04)}.opening-box p{margin:6px 0;line-height:1.75}.brief-section{padding:28px 0;border-top:1px solid rgba(255,255,255,.12)}.brief-section h2{margin:0 0 18px;font-size:1.35rem}.rank-list,.spot-list,.news-list{display:grid;gap:10px}.rank-row,.spot-row,.news-row{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09);border-radius:14px;padding:14px 16px}.rank-row{display:grid;grid-template-columns:54px 1.1fr .9fr .9fr 1.4fr;gap:10px;align-items:center}.rank-no{font-size:1.25rem;font-weight:800}.spot-row h3,.news-row h3{margin:0 0 8px;font-size:1rem}.spot-row p,.news-row p{margin:4px 0;line-height:1.65;color:#d7d3ca}.label{display:inline-block;min-width:70px;color:#8fd7d1;font-size:.76rem;font-weight:700}.alert{border-color:rgba(255,130,90,.45);background:rgba(255,105,70,.08)}.sleague-link,.source-link{color:#8fd7d1;text-decoration:underline;text-underline-offset:3px}.empty{color:#b7b6b1}.search-ref{color:#f5c58a}.search-confirmed{color:#8fd7d1}.hybrid-note{margin:12px 0 22px;padding:10px 12px;border-left:2px solid #8fd7d1;background:rgba(143,215,209,.06);font-size:.84rem;line-height:1.6;color:#d7d3ca}.source-state{display:inline-block;margin:10px 0 0;padding:6px 9px;border-radius:999px;font-size:.75rem;border:1px solid rgba(255,255,255,.12)}.source-state.ok{color:#8fd7d1}.source-state.pending{color:#f5c58a}.brief-footer{padding-top:26px;border-top:1px solid rgba(255,255,255,.12);color:#9c9a95;font-size:.78rem;line-height:1.7}@media(max-width:760px){.brief-wrap{width:min(100% - 24px,980px);padding-top:96px}.rank-row{grid-template-columns:44px 1fr}.rank-row span:nth-child(n+3){grid-column:2}.brief-section{padding:24px 0}}
   </style>
 </head>
 <body>
@@ -68,23 +68,74 @@ const mergeExternal=(base,external)=>{
     _external_checked_at:external.collection_meta?.checked_at||external.generated_at||null
   };
 };
+const bodyLabel={1:'スネ',2:'ヒザ',3:'モモ',4:'腰',5:'腹',6:'胸',7:'肩',8:'頭'};
+const overlapLabel=(low,high)=>low===high?`${bodyLabel[low]||'?'}前後`:`${bodyLabel[low]||'?'}〜${bodyLabel[high]||'?'}`;
+const sourceKey=o=>{try{return new URL(String(o?.source_url||'')).hostname.replace(/^www\./,'')}catch{return String(o?.source_url||'')}};
 const applySearchObservations=(data,searchData)=>{
   if(!searchData||searchData.schema_version!=='ks-current-search-v1'||searchData.verified!==true||searchData.date!==data.date){
-    return {...data,_searchCount:0};
+    return {...data,_searchReferenceCount:0,_searchConfirmedCount:0};
   }
-  const checked=Date.now();
-  const maxAge=Math.max(1,Number(searchData.freshness_minutes)||180)*60000;
-  const fresh=(searchData.observations||[]).filter(x=>{
-    const observed=Date.parse(x?.observed_at||'');
-    return x?.spot&&x?.normalized_size&&Number.isFinite(checked)&&Number.isFinite(observed)&&checked>=observed&&(checked-observed)<=maxAge;
+  const now=Date.now();
+  const policy=searchData.consensus_policy||{};
+  const freshMinutes=Math.max(1,Number(policy.fresh_minutes)||90);
+  const agingMinutes=Math.max(freshMinutes,Number(policy.aging_minutes)||180);
+  const minSources=Math.max(2,Number(policy.minimum_independent_sources)||2);
+  const usable=(searchData.observations||[]).map(o=>{
+    const observed=Date.parse(o?.observed_at||'');
+    const age=Number.isFinite(observed)&&now>=observed?(now-observed)/60000:null;
+    const freshness=age===null?'invalid':age<=freshMinutes?'fresh':age<=agingMinutes?'aging':'stale';
+    return {...o,_age:age,_freshness:freshness,_sourceKey:sourceKey(o)};
+  }).filter(o=>o?.spot&&o?.normalized_size&&o._freshness!=='invalid');
+
+  const bySpot=new Map();
+  for(const o of usable){
+    if(!bySpot.has(o.spot))bySpot.set(o.spot,[]);
+    bySpot.get(o.spot).push(o);
+  }
+
+  let referenceCount=0, confirmedCount=0;
+  const spots=(data.spots||[]).map(spot=>{
+    const rows=(bySpot.get(spot.name)||[]).sort((a,b)=>Date.parse(b.observed_at)-Date.parse(a.observed_at));
+    const references=rows.filter(o=>o._freshness==='fresh'||o._freshness==='aging');
+    const latest=references[0]||null;
+    if(latest)referenceCount++;
+
+    const freshBySource=[];
+    const seen=new Set();
+    for(const o of rows.filter(x=>x._freshness==='fresh')){
+      if(seen.has(o._sourceKey))continue;
+      if(!Number.isFinite(Number(o.normalized_low))||!Number.isFinite(Number(o.normalized_high)))continue;
+      seen.add(o._sourceKey); freshBySource.push(o);
+    }
+    let consensus=null;
+    if(freshBySource.length>=minSources){
+      const low=Math.max(...freshBySource.map(o=>Number(o.normalized_low)));
+      const high=Math.min(...freshBySource.map(o=>Number(o.normalized_high)));
+      if(low<=high){
+        consensus={
+          label:overlapLabel(low,high),low,high,
+          source_count:freshBySource.length,
+          observed_at:freshBySource.map(o=>o.observed_at).sort().at(-1)
+        };
+      }
+    }
+    if(consensus)confirmedCount++;
+    return {
+      ...spot,
+      ...(consensus?{current:consensus.label,current_at:consensus.observed_at,current_basis:'search_consensus'}:{}),
+      search_reference:latest?{
+        size:latest.normalized_size,
+        observed_at:latest.observed_at,
+        freshness:latest._freshness,
+        age_minutes:Math.round(latest._age),
+        wind:latest.wind||null
+      }:null,
+      search_consensus:consensus
+    };
   });
-  const map=new Map(fresh.map(x=>[x.spot,x]));
-  const spots=(data.spots||[]).map(x=>{
-    const o=map.get(x.name);
-    if(!o)return x;
-    return {...x,current:o.normalized_size,current_at:o.observed_at,wind_current:o.wind||null,wind_current_at:o.observed_at,current_basis:'search'};
-  });
-  return {...data,spots,headline:fresh.length?(String(fresh.length)+'スポットは検索確認済みの現在サイズ、残りはAPI予報を表示しています。'):data.headline,_searchCount:fresh.length,_searchCheckedAt:searchData.checked_at||null};
+
+  const headline=`API予報＋検索データを照合。検索参考 ${referenceCount}スポット、複数ソース一致の現在確定 ${confirmedCount}スポット。`;
+  return {...data,spots,headline,_searchReferenceCount:referenceCount,_searchConfirmedCount:confirmedCount,_searchCheckedAt:searchData.checked_at||null};
 };
 Promise.all([
   fetchJson('data/morning-brief.json',true),
@@ -101,9 +152,13 @@ Promise.all([
   const opening=`<div class="opening-box"><p><strong>${esc(o.greeting||'おはようございます、木山です。')}</strong></p><p>${weather.current?sleagueText(weather.current):'<span class="empty">大阪の現在天気は未接続です。</span>'}</p>${weather.forecast?`<p>${sleagueText(weather.forecast)}</p>`:''}${weatherMeta?`<p class="opening-meta">${weatherMeta}</p>`:''}<p>${topic.text?sleagueText(topic.text):'<span class="empty">今日の時事・季節ネタは未接続です。</span>'}</p>${topicMeta?`<p class="opening-meta">${topicMeta}</p>`:''}<p>${sleagueText(o.transition||'では今日の波を見ていきましょう。')}</p></div>`;
   const ranking=(d.ranking||[]).length?d.ranking.slice(0,5).map(x=>`<div class="rank-row"><span class="rank-no">${esc(x.rank)}位</span><strong>${esc(x.spot)}</strong><span>${valueOrEmpty(x.size,'サイズなし')}</span><span>${valueOrEmpty(x.wind,'風なし')}</span><span>${valueOrEmpty(x.note,'コメントなし')} ${x.basis?`<small>${x.basis==='current'?'現在':'予報'}基準</small>`:''}</span></div>`).join(''):'<p class="empty">ランキングデータ未接続。推測値は表示しません。</p>';
   const spots=(d.spots||[]).map(x=>{
-    const hasAny=[x.current,x.wind_current,x.forecast,x.wind_forecast].some(hasValue);
-    if(!hasAny)return `<article class="spot-row"><h3>${esc(x.name)}</h3><p class="empty">本日データなし。推測で補完しません。</p></article>`;
-    return `<article class="spot-row"><h3>${esc(x.name)}</h3><p><span class="label">現在</span>${valueOrEmpty(x.current,'現在データなし')} ${x.current_at?`<small>${esc(x.current_at)}</small>`:''}</p><p><span class="label">現在風</span>${valueOrEmpty(x.wind_current,'現在風なし')} ${x.wind_current_at?`<small>${esc(x.wind_current_at)}</small>`:''}</p><p><span class="label">今後</span>${valueOrEmpty(x.forecast,'予報データなし')} ${x.forecast_at?`<small>${esc(x.forecast_at)}</small>`:''}</p><p><span class="label">予報風</span>${valueOrEmpty(x.wind_forecast,'予報風なし')} ${x.wind_forecast_at?`<small>${esc(x.wind_forecast_at)}</small>`:''}</p></article>`;
+    const ref=x.search_reference||null, consensus=x.search_consensus||null;
+    const searchSize=consensus
+      ?`<span class="search-confirmed">${esc(consensus.label)}</span> <small>複数検索一致</small>`
+      :ref
+        ?`<span class="search-ref">${esc(ref.size)}</span> <small>${ref.freshness==='fresh'?'新着参考':ref.freshness==='aging'?'時間経過・参考':'古い参考'} / ${esc(ref.observed_at||'')}</small>`
+        :'<span class="empty">検索サイズ未取得</span>';
+    return `<article class="spot-row"><h3>${esc(x.name)}</h3><p><span class="label">検索サイズ</span>${searchSize}</p><p><span class="label">現在確定</span>${valueOrEmpty(x.current,'複数検索の一致待ち')} ${x.current_at?`<small>${esc(x.current_at)}</small>`:''}</p><p><span class="label">API予報</span>${valueOrEmpty(x.forecast,'API予報データなし')} ${x.forecast_at?`<small>${esc(x.forecast_at)}</small>`:''}</p><p><span class="label">API風</span>${valueOrEmpty(x.wind_forecast,'風予報なし')} ${x.wind_forecast_at?`<small>${esc(x.wind_forecast_at)}</small>`:''}</p></article>`;
   }).join('');
   const freshComp=(d.competition_news||[]).filter(x=>x?.title||x?.body).map(x=>`<article class="news-row"><h3>${sleagueText(x.type||'COMPETITION')}</h3><p><strong>${sleagueText(x.title||'')}</strong></p><p>${sleagueText(x.body||'')}</p>${x.published_at?`<p class="brief-meta">発表 ${esc(x.published_at)}｜確認 ${esc(x.checked_at||'')}</p>`:''}</article>`).join('');
   const fallback=(d.competition_fallback||[]).filter(x=>fallbackEligible(x,d.date)).slice(0,2).map(x=>`<article class="news-row"><h3>${sleagueText(x.title)}</h3><p>${sleagueText(x.body)}</p>${x.checked_at?`<p class="brief-meta">確認 ${esc(x.checked_at)}</p>`:''}</article>`).join('');
@@ -111,7 +166,7 @@ Promise.all([
   const surf=(d.surf_news||[]).filter(x=>x?.title||x?.body).length?(d.surf_news||[]).filter(x=>x?.title||x?.body).map(x=>`<article class="news-row"><h3>${sleagueText(x.title)}</h3><p>${sleagueText(x.body)}</p>${x.published_at?`<p class="brief-meta">発表 ${esc(x.published_at)}｜確認 ${esc(x.checked_at||'')}</p>`:''}</article>`).join(''):'<p class="empty">本日、掲載するサーフィン関連ニュースはありません。</p>';
   const safetyStatus=d.safety_status||{};
   const safety=(d.safety_news||[]).length?d.safety_news.map(x=>`<article class="news-row alert"><h3>${sleagueText(x.title)}</h3><p>${sleagueText(x.body)}</p><p><span class="label">発表時刻</span>${esc(x.published_at||'')}</p><p><span class="label">確認時刻</span>${esc(x.checked_at||'')}</p></article>`).join(''):(safetyStatus.summary&&safetyStatus.checked_at?`<p class="empty">${sleagueText(safetyStatus.summary)}（${esc(safetyStatus.checked_at)}時点）</p>`:(d._external?'<p class="empty">現在、掲載対象の安全情報はありません。</p>':'<p class="empty">安全情報は準備中です。</p>'));
-  document.querySelector('#brief').innerHTML=`<p class="brief-kicker">NAMI TEST / API + SEARCH DATA</p><h1 class="brief-title">${title}</h1><p class="brief-meta">記事生成時刻：${d.generated_at?esc(d.generated_at):'未生成'}</p>${opening}<p class="brief-lead">${d.headline?sleagueText(d.headline):'<span class="empty">朝刊見出しは未生成です。</span>'}</p><section class="brief-section"><h2>今日の関西 波ランキングTOP5</h2><div class="rank-list">${ranking}</div></section><section class="brief-section"><h2>各スポットの波情報</h2><div class="spot-list">${spots}</div></section><section class="brief-section"><h2>今日のコンペニュース</h2><div class="news-list">${comp}</div></section><section class="brief-section"><h2>サーフィン関連ニュース</h2><div class="news-list">${surf}</div></section><section class="brief-section"><h2>海の事故・安全情報</h2><div class="news-list">${safety}</div></section><section class="brief-section"><h2>今日のひとこと</h2><p>${d.closing?sleagueText(d.closing):'<span class="empty">未生成</span>'}</p></section><footer class="brief-footer">現在値・予報・ニュース・警報を分離し、未確認の現地体験や人物証言は生成しません。</footer>`;
+  document.querySelector('#brief').innerHTML=`<p class="brief-kicker">NAMI TEST / API + SEARCH DATA</p><h1 class="brief-title">${title}</h1><p class="brief-meta">記事生成時刻：${d.generated_at?esc(d.generated_at):'未生成'}</p><div class="hybrid-note">API予報とWeb検索サイズを別表示。検索1件だけでは「現在確定」にせず、90分以内の独立2ソース以上が重なった場合だけ確定します。</div>${opening}<p class="brief-lead">${d.headline?sleagueText(d.headline):'<span class="empty">朝刊見出しは未生成です。</span>'}</p><section class="brief-section"><h2>今日の関西 波ランキングTOP5</h2><div class="rank-list">${ranking}</div></section><section class="brief-section"><h2>各スポットの波情報</h2><div class="spot-list">${spots}</div></section><section class="brief-section"><h2>今日のコンペニュース</h2><div class="news-list">${comp}</div></section><section class="brief-section"><h2>サーフィン関連ニュース</h2><div class="news-list">${surf}</div></section><section class="brief-section"><h2>海の事故・安全情報</h2><div class="news-list">${safety}</div></section><section class="brief-section"><h2>今日のひとこと</h2><p>${d.closing?sleagueText(d.closing):'<span class="empty">未生成</span>'}</p></section><footer class="brief-footer">現在値・予報・ニュース・警報を分離し、未確認の現地体験や人物証言は生成しません。</footer>`;
 })
 .catch(()=>{const root=document.querySelector('#brief');if(root)root.innerHTML='<p class="alert">データを読み込めませんでした。推測値は表示しません。</p>';});
 </script>
