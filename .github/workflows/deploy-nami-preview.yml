@@ -194,7 +194,7 @@ jobs:
           assert policy.get('fresh_minutes') == 90
           assert policy.get('single_source') == 'reference_only'
           assert policy.get('source_visibility') == 'backend_only'
-          assert all(x.get('normalized_low') and x.get('normalized_high') for x in search_data['observations'])
+          assert all(x.get('normalized_low') is not None and x.get('normalized_high') is not None for x in search_data['observations'])
 
           external = json.loads(Path('/tmp/ks-preview-external.json').read_text(encoding='utf-8'))
           assert external.get('schema_version') == 'ks-morning-brief-v2'
