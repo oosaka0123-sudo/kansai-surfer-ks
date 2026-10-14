@@ -189,6 +189,12 @@ jobs:
           assert search_data.get('date') == '2026-10-14'
           assert [x.get('spot') for x in search_data.get('observations', [])] == ['磯ノ浦','伊良湖','静波']
           assert all(x.get('normalized_size') and x.get('observed_at') and x.get('source_url') for x in search_data['observations'])
+          policy = search_data.get('consensus_policy') or {}
+          assert policy.get('minimum_independent_sources') == 2
+          assert policy.get('fresh_minutes') == 90
+          assert policy.get('single_source') == 'reference_only'
+          assert policy.get('source_visibility') == 'backend_only'
+          assert all(x.get('normalized_low') and x.get('normalized_high') for x in search_data['observations'])
 
           external = json.loads(Path('/tmp/ks-preview-external.json').read_text(encoding='utf-8'))
           assert external.get('schema_version') == 'ks-morning-brief-v2'
@@ -231,8 +237,13 @@ jobs:
           text = re.sub(r'<[^>]+>', ' ', visible)
           text = re.sub(r'\s+', ' ', text)
 
-          for hidden_label in ('天気ソース','話題ソース','出典','発表元','一次情報','確認元：','公式外部ソース接続済み'):
+          for hidden_label in ('天気ソース','話題ソース','出典','発表元','一次情報','確認元：','公式外部ソース接続済み','1173life','SURFAREA','Surf life'):
               assert hidden_label not in text, hidden_label
+          assert 'API予報とWeb検索サイズを別表示' in text
+          assert '検索サイズ' in text
+          assert '現在確定' in text
+          assert '複数検索の一致待ち' in text
+          assert 'API予報' in text
           weather = candidate['opening']['osaka_weather']['current']
           assert weather in text, weather
           for item in candidate['ranking']:
