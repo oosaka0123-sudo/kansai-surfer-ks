@@ -18,9 +18,9 @@ JST=timezone(timedelta(hours=9))
 SCHEMA_VERSION="ks-current-search-v1"
 DEFAULT_INPUT=Path("prototype/ks-redesign/data/current-search-observations.json")
 SOURCES=[
-    {"spot":"磯ノ浦","url":"https://www.1173life.com/wakayama-wave-info","name":"1173life"},
-    {"spot":"伊良湖","url":"https://www.1173life.com/irako-wave-info","name":"1173life"},
-    {"spot":"静波","url":"https://www.1173life.com/shizunami-wave-info","name":"1173life"},
+    {"spot":"磯ノ浦","url":"https://www.1173life.com/wakayama-wave-info","name":"1173life","file":"isonoura.html"},
+    {"spot":"伊良湖","url":"https://www.1173life.com/irako-wave-info","name":"1173life","file":"irago.html"},
+    {"spot":"静波","url":"https://www.1173life.com/shizunami-wave-info","name":"1173life","file":"shizunami.html"},
 ]
 BODY_VALUES={"スネ":1,"ヒザ":2,"モモ":3,"腰":4,"腹":5,"胸":6,"肩":7,"頭":8}
 BODY_PATTERN=r"(?:フラット|スネ|すね|ヒザ|ひざ|膝|モモ|もも|コシ|こし|腰|ハラ|はら|腹|ムネ|むね|胸|カタ|かた|肩|アタマ|あたま|頭)(?:\s*[〜～~\-]\s*(?:スネ|すね|ヒザ|ひざ|膝|モモ|もも|コシ|こし|腰|ハラ|はら|腹|ムネ|むね|胸|カタ|かた|肩|アタマ|あたま|頭)(?:肩|胸|腹|腰|モモ|ヒザ|スネ)?)?"
@@ -100,10 +100,27 @@ def parse_observed_at(text, now):
         return candidate
     return None
 
-def parse_source(source, now):
-    text=fetch_text(source["url"])
-    marker=text.find("いまの波")
-    window=text[marker:marker+500] if marker>=0 else text[:1200]
+def rendered_text(path):
+    page=Path(path).read_text(encoding="utf-8",errors="replace")
+    p=TextParser(); p.feed(page)
+    return re.sub(r"\s+"," ",html.unescape(" ".join(p.parts)))
+
+def parse_source(source, now, source_dir=None):
+    text=None
+    if source_dir and source.get("file"):
+        path=Path(source_dir)/source["file"]
+        if path.exists() and path.stat().st_size>100:
+            text=rendered_text(path)
+    if not text:
+        text=fetch_text(source["url"])
+
+    markers=["いまの波","今の波","現在の波","現在"]
+    marker=-1
+    for token in markers:
+        marker=text.find(token)
+        if marker>=0:
+            break
+    window=text[marker:marker+900] if marker>=0 else text[:2400]
 
     size_match=re.search(BODY_PATTERN,window)
     if not size_match:
@@ -144,7 +161,7 @@ def parse_source(source, now):
         "normalized_high":high,
     }
 
-def refresh(base, now):
+def refresh(base, now, source_dir=None):
     if base.get("schema_version")!=SCHEMA_VERSION:
         raise ValueError("unexpected base schema")
     old={(x.get("spot"),x.get("source_url")):x for x in base.get("observations") or []}
@@ -153,13 +170,13 @@ def refresh(base, now):
     for src in SOURCES:
         key=(src["spot"],src["url"])
         try:
-            item=parse_source(src,now)
+            item=parse_source(src,now,source_dir=source_dir)
             observations.append(item)
             status[src["spot"]]={"ok":True,"source_url":src["url"],"observed_at":item["observed_at"]}
         except Exception as exc:
             if key in old:
                 observations.append(old[key])
-            status[src["spot"]]={"ok":False,"source_url":src["url"],"error":type(exc).__name__}
+            status[src["spot"]]={"ok":False,"source_url":src["url"],"error":type(exc).__name__,"detail":str(exc)[:160]}
 
     # Preserve observations from other independent sources (for future GPT/search enrichers).
     source_urls={s["url"] for s in SOURCES}
@@ -184,15 +201,16 @@ def main():
     p=argparse.ArgumentParser()
     p.add_argument("--input",type=Path,default=DEFAULT_INPUT)
     p.add_argument("--output",type=Path,required=True)
+    p.add_argument("--source-dir",type=Path)
     args=p.parse_args()
     base=json.loads(args.input.read_text(encoding="utf-8"))
     now=datetime.now(JST)
-    out=refresh(base,now)
+    out=refresh(base,now,source_dir=args.source_dir)
     args.output.write_text(json.dumps(out,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     ok=sum(1 for x in out["source_fetch_status"].values() if x["ok"])
     print(f"SEARCH_REFRESH_OK={ok}/{len(SOURCES)}")
     for spot,s in out["source_fetch_status"].items():
-        print(f"SOURCE[{spot}]={'OK' if s['ok'] else 'FAIL'} {s.get('observed_at') or s.get('error')}")
+        print(f"SOURCE[{spot}]={'OK' if s['ok'] else 'FAIL'} {s.get('observed_at') or s.get('error')} {s.get('detail','')}")
 
 if __name__=="__main__":
     main()
