@@ -192,3 +192,41 @@ jobs:
 
           python3 scripts/validate_morning_brief.py --mode production --file /tmp/ks-preview-external.json
           echo "nami preview HTTP verification succeeded: $SITE_URL"
+
+      - name: Verify rendered morning brief in headless Chrome
+        shell: bash
+        run: |
+          set -euo pipefail
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || true)"
+          [[ -n "$CHROME" ]] || { echo "Chrome is unavailable on runner."; exit 1; }
+          CACHE_BUST="$(date +%s)"
+          PAGE="${SITE_URL}morning-brief.html?v=${CACHE_BUST}"
+          CANDIDATE="${SITE_URL}data/morning-external-candidate.json?v=${CACHE_BUST}"
+          curl --fail --silent --show-error --location -H 'Cache-Control: no-cache' "$CANDIDATE" > /tmp/render-candidate.json
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --virtual-time-budget=8000 --dump-dom "$PAGE" > /tmp/rendered-morning.html
+
+          python3 - <<'PY'
+          import html
+          import json
+          import re
+          from pathlib import Path
+
+          candidate = json.loads(Path('/tmp/render-candidate.json').read_text(encoding='utf-8'))
+          rendered = html.unescape(Path('/tmp/rendered-morning.html').read_text(encoding='utf-8'))
+          text = re.sub(r'<[^>]+>', ' ', rendered)
+          text = re.sub(r'\s+', ' ', text)
+
+          assert '公式外部ソース接続済み' in text, text[:1000]
+          weather = candidate['opening']['osaka_weather']['current']
+          assert weather in text, weather
+          for item in candidate['ranking']:
+              assert item['spot'] in text, item
+              assert item['size'] in text, item
+          for spot in candidate['spots']:
+              assert spot['name'] in text, spot['name']
+              if spot.get('forecast'):
+                  assert spot['forecast'] in text, spot
+          print('Rendered NAMI morning DOM verification passed.')
+          print('Rendered weather:', weather)
+          print('Rendered TOP5:', [(x['rank'], x['spot'], x['size']) for x in candidate['ranking']])
+          PY
