@@ -292,6 +292,15 @@
     line-height:1.06!important;
     letter-spacing:-.035em!important;
   }
+  .hero-video-ks .hero-title .green{
+    display:block;
+    width:max-content;
+    max-width:100%;
+    white-space:nowrap;
+    font-size:clamp(1.86rem,7.65vw,2.6rem);
+    letter-spacing:-.05em!important;
+    line-height:1.02!important;
+  }
   .hero-video-ks .hero-lead{
     max-width:34rem!important;
     font-size:.87rem!important;
@@ -321,7 +330,7 @@
   .hamburger{width:38px!important}
   .hero-video-content{top:45%;padding:0 15px!important}
   .hero-video-ks .hero-title{font-size:clamp(2.12rem,10vw,2.9rem)!important}
-  .hero-video-ks .hero-title .green{font-size:.92em;letter-spacing:-.045em!important}
+  .hero-video-ks .hero-title .green{font-size:clamp(1.72rem,8.1vw,2.05rem);letter-spacing:-.055em!important}
   .hero-video-ks .hero-lead{font-size:.83rem!important;line-height:1.64!important}
   .hero-scroll{left:15px!important}
 }
