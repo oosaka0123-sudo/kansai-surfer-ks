@@ -72,7 +72,7 @@ const applySearchObservations=(data,searchData)=>{
   if(!searchData||searchData.schema_version!=='ks-current-search-v1'||searchData.verified!==true||searchData.date!==data.date){
     return {...data,_searchCount:0};
   }
-  const checked=Date.parse(searchData.checked_at||'');
+  const checked=Date.now();
   const maxAge=Math.max(1,Number(searchData.freshness_minutes)||180)*60000;
   const fresh=(searchData.observations||[]).filter(x=>{
     const observed=Date.parse(x?.observed_at||'');
