@@ -71,6 +71,8 @@ jobs:
             || { echo "Missing $SOURCE_DIR/isonoura.html"; exit 1; }
           test -f "$SOURCE_DIR/styles.css" \
             || { echo "Missing $SOURCE_DIR/styles.css"; exit 1; }
+          test -f "$SOURCE_DIR/data/current-search-observations.json" \
+            || { echo "Missing $SOURCE_DIR/data/current-search-observations.json"; exit 1; }
 
           echo "Preview source and target validation passed."
 
@@ -152,6 +154,7 @@ jobs:
           curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "${SITE_URL}data/morning-brief.json" > /tmp/ks-preview-morning.json
           CACHE_BUST="$(date +%s)"
           curl --fail --silent --show-error --location --retry 5 --retry-delay 3 -H 'Cache-Control: no-cache' "${SITE_URL}data/morning-external-candidate.json?v=${CACHE_BUST}" > /tmp/ks-preview-external.json
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 -H 'Cache-Control: no-cache' "${SITE_URL}data/current-search-observations.json?v=${CACHE_BUST}" > /tmp/ks-preview-search.json
 
           grep -qi '<html' /tmp/ks-preview-index.html
           grep -qi '<html' /tmp/ks-preview-isonoura.html
@@ -161,6 +164,7 @@ jobs:
           grep -q 'https://sleague.rss7.net/' /tmp/ks-preview-morning.html
           grep -q 'MORNING BRIEF v2' /tmp/ks-preview-morning.html
           grep -q 'morning-external-candidate.json' /tmp/ks-preview-morning.html
+          grep -q 'current-search-observations.json' /tmp/ks-preview-morning.html
 
           python - <<'PY'
           import json
@@ -178,6 +182,13 @@ jobs:
           fallback_kinds = {x.get('kind') for x in data.get('competition_fallback', [])}
           for required in {'monthly_schedule', 'sleague_top3', 'kanoa_ranking'}:
               assert required in fallback_kinds, f'missing fallback kind: {required}'
+
+          search_data = json.loads(Path('/tmp/ks-preview-search.json').read_text(encoding='utf-8'))
+          assert search_data.get('schema_version') == 'ks-current-search-v1'
+          assert search_data.get('verified') is True
+          assert search_data.get('date') == '2026-10-14'
+          assert [x.get('spot') for x in search_data.get('observations', [])] == ['磯ノ浦','伊良湖','静波']
+          assert all(x.get('normalized_size') and x.get('observed_at') and x.get('source_url') for x in search_data['observations'])
 
           external = json.loads(Path('/tmp/ks-preview-external.json').read_text(encoding='utf-8'))
           assert external.get('schema_version') == 'ks-morning-brief-v2'
@@ -202,7 +213,9 @@ jobs:
           CACHE_BUST="$(date +%s)"
           PAGE="${SITE_URL}morning-brief.html?v=${CACHE_BUST}"
           CANDIDATE="${SITE_URL}data/morning-external-candidate.json?v=${CACHE_BUST}"
+          SEARCH_DATA="${SITE_URL}data/current-search-observations.json?v=${CACHE_BUST}"
           curl --fail --silent --show-error --location -H 'Cache-Control: no-cache' "$CANDIDATE" > /tmp/render-candidate.json
+          curl --fail --silent --show-error --location -H 'Cache-Control: no-cache' "$SEARCH_DATA" > /tmp/render-search.json
           "$CHROME" --headless=new --no-sandbox --disable-gpu --virtual-time-budget=8000 --dump-dom "$PAGE" > /tmp/rendered-morning.html
 
           python3 - <<'PY'
@@ -212,6 +225,7 @@ jobs:
           from pathlib import Path
 
           candidate = json.loads(Path('/tmp/render-candidate.json').read_text(encoding='utf-8'))
+          search_data = json.loads(Path('/tmp/render-search.json').read_text(encoding='utf-8'))
           rendered = html.unescape(Path('/tmp/rendered-morning.html').read_text(encoding='utf-8'))
           visible = re.sub(r'(?is)<(script|style)[^>]*>.*?</\1>', ' ', rendered)
           text = re.sub(r'<[^>]+>', ' ', visible)
@@ -228,6 +242,10 @@ jobs:
               assert spot['name'] in text, spot['name']
               if spot.get('forecast'):
                   assert spot['forecast'] in text, spot
+          for obs in search_data['observations']:
+              assert obs['normalized_size'] in text, obs
+          assert '1173life.com' not in text
+          assert 'API + SEARCH DATA' in text
           print('Rendered NAMI morning DOM verification passed.')
           print('Rendered weather:', weather)
           print('Rendered TOP5:', [(x['rank'], x['spot'], x['size']) for x in candidate['ranking']])
