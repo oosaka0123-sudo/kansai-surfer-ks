@@ -24,6 +24,27 @@ SLEAGUE_SCHEDULE_URL = "https://sleague.jp/schedule/"
 JMA_EXTRA_FEED = "https://www.data.jma.go.jp/developer/xml/feed/extra.xml"
 JMA_EQVOL_FEED = "https://www.data.jma.go.jp/developer/xml/feed/eqvol.xml"
 JCG_RSS_URL = "https://www6.kaiho.mlit.go.jp/rss.xml"
+OPEN_METEO_OSAKA_URL = (
+    "https://api.open-meteo.com/v1/forecast"
+    "?latitude=34.6937&longitude=135.5023"
+    "&current=temperature_2m,weather_code,wind_speed_10m,wind_direction_10m"
+    "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max"
+    "&timezone=Asia%2FTokyo&forecast_days=1"
+)
+OPEN_METEO_SOURCE = "https://open-meteo.com/"
+PROD_SPOT_BASE = "https://kansai.rss7.net/data"
+SPOT_CONFIGS = [
+    {"key":"isonoura","name":"磯ノ浦","offshore_start":340,"offshore_end":60,"swell_min":150,"swell_max":240},
+    {"key":"kounohama","name":"国府の浜","offshore_start":240,"offshore_end":300,"swell_min":60,"swell_max":150},
+    {"key":"ikumi","name":"生見","offshore_start":240,"offshore_end":300,"swell_min":60,"swell_max":150},
+    {"key":"komatsu","name":"小松海岸","offshore_start":0,"offshore_end":90,"swell_min":180,"swell_max":270},
+    {"key":"irago","name":"伊良湖","offshore_start":270,"offshore_end":30,"swell_min":90,"swell_max":200},
+    {"key":"shizunami","name":"静波","offshore_start":270,"offshore_end":50,"swell_min":150,"swell_max":220},
+    {"key":"hamadutu","name":"浜詰","offshore_start":120,"offshore_end":200,"swell_min":280,"swell_max":360},
+    {"key":"takahama","name":"高浜","offshore_start":120,"offshore_end":200,"swell_min":270,"swell_max":360},
+    {"key":"hakuto","name":"白兎","offshore_start":120,"offshore_end":200,"swell_min":270,"swell_max":360},
+]
+DIRS_JP = ["北","北北東","北東","東北東","東","東南東","南東","南南東","南","南南西","南西","西南西","西","西北西","北西","北北西"]
 
 SPOTS = ["磯ノ浦","国府の浜","生見","小松海岸","伊良湖","静波","浜詰","高浜","白兎"]
 REGION_WORDS = [
