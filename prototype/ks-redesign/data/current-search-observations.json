@@ -1,0 +1,40 @@
+{
+  "schema_version": "ks-current-search-v1",
+  "verified": true,
+  "preview": true,
+  "date": "2026-10-14",
+  "checked_at": "2026-10-14T11:51:00+09:00",
+  "freshness_minutes": 180,
+  "observations": [
+    {
+      "spot": "磯ノ浦",
+      "raw_size": "ひざ〜もも",
+      "normalized_size": "ヒザ〜モモ",
+      "wave_m": 0.42,
+      "wind": "北西 8.3m/s",
+      "observed_at": "2026-10-14T10:00:00+09:00",
+      "source_url": "https://www.1173life.com/wakayama-wave-info",
+      "source_checked_at": "2026-10-14T11:51:00+09:00"
+    },
+    {
+      "spot": "伊良湖",
+      "raw_size": "腰〜胸肩",
+      "normalized_size": "腰〜胸肩",
+      "wave_m": 0.9,
+      "wind": "西 4.3m/s",
+      "observed_at": "2026-10-14T10:00:00+09:00",
+      "source_url": "https://www.1173life.com/irako-wave-info",
+      "source_checked_at": "2026-10-14T11:51:00+09:00"
+    },
+    {
+      "spot": "静波",
+      "raw_size": "腰〜胸肩",
+      "normalized_size": "腰〜胸肩",
+      "wave_m": 0.93,
+      "wind": "西 4.2m/s",
+      "observed_at": "2026-10-14T10:00:00+09:00",
+      "source_url": "https://www.1173life.com/shizunami-wave-info",
+      "source_checked_at": "2026-10-14T11:51:00+09:00"
+    }
+  ]
+}

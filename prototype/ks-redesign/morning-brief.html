@@ -68,12 +68,31 @@ const mergeExternal=(base,external)=>{
     _external_checked_at:external.collection_meta?.checked_at||external.generated_at||null
   };
 };
+const applySearchObservations=(data,searchData)=>{
+  if(!searchData||searchData.schema_version!=='ks-current-search-v1'||searchData.verified!==true||searchData.date!==data.date){
+    return {...data,_searchCount:0};
+  }
+  const checked=Date.now();
+  const maxAge=Math.max(1,Number(searchData.freshness_minutes)||180)*60000;
+  const fresh=(searchData.observations||[]).filter(x=>{
+    const observed=Date.parse(x?.observed_at||'');
+    return x?.spot&&x?.normalized_size&&Number.isFinite(checked)&&Number.isFinite(observed)&&checked>=observed&&(checked-observed)<=maxAge;
+  });
+  const map=new Map(fresh.map(x=>[x.spot,x]));
+  const spots=(data.spots||[]).map(x=>{
+    const o=map.get(x.name);
+    if(!o)return x;
+    return {...x,current:o.normalized_size,current_at:o.observed_at,wind_current:o.wind||null,wind_current_at:o.observed_at,current_basis:'search'};
+  });
+  return {...data,spots,headline:fresh.length?(String(fresh.length)+'スポットは検索確認済みの現在サイズ、残りはAPI予報を表示しています。'):data.headline,_searchCount:fresh.length,_searchCheckedAt:searchData.checked_at||null};
+};
 Promise.all([
   fetchJson('data/morning-brief.json',true),
-  fetchJson('data/morning-external-candidate.json',false)
+  fetchJson('data/morning-external-candidate.json',false),
+  fetchJson('data/current-search-observations.json',false)
 ])
-.then(([base,external])=>{
-  const d=mergeExternal(base,external);
+.then(([base,external,searchData])=>{
+  const d=applySearchObservations(mergeExternal(base,external),searchData);
   const dateText=d.date?esc(String(d.date).replaceAll('-','/')):'日付未設定';
   const title=`${dateText}（${esc(d.weekday||'')}）関西サーフィン波情報`;
   const o=d.opening||{}, weather=o.osaka_weather||{}, topic=o.topic||{};
@@ -92,7 +111,7 @@ Promise.all([
   const surf=(d.surf_news||[]).filter(x=>x?.title||x?.body).length?(d.surf_news||[]).filter(x=>x?.title||x?.body).map(x=>`<article class="news-row"><h3>${sleagueText(x.title)}</h3><p>${sleagueText(x.body)}</p>${x.published_at?`<p class="brief-meta">発表 ${esc(x.published_at)}｜確認 ${esc(x.checked_at||'')}</p>`:''}</article>`).join(''):'<p class="empty">本日、掲載するサーフィン関連ニュースはありません。</p>';
   const safetyStatus=d.safety_status||{};
   const safety=(d.safety_news||[]).length?d.safety_news.map(x=>`<article class="news-row alert"><h3>${sleagueText(x.title)}</h3><p>${sleagueText(x.body)}</p><p><span class="label">発表時刻</span>${esc(x.published_at||'')}</p><p><span class="label">確認時刻</span>${esc(x.checked_at||'')}</p></article>`).join(''):(safetyStatus.summary&&safetyStatus.checked_at?`<p class="empty">${sleagueText(safetyStatus.summary)}（${esc(safetyStatus.checked_at)}時点）</p>`:(d._external?'<p class="empty">現在、掲載対象の安全情報はありません。</p>':'<p class="empty">安全情報は準備中です。</p>'));
-  document.querySelector('#brief').innerHTML=`<p class="brief-kicker">NAMI TEST / MORNING BRIEF v2</p><h1 class="brief-title">${title}</h1><p class="brief-meta">記事生成時刻：${d.generated_at?esc(d.generated_at):'未生成'}</p>${opening}<p class="brief-lead">${d.headline?sleagueText(d.headline):'<span class="empty">朝刊見出しは未生成です。</span>'}</p><section class="brief-section"><h2>今日の関西 波ランキングTOP5</h2><div class="rank-list">${ranking}</div></section><section class="brief-section"><h2>各スポットの波情報</h2><div class="spot-list">${spots}</div></section><section class="brief-section"><h2>今日のコンペニュース</h2><div class="news-list">${comp}</div></section><section class="brief-section"><h2>サーフィン関連ニュース</h2><div class="news-list">${surf}</div></section><section class="brief-section"><h2>海の事故・安全情報</h2><div class="news-list">${safety}</div></section><section class="brief-section"><h2>今日のひとこと</h2><p>${d.closing?sleagueText(d.closing):'<span class="empty">未生成</span>'}</p></section><footer class="brief-footer">現在値・予報・ニュース・警報を分離し、未確認の現地体験や人物証言は生成しません。</footer>`;
+  document.querySelector('#brief').innerHTML=`<p class="brief-kicker">NAMI TEST / API + SEARCH DATA</p><h1 class="brief-title">${title}</h1><p class="brief-meta">記事生成時刻：${d.generated_at?esc(d.generated_at):'未生成'}</p>${opening}<p class="brief-lead">${d.headline?sleagueText(d.headline):'<span class="empty">朝刊見出しは未生成です。</span>'}</p><section class="brief-section"><h2>今日の関西 波ランキングTOP5</h2><div class="rank-list">${ranking}</div></section><section class="brief-section"><h2>各スポットの波情報</h2><div class="spot-list">${spots}</div></section><section class="brief-section"><h2>今日のコンペニュース</h2><div class="news-list">${comp}</div></section><section class="brief-section"><h2>サーフィン関連ニュース</h2><div class="news-list">${surf}</div></section><section class="brief-section"><h2>海の事故・安全情報</h2><div class="news-list">${safety}</div></section><section class="brief-section"><h2>今日のひとこと</h2><p>${d.closing?sleagueText(d.closing):'<span class="empty">未生成</span>'}</p></section><footer class="brief-footer">現在値・予報・ニュース・警報を分離し、未確認の現地体験や人物証言は生成しません。</footer>`;
 })
 .catch(()=>{const root=document.querySelector('#brief');if(root)root.innerHTML='<p class="alert">データを読み込めませんでした。推測値は表示しません。</p>';});
 </script>
