@@ -58,11 +58,25 @@ jobs:
             echo "Using repository bootstrap search data."
           fi
 
+      - name: Render allowlisted public wave pages
+        shell: bash
+        run: |
+          set -euo pipefail
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || true)"
+          [[ -n "$CHROME" ]] || { echo "Chrome is unavailable on runner."; exit 1; }
+          mkdir -p /tmp/rendered-wave-sources
+
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --virtual-time-budget=8000 --dump-dom             "https://www.1173life.com/wakayama-wave-info" > /tmp/rendered-wave-sources/isonoura.html || true
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --virtual-time-budget=8000 --dump-dom             "https://www.1173life.com/irako-wave-info" > /tmp/rendered-wave-sources/irago.html || true
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --virtual-time-budget=8000 --dump-dom             "https://www.1173life.com/shizunami-wave-info" > /tmp/rendered-wave-sources/shizunami.html || true
+
+          ls -lh /tmp/rendered-wave-sources
+
       - name: Refresh allowlisted public wave pages
         shell: bash
         run: |
           set -euo pipefail
-          python3 scripts/refresh_nami_search_wave.py             --input /tmp/base-search.json             --output /tmp/current-search-observations.json
+          python3 scripts/refresh_nami_search_wave.py             --input /tmp/base-search.json             --source-dir /tmp/rendered-wave-sources             --output /tmp/current-search-observations.json
 
       - name: Validate refreshed search data
         shell: bash
