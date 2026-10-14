@@ -150,6 +150,7 @@ jobs:
           curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "${SITE_URL}isonoura.html" > /tmp/ks-preview-isonoura.html
           curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "${SITE_URL}morning-brief.html" > /tmp/ks-preview-morning.html
           curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "${SITE_URL}data/morning-brief.json" > /tmp/ks-preview-morning.json
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "${SITE_URL}data/morning-external-candidate.json" > /tmp/ks-preview-external.json
 
           grep -qi '<html' /tmp/ks-preview-index.html
           grep -qi '<html' /tmp/ks-preview-isonoura.html
@@ -177,7 +178,16 @@ jobs:
           for required in {'monthly_schedule', 'sleague_top3', 'kanoa_ranking'}:
               assert required in fallback_kinds, f'missing fallback kind: {required}'
 
+          external = json.loads(Path('/tmp/ks-preview-external.json').read_text(encoding='utf-8'))
+          assert external.get('schema_version') == 'ks-morning-brief-v2'
+          assert external.get('verified') is True and external.get('preview') is False
+          assert (external.get('opening') or {}).get('osaka_weather', {}).get('current')
+          assert len(external.get('ranking') or []) == 5
+          assert all(x.get('basis') == 'forecast' for x in external.get('ranking', []))
+          assert sum(1 for x in external.get('spots', []) if x.get('forecast')) == 9
           print('Morning brief public JSON verification passed.')
+          print('Live TOP5:', [(x['rank'], x['spot'], x['size']) for x in external['ranking']])
           PY
 
+          python3 scripts/validate_morning_brief.py --mode production --file /tmp/ks-preview-external.json
           echo "nami preview HTTP verification succeeded: $SITE_URL"
