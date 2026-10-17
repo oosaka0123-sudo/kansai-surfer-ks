@@ -10,6 +10,7 @@ on:
       - 'prototype/ks-redesign/data/morning-brief.json'
       - 'prototype/ks-redesign/data/current-search-observations.json'
       - 'scripts/validate_morning_brief.py'
+      - 'scripts/test_surfmedia_news_collector.py'
       - 'scripts/refresh_nami_search_wave.py'
       - 'scripts/test_refresh_nami_search_wave.py'
       - '.github/workflows/refresh-nami-search-wave.yml'
@@ -21,6 +22,7 @@ on:
       - 'prototype/ks-redesign/data/morning-brief.json'
       - 'prototype/ks-redesign/data/current-search-observations.json'
       - 'scripts/validate_morning_brief.py'
+      - 'scripts/test_surfmedia_news_collector.py'
       - 'scripts/refresh_nami_search_wave.py'
       - 'scripts/test_refresh_nami_search_wave.py'
       - '.github/workflows/refresh-nami-search-wave.yml'
@@ -42,6 +44,8 @@ jobs:
           python3 scripts/validate_morning_brief.py --self-test
       - name: Test hourly NAMI search refresh parser
         run: python3 scripts/test_refresh_nami_search_wave.py
+      - name: Test SURFMEDIA competition collector
+        run: python3 scripts/test_surfmedia_news_collector.py
       - name: Validate search-consensus data policy
         run: |
           python3 - <<'PY'

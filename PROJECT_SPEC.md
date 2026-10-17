@@ -199,6 +199,13 @@ The morning blog is being redesigned as a short, fact-grounded surf morning edit
 
 Normal days should remain concise. Major typhoon, earthquake, tsunami, high-wave, marine-accident, or surfer-accident information may exceed the normal length because safety has priority.
 
+### Surf competition news collection
+- NAMI morning context monitors the public SURFMEDIA RSS feed for fresh competition news.
+- Prefer fresh items involving 五十嵐カノア / コナー・オレアリー, WSL/CT, ISA, and other meaningful competition results.
+- Fresh competition news takes priority over routine S.LEAGUE / Kanoa fallback items.
+- Keep the source URL and checked/published timestamps in backend metadata, but do not render reference-source labels or URLs in the reader-facing morning article.
+- The collector stays fail-closed: stale, malformed, or non-competition feed items must not be promoted into the competition section.
+
 ### Competition news fallback
 - Prefer real current competition developments first: WSL, S.LEAGUE, domestic and international events.
 - When there is no meaningful new competition story, use one or two useful fallback items such as the current month's event schedule, S.LEAGUE Top 3, KS-supported Kanoa Igarashi's current WSL ranking, or his next event.
