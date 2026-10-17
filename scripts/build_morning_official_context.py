@@ -558,16 +558,23 @@ def parse_surfmedia_feed(raw):
 
 def surfmedia_competition_score(entry):
     blob = " ".join([entry.get("title") or "", " ".join(entry.get("categories") or [])])
+    categories = entry.get("categories") or []
+    has_event_signal = any(word in blob for word in SURFMEDIA_COMPETITION_KEYWORDS)
+    has_result_signal = any(word in blob for word in SURFMEDIA_RESULT_KEYWORDS)
+    has_competition_category = any(cat in ("WSL MENS CT", "WSL WOMENS CT", "COMPETITION") for cat in categories)
+    if not (has_event_signal or has_result_signal or has_competition_category):
+        return 0
+
     score = 0
     if "五十嵐カノア" in blob:
         score += 120
     if "コナー・オレアリー" in blob:
         score += 100
-    if any(word in blob for word in SURFMEDIA_COMPETITION_KEYWORDS):
+    if has_event_signal:
         score += 60
-    if any(word in blob for word in SURFMEDIA_RESULT_KEYWORDS):
+    if has_result_signal:
         score += 30
-    if any(cat in ("WSL MENS CT", "WSL WOMENS CT", "COMPETITION") for cat in entry.get("categories") or []):
+    if has_competition_category:
         score += 30
     return score
 
