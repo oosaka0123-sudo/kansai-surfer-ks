@@ -13,6 +13,7 @@ on:
       - 'scripts/test_surfmedia_news_collector.py'
       - 'scripts/refresh_nami_search_wave.py'
       - 'scripts/test_refresh_nami_search_wave.py'
+      - 'scripts/test_bcm_midpoint_policy.py'
       - '.github/workflows/refresh-nami-search-wave.yml'
       - '.github/workflows/validate-morning-brief.yml'
   pull_request:
@@ -25,6 +26,7 @@ on:
       - 'scripts/test_surfmedia_news_collector.py'
       - 'scripts/refresh_nami_search_wave.py'
       - 'scripts/test_refresh_nami_search_wave.py'
+      - 'scripts/test_bcm_midpoint_policy.py'
       - '.github/workflows/refresh-nami-search-wave.yml'
       - '.github/workflows/validate-morning-brief.yml'
   workflow_dispatch:
@@ -46,6 +48,8 @@ jobs:
         run: python3 scripts/test_refresh_nami_search_wave.py
       - name: Test SURFMEDIA competition collector
         run: python3 scripts/test_surfmedia_news_collector.py
+      - name: Test BCM + KS midpoint policy
+        run: python3 scripts/test_bcm_midpoint_policy.py
       - name: Validate search-consensus data policy
         run: |
           python3 - <<'PY'
@@ -60,6 +64,12 @@ jobs:
           assert policy['minimum_independent_sources']>=2
           assert policy['single_source']=='reference_only'
           assert policy['source_visibility']=='backend_only'
+          midpoint=policy['reference_midpoint']
+          assert midpoint['enabled'] is True
+          assert midpoint['method']=='50_50_midpoint'
+          assert midpoint['fresh_minutes']==90
+          assert midpoint['output']=='reference_estimate_only'
+          assert midpoint['current_confirmation']=='unchanged'
           for x in data['observations']:
               assert x['source_url'].startswith('https://')
               assert x['normalized_low']<=x['normalized_high']
@@ -88,3 +98,5 @@ jobs:
           grep -q '安全情報は準備中です' prototype/ks-redesign/morning-brief.html
           grep -q 'API予報とWeb検索サイズを別表示' prototype/ks-redesign/morning-brief.html
           grep -q 'minimum_independent_sources' prototype/ks-redesign/data/current-search-observations.json
+          grep -q 'BCM＋KS参考の中間値' prototype/ks-redesign/morning-brief.html
+          grep -q '"method": "50_50_midpoint"' prototype/ks-redesign/data/current-search-observations.json
