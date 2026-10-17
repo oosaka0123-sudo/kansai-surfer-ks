@@ -171,6 +171,13 @@ def parse_source(source, now, source_dir=None):
         "normalized_high":high,
     }
 
+def canonical_consensus_policy():
+    fixture=json.loads(DEFAULT_INPUT.read_text(encoding="utf-8"))
+    policy=fixture.get("consensus_policy")
+    if not isinstance(policy,dict):
+        raise ValueError("canonical consensus policy missing")
+    return policy
+
 def refresh(base, now, source_dir=None):
     if base.get("schema_version")!=SCHEMA_VERSION:
         raise ValueError("unexpected base schema")
@@ -196,6 +203,7 @@ def refresh(base, now, source_dir=None):
 
     observations.sort(key=lambda x:(x.get("spot") or "",x.get("source_url") or ""))
     out=dict(base)
+    out["consensus_policy"]=canonical_consensus_policy()
     out.update({
         "verified":True,
         "preview":True,
