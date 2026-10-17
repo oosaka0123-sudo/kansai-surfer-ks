@@ -58,6 +58,15 @@
     "minimum_independent_sources": 2,
     "rule": "fresh/aging observations from at least two independent sources must overlap after body-size normalization before current is confirmed",
     "single_source": "reference_only",
-    "source_visibility": "backend_only"
+    "source_visibility": "backend_only",
+    "reference_midpoint": {
+      "enabled": true,
+      "method": "50_50_midpoint",
+      "bcm_role": "approx_reference",
+      "ks_role": "freshest_non_bcm_search_reference",
+      "fresh_minutes": 90,
+      "output": "reference_estimate_only",
+      "current_confirmation": "unchanged"
+    }
   }
 }

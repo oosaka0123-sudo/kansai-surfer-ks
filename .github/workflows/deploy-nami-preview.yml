@@ -194,6 +194,11 @@ jobs:
           assert policy.get('fresh_minutes') == 90
           assert policy.get('single_source') == 'reference_only'
           assert policy.get('source_visibility') == 'backend_only'
+          midpoint = policy.get('reference_midpoint') or {}
+          assert midpoint.get('enabled') is True
+          assert midpoint.get('method') == '50_50_midpoint'
+          assert midpoint.get('fresh_minutes') == 90
+          assert midpoint.get('output') == 'reference_estimate_only'
           assert all(x.get('normalized_low') is not None and x.get('normalized_high') is not None for x in search_data['observations'])
 
           external = json.loads(Path('/tmp/ks-preview-external.json').read_text(encoding='utf-8'))
