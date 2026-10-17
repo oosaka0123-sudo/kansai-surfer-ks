@@ -188,6 +188,15 @@ The morning blog is being redesigned as a short, fact-grounded surf morning edit
 - Use a friendly, popular-host tone, but never fabricate personal observation, friend reports, or lived experience.
 - Weather and current-affairs facts must be sourced/verified before publication.
 
+### Morning brief editorial UI
+- NAMI morning brief should read like a surf-media morning blog, not a developer dashboard.
+- Use an editorial paper layout with strong masthead/date, human opening, clear TOP5, compact nine-spot entries, article-style news, safety block, closing comment, and a small expandable data-method note.
+- Keep technical labels secondary. `現在確定`, `検索参考`, `API予報`, and `API風` may remain as compact labels so semantics are never lost.
+- Do not put `NAMI TEST / API + SEARCH DATA` or long collection-method text in the first-view reading flow; keep it in the expandable data-method note.
+- Prefer light/off-white paper colors with deep ocean ink/accent for morning readability while keeping the KS dark global header.
+- Reduce generic rounded-card repetition; use typography, whitespace, and thin rules for editorial rhythm.
+- The redesign is presentation-only: factual values, timestamps, current-vs-forecast meaning, source hiding rules, and S.LEAGUE body links must remain unchanged.
+
 ### Standard article order
 1. Human opening by Kiyama.
 2. `今日の関西 波ランキングTOP5`.
