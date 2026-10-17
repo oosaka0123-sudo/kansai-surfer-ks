@@ -61,7 +61,7 @@
     .sleague-link,.source-link{color:var(--sea-deep);text-decoration:underline;text-underline-offset:3px}
     .empty{color:#8c9699}
     .search-ref{color:#a26b21;font-weight:700}
-    .search-confirmed{color:var(--sea-deep);font-weight:800}
+    .search-confirmed{color:var(--sea-deep);font-weight:800}.reference-estimate{color:#7a5b16;font-weight:800}
     .method-note{margin:34px 0 8px;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:16px 0;color:var(--muted);font-size:.82rem;line-height:1.7}
     .method-note summary{cursor:pointer;font-weight:800;color:#4d5e65}
     .method-note p{margin:10px 0 0}
@@ -135,9 +135,34 @@ const mergeExternal=(base,external)=>{
 const bodyLabel={1:'スネ',2:'ヒザ',3:'モモ',4:'腰',5:'腹',6:'胸',7:'肩',8:'頭'};
 const overlapLabel=(low,high)=>low===high?`${bodyLabel[low]||'?'}前後`:`${bodyLabel[low]||'?'}〜${bodyLabel[high]||'?'}`;
 const sourceKey=o=>{try{return new URL(String(o?.source_url||'')).hostname.replace(/^www\./,'')}catch{return String(o?.source_url||'')}};
+const isBcmObservation=o=>/^(?:www\.)?bcm-surfpatrol\.com$/i.test(String(o?._sourceKey||''))||/^BCM$/i.test(String(o?.source_name||'').trim());
+const rangeCenter=o=>(Number(o?.normalized_low)+Number(o?.normalized_high))/2;
+const midpointBodyLabel=value=>{
+  const v=Math.max(1,Math.min(8,Math.round(Number(value)*2)/2));
+  if(Number.isInteger(v))return `${bodyLabel[v]||'?'}前後`;
+  const low=Math.floor(v),high=Math.ceil(v);
+  return `${bodyLabel[low]||'?'}〜${bodyLabel[high]||'?'}`;
+};
+const buildBcmKsMidpoint=(rows,policy)=>{
+  const cfg=policy?.reference_midpoint||{};
+  if(cfg.enabled!==true||cfg.method!=='50_50_midpoint')return null;
+  const freshLimit=Math.max(1,Number(cfg.fresh_minutes)||90);
+  const fresh=rows.filter(o=>o._age!==null&&o._age<=freshLimit&&Number.isFinite(Number(o.normalized_low))&&Number.isFinite(Number(o.normalized_high)));
+  const bcm=fresh.find(isBcmObservation);
+  const ks=fresh.find(o=>!isBcmObservation(o));
+  if(!bcm||!ks)return null;
+  const value=(rangeCenter(bcm)+rangeCenter(ks))/2;
+  return {
+    label:midpointBodyLabel(value),
+    value,
+    observed_at:[bcm.observed_at,ks.observed_at].sort().at(-1),
+    basis:'bcm_plus_ks_midpoint',
+    approximate:true
+  };
+};
 const applySearchObservations=(data,searchData)=>{
   if(!searchData||searchData.schema_version!=='ks-current-search-v1'||searchData.verified!==true||searchData.date!==data.date){
-    return {...data,_searchReferenceCount:0,_searchConfirmedCount:0};
+    return {...data,_searchReferenceCount:0,_searchConfirmedCount:0,_referenceEstimateCount:0};
   }
   const now=Date.now();
   const policy=searchData.consensus_policy||{};
@@ -157,7 +182,7 @@ const applySearchObservations=(data,searchData)=>{
     bySpot.get(o.spot).push(o);
   }
 
-  let referenceCount=0, confirmedCount=0;
+  let referenceCount=0, confirmedCount=0, referenceEstimateCount=0;
   const spots=(data.spots||[]).map(spot=>{
     const rows=(bySpot.get(spot.name)||[]).sort((a,b)=>Date.parse(b.observed_at)-Date.parse(a.observed_at));
     // NAMI is a staging/data-preview surface: keep the latest valid search
@@ -186,7 +211,9 @@ const applySearchObservations=(data,searchData)=>{
         };
       }
     }
+    const referenceEstimate=buildBcmKsMidpoint(rows,policy);
     if(consensus)confirmedCount++;
+    if(referenceEstimate)referenceEstimateCount++;
     return {
       ...spot,
       ...(consensus?{current:consensus.label,current_at:consensus.observed_at,current_basis:'search_consensus'}:{}),
@@ -197,12 +224,13 @@ const applySearchObservations=(data,searchData)=>{
         age_minutes:Math.round(latest._age),
         wind:latest.wind||null
       }:null,
-      search_consensus:consensus
+      search_consensus:consensus,
+      reference_estimate:referenceEstimate
     };
   });
 
-  const hybridSummary=`検索参考 ${referenceCount}スポット、複数ソース一致の現在確定 ${confirmedCount}スポット。`;
-  return {...data,spots,_hybridSummary:hybridSummary,_searchReferenceCount:referenceCount,_searchConfirmedCount:confirmedCount,_searchCheckedAt:searchData.checked_at||null};
+  const hybridSummary=`検索参考 ${referenceCount}スポット、BCM＋KS中間の参考推定 ${referenceEstimateCount}スポット、複数ソース一致の現在確定 ${confirmedCount}スポット。`;
+  return {...data,spots,_hybridSummary:hybridSummary,_searchReferenceCount:referenceCount,_searchConfirmedCount:confirmedCount,_referenceEstimateCount:referenceEstimateCount,_searchCheckedAt:searchData.checked_at||null};
 };
 Promise.all([
   fetchJson('data/morning-brief.json',true),
@@ -219,13 +247,14 @@ Promise.all([
   const opening=`<section class="opening-story"><p class="opening-greeting">${esc(o.greeting||'おはようございます、木山です。')}</p><p class="opening-weather">${weather.current?sleagueText(weather.current):'<span class="empty">大阪の現在天気は未接続です。</span>'}</p>${weather.forecast?`<p class="opening-weather">${sleagueText(weather.forecast)}</p>`:''}${weatherMeta?`<p class="opening-meta">${weatherMeta}</p>`:''}<p class="opening-topic">${topic.text?sleagueText(topic.text):'<span class="empty">今日の時事・季節ネタは未接続です。</span>'}</p>${topicMeta?`<p class="opening-meta">${topicMeta}</p>`:''}<p class="opening-transition">${sleagueText(o.transition||'では今日の波を見ていきましょう。')}</p></section>`;
   const ranking=(d.ranking||[]).length?d.ranking.slice(0,5).map(x=>`<article class="rank-row"><div class="rank-main"><span class="rank-no">${esc(x.rank)}位</span><strong class="rank-spot">${esc(x.spot)}</strong><span class="rank-size">${valueOrEmpty(x.size,'サイズなし')}</span></div><div class="rank-sub"><span>${valueOrEmpty(x.wind,'風なし')}</span><span>${valueOrEmpty(x.note,'コメントなし')}</span>${x.basis?`<span class="basis-badge">${x.basis==='current'?'現在':'予報'}</span>`:''}</div></article>`).join(''):'<p class="empty">ランキングデータ未接続。推測値は表示しません。</p>';
   const spots=(d.spots||[]).map(x=>{
-    const ref=x.search_reference||null, consensus=x.search_consensus||null;
+    const ref=x.search_reference||null, consensus=x.search_consensus||null, estimate=x.reference_estimate||null;
     const searchSize=consensus
       ?`<span class="search-confirmed">${esc(consensus.label)}</span> <small>複数検索一致</small>`
       :ref
         ?`<span class="search-ref">${esc(ref.size)}</span> <small>${ref.freshness==='fresh'?'新着参考':ref.freshness==='aging'?'時間経過・参考':'古い参考'} / ${esc(ref.observed_at||'')}</small>`
         :'<span class="empty">検索サイズ未取得</span>';
-    return `<article class="spot-row"><div class="spot-head"><h3>${esc(x.name)}</h3></div><p class="spot-now"><span class="mini-label">現在確定</span><strong>${valueOrEmpty(x.current,'複数検索の一致待ち')}</strong>${x.current_at?`<small>${esc(x.current_at)}</small>`:''}</p><p class="spot-reference"><span class="mini-label">検索参考</span> ${searchSize}</p><div class="spot-forecast"><span class="label">API予報</span><span>${valueOrEmpty(x.forecast,'API予報データなし')} ${x.forecast_at?`<small>${esc(x.forecast_at)}</small>`:''}</span><span class="label">API風</span><span>${valueOrEmpty(x.wind_forecast,'風予報なし')} ${x.wind_forecast_at?`<small>${esc(x.wind_forecast_at)}</small>`:''}</span></div></article>`;
+    const estimateLine=estimate?`<p class="spot-reference"><span class="mini-label">参考推定</span> <span class="reference-estimate">${esc(estimate.label)}</span> <small>BCM＋KS参考の中間値 / 現在確定ではありません</small></p>`:'';
+    return `<article class="spot-row"><div class="spot-head"><h3>${esc(x.name)}</h3></div><p class="spot-now"><span class="mini-label">現在確定</span><strong>${valueOrEmpty(x.current,'複数検索の一致待ち')}</strong>${x.current_at?`<small>${esc(x.current_at)}</small>`:''}</p><p class="spot-reference"><span class="mini-label">検索参考</span> ${searchSize}</p>${estimateLine}<div class="spot-forecast"><span class="label">API予報</span><span>${valueOrEmpty(x.forecast,'API予報データなし')} ${x.forecast_at?`<small>${esc(x.forecast_at)}</small>`:''}</span><span class="label">API風</span><span>${valueOrEmpty(x.wind_forecast,'風予報なし')} ${x.wind_forecast_at?`<small>${esc(x.wind_forecast_at)}</small>`:''}</span></div></article>`;
   }).join('');
   const freshComp=(d.competition_news||[]).filter(x=>x?.title||x?.body).map(x=>`<article class="news-row"><h3>${sleagueText(x.type||'COMPETITION')}</h3><p class="news-title"><strong>${sleagueText(x.title||'')}</strong></p><p>${sleagueText(x.body||'')}</p>${x.published_at?`<p class="brief-meta">発表 ${esc(x.published_at)}｜確認 ${esc(x.checked_at||'')}</p>`:''}</article>`).join('');
   const fallback=(d.competition_fallback||[]).filter(x=>fallbackEligible(x,d.date)).slice(0,2).map(x=>`<article class="news-row"><h3>COMPETITION</h3><p class="news-title"><strong>${sleagueText(x.title)}</strong></p><p>${sleagueText(x.body)}</p>${x.checked_at?`<p class="brief-meta">確認 ${esc(x.checked_at)}</p>`:''}</article>`).join('');
@@ -233,7 +262,7 @@ Promise.all([
   const surf=(d.surf_news||[]).filter(x=>x?.title||x?.body).length?(d.surf_news||[]).filter(x=>x?.title||x?.body).map(x=>`<article class="news-row"><h3>SURF NEWS</h3><p class="news-title"><strong>${sleagueText(x.title)}</strong></p><p>${sleagueText(x.body)}</p>${x.published_at?`<p class="brief-meta">発表 ${esc(x.published_at)}｜確認 ${esc(x.checked_at||'')}</p>`:''}</article>`).join(''):'<p class="empty">本日、掲載するサーフィン関連ニュースはありません。</p>';
   const safetyStatus=d.safety_status||{};
   const safety=(d.safety_news||[]).length?d.safety_news.map(x=>`<article class="news-row alert"><h3>${sleagueText(x.title)}</h3><p>${sleagueText(x.body)}</p><p><span class="label">発表時刻</span>${esc(x.published_at||'')}</p><p><span class="label">確認時刻</span>${esc(x.checked_at||'')}</p></article>`).join(''):(safetyStatus.summary&&safetyStatus.checked_at?`<p class="empty">${sleagueText(safetyStatus.summary)}（${esc(safetyStatus.checked_at)}時点）</p>`:(d._external?'<p class="empty">現在、掲載対象の安全情報はありません。</p>':'<p class="empty">安全情報は準備中です。</p>'));
-  document.querySelector('#brief').innerHTML=`<article class="morning-paper"><header class="masthead"><div class="edition-row"><p class="brief-kicker">KANSAI SURFER KS / MORNING</p><span class="test-chip">NAMI TEST</span></div><h1 class="brief-title">${dateText} 朝の波情報</h1><p class="brief-deck">関西9スポットの波情報・風・サーフニュースを、朝の読み物としてまとめています。</p><p class="brief-meta">${esc(d.weekday||'')}曜日｜記事生成 ${d.generated_at?esc(d.generated_at):'未生成'}</p></header>${opening}<p class="brief-lead">${d.headline?sleagueText(d.headline):'<span class="empty">朝刊見出しは未生成です。</span>'}</p><section class="brief-section"><h2>今日の関西 波ランキングTOP5</h2><div class="rank-list">${ranking}</div></section><section class="brief-section"><h2>9スポットの波情報</h2><div class="spot-list">${spots}</div></section><section class="brief-section"><h2>今日のコンペニュース</h2><div class="news-list">${comp}</div></section><section class="brief-section"><h2>サーフィン関連ニュース</h2><div class="news-list">${surf}</div></section><section class="brief-section"><h2>海の事故・安全情報</h2><div class="news-list">${safety}</div></section><section class="brief-section"><h2>今日のひとこと</h2><p>${d.closing?sleagueText(d.closing):'<span class="empty">未生成</span>'}</p></section><details class="method-note"><summary>このページのデータについて</summary><p>NAMI TEST / API + SEARCH DATA</p><p>API予報とWeb検索サイズを別表示。${d._hybridSummary?sleagueText(d._hybridSummary):''} NAMIでは古い検索結果もテスト確認用に参考表示しますが、「現在確定」は90分以内の独立2ソース以上が重なった場合だけです。</p></details><footer class="brief-footer">現在値・予報・ニュース・警報を分離し、未確認の現地体験や人物証言は生成しません。</footer></article>`;
+  document.querySelector('#brief').innerHTML=`<article class="morning-paper"><header class="masthead"><div class="edition-row"><p class="brief-kicker">KANSAI SURFER KS / MORNING</p><span class="test-chip">NAMI TEST</span></div><h1 class="brief-title">${dateText} 朝の波情報</h1><p class="brief-deck">関西9スポットの波情報・風・サーフニュースを、朝の読み物としてまとめています。</p><p class="brief-meta">${esc(d.weekday||'')}曜日｜記事生成 ${d.generated_at?esc(d.generated_at):'未生成'}</p></header>${opening}<p class="brief-lead">${d.headline?sleagueText(d.headline):'<span class="empty">朝刊見出しは未生成です。</span>'}</p><section class="brief-section"><h2>今日の関西 波ランキングTOP5</h2><div class="rank-list">${ranking}</div></section><section class="brief-section"><h2>9スポットの波情報</h2><div class="spot-list">${spots}</div></section><section class="brief-section"><h2>今日のコンペニュース</h2><div class="news-list">${comp}</div></section><section class="brief-section"><h2>サーフィン関連ニュース</h2><div class="news-list">${surf}</div></section><section class="brief-section"><h2>海の事故・安全情報</h2><div class="news-list">${safety}</div></section><section class="brief-section"><h2>今日のひとこと</h2><p>${d.closing?sleagueText(d.closing):'<span class="empty">未生成</span>'}</p></section><details class="method-note"><summary>このページのデータについて</summary><p>NAMI TEST / API + SEARCH DATA</p><p>API予報とWeb検索サイズを別表示。${d._hybridSummary?sleagueText(d._hybridSummary):''} NAMIでは古い検索結果もテスト確認用に参考表示します。BCMが同時間帯に取れた場合は、BCMとKS側検索参考を50%ずつで中間化した「参考推定」も表示しますが、「現在確定」は90分以内の独立2ソース以上が重なった場合だけです。</p></details><footer class="brief-footer">現在値・予報・ニュース・警報を分離し、未確認の現地体験や人物証言は生成しません。</footer></article>`;
 })
 .catch(()=>{const root=document.querySelector('#brief');if(root)root.innerHTML='<p class="alert">データを読み込めませんでした。推測値は表示しません。</p>';});
 </script>
