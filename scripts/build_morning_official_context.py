@@ -24,6 +24,14 @@ SLEAGUE_SCHEDULE_URL = "https://sleague.jp/schedule/"
 JMA_EXTRA_FEED = "https://www.data.jma.go.jp/developer/xml/feed/extra.xml"
 JMA_EQVOL_FEED = "https://www.data.jma.go.jp/developer/xml/feed/eqvol.xml"
 JCG_RSS_URL = "https://www6.kaiho.mlit.go.jp/rss.xml"
+SURFMEDIA_FEED_URL = "https://surfmedia.jp/feed/"
+SURFMEDIA_COMPETITION_KEYWORDS = (
+    "WSL", "CT", "ISA", "S.LEAGUE", "エスリーグ", "五十嵐カノア", "コナー・オレアリー",
+    "ワールド・サーフ・リーグ", "チャンピオンシップ・ツアー", "ワールド・サーフィン・ゲームズ",
+)
+SURFMEDIA_RESULT_KEYWORDS = (
+    "敗退", "優勝", "準優勝", "決勝", "ラウンド", "ヒート", "結果", "スタート", "開幕", "進出", "フィニッシュ",
+)
 OPEN_METEO_OSAKA_URL = (
     "https://api.open-meteo.com/v1/forecast"
     "?latitude=34.6937&longitude=135.5023"
@@ -511,6 +519,102 @@ def parse_sleague_month_schedule(raw, month):
     return events[:4]
 
 
+def strip_html_fragment(value):
+    raw = str(value or "").encode("utf-8", errors="ignore")
+    _, text = parse_html(raw)
+    return re.sub(r"\\s+", " ", text).strip()
+
+
+def parse_surfmedia_feed(raw):
+    root = ET.fromstring(raw)
+    channel = root.find("channel")
+    if channel is None:
+        raise ValueError("SURFMEDIA RSS channel missing")
+    entries = []
+    for item in channel.findall("item"):
+        title = (item.findtext("title") or "").strip()
+        link = (item.findtext("link") or "").strip()
+        pub_raw = (item.findtext("pubDate") or "").strip()
+        description = strip_html_fragment(item.findtext("description") or "")
+        categories = [(x.text or "").strip() for x in item.findall("category") if (x.text or "").strip()]
+        if not title or not link.startswith("https://surfmedia.jp/") or not pub_raw:
+            continue
+        try:
+            published = parsedate_to_datetime(pub_raw)
+            if published.tzinfo is None:
+                published = published.replace(tzinfo=JST)
+            published = published.astimezone(JST)
+        except (TypeError, ValueError, OverflowError):
+            continue
+        entries.append({
+            "title": title,
+            "url": link,
+            "published": published,
+            "description": description,
+            "categories": categories,
+        })
+    return entries
+
+
+def surfmedia_competition_score(entry):
+    blob = " ".join([entry.get("title") or "", " ".join(entry.get("categories") or [])])
+    score = 0
+    if "五十嵐カノア" in blob:
+        score += 120
+    if "コナー・オレアリー" in blob:
+        score += 100
+    if any(word in blob for word in SURFMEDIA_COMPETITION_KEYWORDS):
+        score += 60
+    if any(word in blob for word in SURFMEDIA_RESULT_KEYWORDS):
+        score += 30
+    if any(cat in ("WSL MENS CT", "WSL WOMENS CT", "COMPETITION") for cat in entry.get("categories") or []):
+        score += 30
+    return score
+
+
+def collect_surfmedia_competition(now, status):
+    checked = iso(now)
+    try:
+        raw = fetch(SURFMEDIA_FEED_URL)
+        entries = parse_surfmedia_feed(raw)
+        fresh = []
+        for entry in entries:
+            age = now - entry["published"]
+            if age < timedelta(minutes=-10) or age > timedelta(hours=36):
+                continue
+            score = surfmedia_competition_score(entry)
+            if score <= 0:
+                continue
+            fresh.append((score, entry["published"], entry))
+        fresh.sort(key=lambda x: (x[0], x[1]), reverse=True)
+        selected = [x[2] for x in fresh[:2]]
+        output = []
+        for entry in selected:
+            body = entry.get("description") or entry["title"]
+            body = re.sub(r"\\s+", " ", body).strip()
+            if len(body) > 320:
+                body = body[:317].rstrip() + "…"
+            output.append({
+                "type": "WSL / COMPETITION",
+                "title": entry["title"],
+                "body": body,
+                "source": entry["url"],
+                "published_at": iso(entry["published"]),
+                "checked_at": checked,
+            })
+        status["surfmedia_competition"] = {
+            "ok": True,
+            "entries": len(entries),
+            "fresh_candidates": len(fresh),
+            "selected": len(output),
+            "source": SURFMEDIA_FEED_URL,
+        }
+        return output
+    except Exception as exc:
+        status["surfmedia_competition"] = {"ok": False, "error": type(exc).__name__, "source": SURFMEDIA_FEED_URL}
+        return []
+
+
 def fallback_template(kind):
     return {
         "kind": kind, "title": None, "body": None, "source": None,
@@ -821,12 +925,23 @@ def build(now, previous=None):
     source_status = {}
     osaka_weather = collect_osaka_weather(now, source_status)
     spots, ranking = collect_spot_forecasts(now, source_status)
+    competition_news = collect_surfmedia_competition(now, source_status)
     fallbacks = build_sleague_fallbacks(now, previous, source_status)
+    if competition_news:
+        for item in fallbacks:
+            item["publish"] = False
     safety = collect_jma(now, source_status) + collect_jcg(now, source_status)
 
     published_fallback = next((x for x in fallbacks if x.get("publish") is True), None)
     topic = {"text": None, "source": None, "published_at": None, "checked_at": None}
-    if published_fallback:
+    if competition_news:
+        topic = {
+            "text": competition_news[0].get("title"),
+            "source": competition_news[0].get("source"),
+            "published_at": competition_news[0].get("published_at"),
+            "checked_at": competition_news[0].get("checked_at"),
+        }
+    elif published_fallback:
         topic = {
             "text": published_fallback.get("title"),
             "source": published_fallback.get("source"),
@@ -855,13 +970,13 @@ def build(now, previous=None):
         "headline": headline,
         "ranking": ranking,
         "spots": spots,
-        "competition_news": [],
+        "competition_news": competition_news,
         "competition_fallback": fallbacks,
         "surf_news": [],
         "safety_news": safety,
         "safety_status": {"summary": None, "checked_at": None, "sources": []},
         "closing": closing,
-        "sources_note": "Official-source candidate: Open-Meteo / KS公開9スポットAPI / S.LEAGUE / 気象庁防災情報XML / 海上保安庁 海の安全情報。現在観測とAPI予報を混同せず、取得失敗項目は推測で補完しません。",
+        "sources_note": "Verified-source candidate: Open-Meteo / KS公開9スポットAPI / SURFMEDIA / S.LEAGUE / 気象庁防災情報XML / 海上保安庁 海の安全情報。現在観測とAPI予報を混同せず、取得失敗項目は推測で補完しません。",
         "collection_meta": {
             "collector": "ks-morning-official-v2",
             "checked_at": iso(now),
@@ -892,6 +1007,9 @@ def main():
     if data["ranking"]:
         print("RANKING_TOP=" + " / ".join(f"{x['rank']}位 {x['spot']} {x['size']}" for x in data["ranking"]))
     print("PUBLISHED_FALLBACKS=" + (",".join(published) if published else "(none)"))
+    print(f"COMPETITION_NEWS={len(data['competition_news'])}")
+    for item in data["competition_news"]:
+        print("COMPETITION_ITEM=" + " | ".join([str(item.get("title") or "")[:180], str(item.get("published_at") or "")]))
     for item in data["competition_fallback"]:
         if item.get("publish"):
             print("FALLBACK_TITLE=" + str(item.get("title") or "")[:180])
