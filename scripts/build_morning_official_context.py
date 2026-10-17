@@ -26,7 +26,7 @@ JMA_EQVOL_FEED = "https://www.data.jma.go.jp/developer/xml/feed/eqvol.xml"
 JCG_RSS_URL = "https://www6.kaiho.mlit.go.jp/rss.xml"
 SURFMEDIA_FEED_URL = "https://surfmedia.jp/feed/"
 SURFMEDIA_COMPETITION_KEYWORDS = (
-    "WSL", "CT", "ISA", "S.LEAGUE", "エスリーグ", "五十嵐カノア", "コナー・オレアリー",
+    "WSL", "CT", "ISA", "S.LEAGUE", "エスリーグ",
     "ワールド・サーフ・リーグ", "チャンピオンシップ・ツアー", "ワールド・サーフィン・ゲームズ",
 )
 SURFMEDIA_RESULT_KEYWORDS = (
