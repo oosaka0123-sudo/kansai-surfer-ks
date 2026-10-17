@@ -37,6 +37,10 @@ assert "五十嵐カノア" in target["title"]
 assert target["published"].isoformat() == "2026-10-17T12:00:00+09:00"
 assert "ラウンド2" in target["description"]
 assert builder.surfmedia_competition_score(target) >= 300
+assert builder.surfmedia_competition_score({
+    "title": "五十嵐カノアの最新映像が公開",
+    "categories": ["NEWS"],
+}) == 0
 
 real_fetch = builder.fetch
 builder.fetch = lambda url: rss
