@@ -8,7 +8,7 @@ spec=importlib.util.spec_from_file_location("builder",ROOT/"scripts"/"build_morn
 builder=importlib.util.module_from_spec(spec); spec.loader.exec_module(builder)
 JST=timezone(timedelta(hours=9))
 
-rss=b"""<?xml version="1.0" encoding="UTF-8"?>
+rss=""""<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
 <channel>
 <title>SURFMEDIA</title>
@@ -27,7 +27,7 @@ rss=b"""<?xml version="1.0" encoding="UTF-8"?>
 <description><![CDATA[<p>å¤ãè¨äºã§ãã</p>]]></description>
 </item>
 </channel>
-</rss>"""
+</rss>""".encode("utf-8")
 
 entries=builder.parse_surfmedia_feed(rss)
 assert len(entries)==2
