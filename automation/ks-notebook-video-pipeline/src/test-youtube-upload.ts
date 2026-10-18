@@ -1,21 +1,18 @@
-import fs from 'node:fs';
 import path from 'node:path';
-import { uploadYoutube, writeCapability } from './youtube.js';
+import { runQualityGate } from './quality-gate.js';
+import { uploadYoutube } from './youtube.js';
 
-const videoPath=process.env.YOUTUBE_TEST_VIDEO ?? path.resolve('dummy.mp4');
-if(!fs.existsSync(videoPath)) throw new Error(`Test video not found: ${videoPath}`);
-
-const requested=(process.env.YOUTUBE_TEST_PRIVACY ?? 'unlisted') as 'private'|'unlisted';
-const result=await uploadYoutube({
-  videoPath,
-  title:`KS-API-TEST-${new Date().toISOString()}`,
-  description:'KS Notebook pipeline connectivity test',
-  privacyStatus:requested
-});
-writeCapability(path.resolve('youtube-capability.json'),{
-  oauth_ok:true,
-  upload_ok:true,
-  requested_privacy:requested,
-  ...result
-});
-console.log(JSON.stringify(result,null,2));
+// This is NOT a dummy-video connectivity uploader: every upload must be a genuine validated run.
+// A separate explicit opt-in is required to produce any YouTube side effects.
+const runDir = process.env.KS_QC_RUN_DIR;
+if (!runDir) throw new Error('KS_QC_RUN_DIR is required. Dummy uploads are disabled.');
+const fullRunDir = path.resolve(runDir);
+const gate = runQualityGate(fullRunDir, 'upload');
+console.log(JSON.stringify(gate, null, 2));
+if (!gate.ok) {
+  process.exitCode = 2;
+} else if (process.env.KS_ALLOW_PRIVATE_UPLOAD !== 'yes') {
+  console.log('DRY_RUN: QC passed; upload not attempted. Set KS_ALLOW_PRIVATE_UPLOAD=yes to explicitly authorize a private upload.');
+} else {
+  console.log(JSON.stringify(await uploadYoutube({runDir: fullRunDir}), null, 2));
+}
