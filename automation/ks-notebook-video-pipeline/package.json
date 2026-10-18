@@ -10,6 +10,9 @@
     "state:test": "tsx src/test-state.ts",
     "source:build": "tsx src/build-source.ts",
     "video:validate": "tsx src/video-validator.ts",
+    "qc:test": "tsx src/test-quality-gate.ts",
+    "gate:upload": "tsx src/quality-gate.ts upload",
+    "gate:ready": "tsx src/quality-gate.ts ready",
     "cleanup:check": "tsx src/cleanup.ts",
     "pipeline": "tsx src/pipeline.ts"
   },
