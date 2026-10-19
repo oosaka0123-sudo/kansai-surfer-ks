@@ -14,3 +14,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run deploy-top-share-button-production.yml -R oosaka0123-sudo/kansai-surfer-ks --ref main
+
+# retry with configured FTPS credentials
