@@ -1,0 +1,113 @@
+name: Deploy Top share button to production
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ks-top-share-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      FTP_HOST: ftp.lolipop.jp
+      PROD_FILE: /kansai/index.html
+      SITE_URL: https://kansai.rss7.net/index.html
+      SOURCE_SHA: 3eba06f048339a5c00800acf1518a69e1f163eb2
+      BASELINE_SHA: eda6cbfa160a43669e2e2db282df710f3c422887
+
+    steps:
+      - name: Checkout committed Top source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+          fetch-depth: 0
+
+      - name: Validate committed source and unchanged production baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'id="topShareBtn"' index.html
+          grep -q 'fa-share-nodes' index.html
+          grep -q 'navigator.share' index.html
+          grep -q 'navigator.clipboard' index.html
+          grep -q 'AbortError' index.html
+
+          git show "$BASELINE_SHA:index.html" > "$RUNNER_TEMP/baseline.html"
+          curl --fail --silent --show-error --location             --retry 4 --retry-delay 2             "$SITE_URL?v=$GITHUB_RUN_ID" -o "$RUNNER_TEMP/live-before.html"
+
+          cmp -s "$RUNNER_TEMP/baseline.html" "$RUNNER_TEMP/live-before.html" || {
+            echo "::error::Production Top changed after baseline commit; refusing upload."
+            exit 1
+          }
+
+          python3 - <<'PY'
+          import pathlib
+          src=pathlib.Path('index.html').read_text(encoding='utf-8')
+          base=pathlib.Path(__import__('os').environ['RUNNER_TEMP']+'/baseline.html').read_text(encoding='utf-8')
+          if src == base:
+              raise SystemExit('share source is identical to baseline')
+          required=['id="topShareBtn"','class="top-share-btn"','navigator.share','navigator.clipboard','URLをコピーしました']
+          for token in required:
+              if token not in src:
+                  raise SystemExit(f'missing {token}')
+          print('TOP_SHARE_SOURCE_OK')
+          PY
+
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y lftp
+
+      - name: Upload Top only with rollback
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_PROD_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_PROD_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          test -n "$FTP_USERNAME" || { echo "::error::KS_PROD_FTP_USER missing"; exit 1; }
+          test -n "$FTP_PASSWORD" || { echo "::error::KS_PROD_FTP_PASSWORD missing"; exit 1; }
+
+          W="$RUNNER_TEMP/top-share-prod"
+          mkdir -p "$W"
+
+          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST" -e "set cmd:fail-exit true; set ftp:ssl-force true; set ftp:ssl-protect-data true; set ftp:passive-mode true; get \"$PROD_FILE\" -o \"$W/index.backup.html\"; bye"
+
+          rollback(){
+            echo "::warning::Verification failed; restoring original Top."
+            lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST" -e "set cmd:fail-exit true; set ftp:ssl-force true; set ftp:ssl-protect-data true; set ftp:passive-mode true; put \"$W/index.backup.html\" -o \"$PROD_FILE\"; bye" || true
+          }
+          trap rollback ERR
+
+          cmp -s "$W/index.backup.html" "$RUNNER_TEMP/live-before.html"
+
+          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST" -e "set cmd:fail-exit true; set ftp:ssl-force true; set ftp:ssl-protect-data true; set ftp:passive-mode true; put index.html -o \"$PROD_FILE\"; get \"$PROD_FILE\" -o \"$W/index.verify.html\"; bye"
+          cmp -s index.html "$W/index.verify.html"
+
+          curl --fail --silent --show-error --location             --retry 5 --retry-delay 2             "$SITE_URL?v=$GITHUB_RUN_ID" -o "$W/index.live.html"
+          cmp -s index.html "$W/index.live.html"
+
+          grep -q 'id="topShareBtn"' "$W/index.live.html"
+          grep -q 'navigator.share' "$W/index.live.html"
+          grep -q 'navigator.clipboard' "$W/index.live.html"
+
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium)"
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --hide-scrollbars             --window-size=390,844 --screenshot="$W/top-share-live-390.png"             "$SITE_URL?v=$GITHUB_RUN_ID"
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --hide-scrollbars             --window-size=1440,900 --screenshot="$W/top-share-live-1440.png"             "$SITE_URL?v=$GITHUB_RUN_ID"
+
+          trap - ERR
+          echo TOP_SHARE_PRODUCTION_OK
+
+      - name: Upload live verification screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: top-share-production-verification
+          path: |
+            ${{ runner.temp }}/top-share-prod/top-share-live-390.png
+            ${{ runner.temp }}/top-share-prod/top-share-live-1440.png
+          retention-days: 3
