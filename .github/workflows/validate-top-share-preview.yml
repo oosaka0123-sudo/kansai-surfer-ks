@@ -1,0 +1,48 @@
+name: Validate Top share button preview
+
+on:
+  push:
+    branches:
+      - feat/top-share-button-20261020
+
+permissions:
+  contents: read
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate source and capture responsive screenshots
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'id="topShareBtn"' index.html
+          grep -q 'fa-share-nodes' index.html
+          grep -q 'navigator.share' index.html
+          grep -q 'navigator.clipboard' index.html
+          grep -q 'AbortError' index.html
+
+          python3 -m http.server 8765 >/tmp/ks-top-share-preview.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
+          sleep 1
+          curl --fail --silent --show-error http://127.0.0.1:8765/index.html >/dev/null
+
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium)"
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --hide-scrollbars             --window-size=320,760 --screenshot="$RUNNER_TEMP/top-share-320.png"             http://127.0.0.1:8765/index.html
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --hide-scrollbars             --window-size=390,844 --screenshot="$RUNNER_TEMP/top-share-390.png"             http://127.0.0.1:8765/index.html
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --hide-scrollbars             --window-size=1440,900 --screenshot="$RUNNER_TEMP/top-share-1440.png"             http://127.0.0.1:8765/index.html
+
+          file "$RUNNER_TEMP/top-share-320.png" "$RUNNER_TEMP/top-share-390.png" "$RUNNER_TEMP/top-share-1440.png"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: top-share-preview
+          path: |
+            ${{ runner.temp }}/top-share-320.png
+            ${{ runner.temp }}/top-share-390.png
+            ${{ runner.temp }}/top-share-1440.png
+          retention-days: 3
