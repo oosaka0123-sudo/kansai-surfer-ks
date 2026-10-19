@@ -65,13 +65,13 @@ jobs:
       - name: Upload Top only with rollback
         shell: bash
         env:
-          FTP_USERNAME: ${{ secrets.KS_PROD_FTP_USER }}
-          FTP_PASSWORD: ${{ secrets.KS_PROD_FTP_PASSWORD }}
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
         run: |
           set -euo pipefail
           set +x
-          test -n "$FTP_USERNAME" || { echo "::error::KS_PROD_FTP_USER missing"; exit 1; }
-          test -n "$FTP_PASSWORD" || { echo "::error::KS_PROD_FTP_PASSWORD missing"; exit 1; }
+          test -n "$FTP_USERNAME" || { echo "::error::configured FTPS user missing"; exit 1; }
+          test -n "$FTP_PASSWORD" || { echo "::error::configured FTPS password missing"; exit 1; }
 
           W="$RUNNER_TEMP/top-share-prod"
           mkdir -p "$W"
