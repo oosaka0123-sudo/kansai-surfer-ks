@@ -1,0 +1,46 @@
+name: Verify Top share button live once
+
+on:
+  push:
+    paths:
+      - '.github/workflows/verify-top-share-live-once.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 3eba06f048339a5c00800acf1518a69e1f163eb2
+
+      - name: Verify exact live Top and mobile rendering
+        shell: bash
+        run: |
+          set -euo pipefail
+          W="$RUNNER_TEMP/top-share-live"
+          mkdir -p "$W"
+
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 2             "https://kansai.rss7.net/index.html?v=$GITHUB_RUN_ID" -o "$W/live.html"
+
+          cmp -s index.html "$W/live.html"
+          grep -q 'id="topShareBtn"' "$W/live.html"
+          grep -q 'fa-share-nodes' "$W/live.html"
+          grep -q 'navigator.share' "$W/live.html"
+          grep -q 'navigator.clipboard' "$W/live.html"
+          grep -q 'AbortError' "$W/live.html"
+
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium)"
+          timeout 45s "$CHROME" --headless=new --no-sandbox --disable-gpu --hide-scrollbars             --virtual-time-budget=1800 --window-size=390,844             --screenshot="$W/top-share-live-390.png"             "https://kansai.rss7.net/index.html?v=$GITHUB_RUN_ID"
+
+          test -s "$W/top-share-live-390.png"
+          echo TOP_SHARE_LIVE_OK
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: top-share-live-proof
+          path: ${{ runner.temp }}/top-share-live/top-share-live-390.png
+          retention-days: 3
