@@ -90,21 +90,25 @@ jobs:
           data=json.loads(Path('/tmp/current-search-observations.json').read_text(encoding='utf-8'))
           assert data['schema_version']=='ks-current-search-v1'
           assert data['verified'] is True and data['preview'] is True
-          assert data['refresh_mode']=='hourly_allowlist_plus_gpt_search_enrichment'
+          assert data['refresh_mode']=='hourly_allowlist_with_bcm_delayed_sample_reference'
           assert data['consensus_policy']['minimum_independent_sources'] >= 2
           assert data['consensus_policy']['single_source']=='reference_only'
           midpoint=data['consensus_policy']['reference_midpoint']
           assert midpoint['enabled'] is True
           assert midpoint['method']=='50_50_midpoint'
-          assert midpoint['fresh_minutes']==90
+          assert midpoint['ks_fresh_minutes']==90
+          assert midpoint['bcm_sample_max_age_minutes']==2160
+          assert midpoint['bcm_requires_delayed_sample_kind'] is True
           assert midpoint['output']=='reference_estimate_only'
           status=data['source_fetch_status']
           ok=sum(1 for x in status.values() if x.get('ok'))
+          bcm_ok=sum(1 for x in status.values() if x.get('ok') and x.get('source_name')=='BCM')
           assert ok >= 1, status
+          assert bcm_ok >= 1, status
           assert data['observations'], 'no observations'
           assert all(str(x.get('source_url','')).startswith('https://') for x in data['observations'])
           assert datetime.fromisoformat(data['checked_at']).tzinfo is not None
-          print('Refresh validation passed:', ok, '/', len(status), 'sources')
+          print('Refresh validation passed:', ok, '/', len(status), 'sources; BCM:', bcm_ok)
           print('Observations:', [(x['spot'],x['normalized_size'],x['observed_at']) for x in data['observations']])
           PY
 
@@ -153,9 +157,11 @@ jobs:
           actual=json.loads(Path('/tmp/public-search.json').read_text(encoding='utf-8'))
           assert actual['schema_version']=='ks-current-search-v1'
           assert actual['checked_at']==expected['checked_at']
-          assert actual['refresh_mode']=='hourly_allowlist_plus_gpt_search_enrichment'
+          assert actual['refresh_mode']=='hourly_allowlist_with_bcm_delayed_sample_reference'
           assert actual['consensus_policy']['reference_midpoint']['method']=='50_50_midpoint'
           assert actual['consensus_policy']['reference_midpoint']['output']=='reference_estimate_only'
+          assert actual['consensus_policy']['reference_midpoint']['bcm_sample_max_age_minutes']==2160
+          assert any(x.get('source_kind')=='bcm_delayed_public_sample_reference' for x in actual.get('observations',[]))
           print('Public NAMI search refresh verified:', actual['checked_at'])
           print('Visible-data candidates:', [(x['spot'],x['normalized_size'],x['observed_at']) for x in actual['observations']])
           PY
