@@ -1,0 +1,52 @@
+name: Finish borderless Top share once
+on:
+  push:
+    paths:
+      - '.github/workflows/finish-borderless-top-share-once.yml'
+permissions:
+  contents: read
+jobs:
+  finish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    env:
+      SOURCE_SHA: cd1a713631d8ec0b4f9185c3f63bd03294f6f7b1
+      PREVIOUS_SHA: 3eba06f048339a5c00800acf1518a69e1f163eb2
+      SITE_URL: https://kansai.rss7.net/index.html
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+          fetch-depth: 0
+      - run: sudo apt-get update -qq && sudo apt-get install -y lftp
+      - name: Detect live state, deploy if needed, verify exact bytes
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          W="$RUNNER_TEMP/finish-borderless"
+          mkdir -p "$W"
+          git show "$PREVIOUS_SHA:index.html" > "$W/previous.html"
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 2 "$SITE_URL?v=$GITHUB_RUN_ID" -o "$W/live-before.html"
+
+          if cmp -s index.html "$W/live-before.html"; then
+            echo "LIVE_ALREADY_BORDERLESS"
+          elif cmp -s "$W/previous.html" "$W/live-before.html"; then
+            echo "LIVE_IS_PREVIOUS_VERSION; deploying committed borderless source"
+            lftp -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp -e "set cmd:fail-exit true; set ftp:ssl-force true; set ftp:ssl-protect-data true; set ftp:passive-mode true; get /kansai/index.html -o \"$W/backup.html\"; put index.html -o /kansai/index.html; get /kansai/index.html -o \"$W/ftp-verify.html\"; bye"
+            cmp -s index.html "$W/ftp-verify.html"
+          else
+            echo "::error::Live Top is neither previous nor intended source; refusing to overwrite."
+            exit 1
+          fi
+
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 2 "$SITE_URL?v=$GITHUB_RUN_ID-final" -o "$W/live-final.html"
+          cmp -s index.html "$W/live-final.html"
+          grep -q 'id="topShareBtn"' "$W/live-final.html"
+          grep -q 'border: 0;' "$W/live-final.html"
+          grep -q 'background: transparent;' "$W/live-final.html"
+          grep -q 'navigator.share' "$W/live-final.html"
+          echo BORDERLESS_TOP_SHARE_LIVE_OK
