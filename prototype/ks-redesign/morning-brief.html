@@ -147,8 +147,8 @@ const midpointBodyLabel=value=>{
 const buildBcmKsMidpoint=(rows,policy)=>{
   const cfg=policy?.reference_midpoint||{};
   if(cfg.enabled!==true||cfg.method!=='50_50_midpoint')return null;
-  const ksFreshLimit=Math.max(1,Number(cfg.ks_fresh_minutes)||90);
-  const bcmMaxAge=Math.max(ksFreshLimit,Number(cfg.bcm_sample_max_age_minutes)||2160);
+  const ksReferenceMaxAge=Math.max(1,Number(cfg.ks_reference_max_age_minutes)||180);
+  const bcmMaxAge=Math.max(ksReferenceMaxAge,Number(cfg.bcm_sample_max_age_minutes)||2160);
   const validRange=o=>Number.isFinite(Number(o?.normalized_low))&&Number.isFinite(Number(o?.normalized_high));
   const bcm=rows.find(o=>{
     if(!isBcmObservation(o)||o._age===null||o._age>bcmMaxAge||!validRange(o))return false;
@@ -156,7 +156,7 @@ const buildBcmKsMidpoint=(rows,policy)=>{
     if(o.mapping_kind==='nearby_proxy'&&cfg.proxy_mapping_allowed!==true)return false;
     return true;
   });
-  const ks=rows.find(o=>!isBcmObservation(o)&&o._age!==null&&o._age<=ksFreshLimit&&validRange(o));
+  const ks=rows.find(o=>!isBcmObservation(o)&&o._age!==null&&o._age<=ksReferenceMaxAge&&validRange(o));
   if(!bcm||!ks)return null;
   const value=(rangeCenter(bcm)+rangeCenter(ks))/2;
   return {
@@ -272,7 +272,7 @@ Promise.all([
   const surf=(d.surf_news||[]).filter(x=>x?.title||x?.body).length?(d.surf_news||[]).filter(x=>x?.title||x?.body).map(x=>`<article class="news-row"><h3>SURF NEWS</h3><p class="news-title"><strong>${sleagueText(x.title)}</strong></p><p>${sleagueText(x.body)}</p>${x.published_at?`<p class="brief-meta">発表 ${esc(x.published_at)}｜確認 ${esc(x.checked_at||'')}</p>`:''}</article>`).join(''):'<p class="empty">本日、掲載するサーフィン関連ニュースはありません。</p>';
   const safetyStatus=d.safety_status||{};
   const safety=(d.safety_news||[]).length?d.safety_news.map(x=>`<article class="news-row alert"><h3>${sleagueText(x.title)}</h3><p>${sleagueText(x.body)}</p><p><span class="label">発表時刻</span>${esc(x.published_at||'')}</p><p><span class="label">確認時刻</span>${esc(x.checked_at||'')}</p></article>`).join(''):(safetyStatus.summary&&safetyStatus.checked_at?`<p class="empty">${sleagueText(safetyStatus.summary)}（${esc(safetyStatus.checked_at)}時点）</p>`:(d._external?'<p class="empty">現在、掲載対象の安全情報はありません。</p>':'<p class="empty">安全情報は準備中です。</p>'));
-  document.querySelector('#brief').innerHTML=`<article class="morning-paper"><header class="masthead"><div class="edition-row"><p class="brief-kicker">KANSAI SURFER KS / MORNING</p><span class="test-chip">NAMI TEST</span></div><h1 class="brief-title">${dateText} 朝の波情報</h1><p class="brief-deck">関西9スポットの波情報・風・サーフニュースを、朝の読み物としてまとめています。</p><p class="brief-meta">${esc(d.weekday||'')}曜日｜記事生成 ${d.generated_at?esc(d.generated_at):'未生成'}</p></header>${opening}<p class="brief-lead">${d.headline?sleagueText(d.headline):'<span class="empty">朝刊見出しは未生成です。</span>'}</p><section class="brief-section"><h2>今日の関西 波ランキングTOP5</h2><div class="rank-list">${ranking}</div></section><section class="brief-section"><h2>9スポットの波情報</h2><div class="spot-list">${spots}</div></section><section class="brief-section"><h2>今日のコンペニュース</h2><div class="news-list">${comp}</div></section><section class="brief-section"><h2>サーフィン関連ニュース</h2><div class="news-list">${surf}</div></section><section class="brief-section"><h2>海の事故・安全情報</h2><div class="news-list">${safety}</div></section><section class="brief-section"><h2>今日のひとこと</h2><p>${d.closing?sleagueText(d.closing):'<span class="empty">未生成</span>'}</p></section><details class="method-note"><summary>このページのデータについて</summary><p>NAMI TEST / API + SEARCH DATA</p><p>API予報とWeb検索サイズを別表示。${d._hybridSummary?sleagueText(d._hybridSummary):''} NAMIでは古い検索結果もテスト確認用に参考表示します。BCMの公開サンプル（1日前）を補助参考として使える場合は、BCM側と90分以内のKS検索参考を50%ずつで中間化した「参考推定」も表示します。BCM単独や参考推定は「現在確定」には使わず、「現在確定」は90分以内の独立2ソース以上が重なった場合だけです。</p></details><footer class="brief-footer">現在値・予報・ニュース・警報を分離し、未確認の現地体験や人物証言は生成しません。</footer></article>`;
+  document.querySelector('#brief').innerHTML=`<article class="morning-paper"><header class="masthead"><div class="edition-row"><p class="brief-kicker">KANSAI SURFER KS / MORNING</p><span class="test-chip">NAMI TEST</span></div><h1 class="brief-title">${dateText} 朝の波情報</h1><p class="brief-deck">関西9スポットの波情報・風・サーフニュースを、朝の読み物としてまとめています。</p><p class="brief-meta">${esc(d.weekday||'')}曜日｜記事生成 ${d.generated_at?esc(d.generated_at):'未生成'}</p></header>${opening}<p class="brief-lead">${d.headline?sleagueText(d.headline):'<span class="empty">朝刊見出しは未生成です。</span>'}</p><section class="brief-section"><h2>今日の関西 波ランキングTOP5</h2><div class="rank-list">${ranking}</div></section><section class="brief-section"><h2>9スポットの波情報</h2><div class="spot-list">${spots}</div></section><section class="brief-section"><h2>今日のコンペニュース</h2><div class="news-list">${comp}</div></section><section class="brief-section"><h2>サーフィン関連ニュース</h2><div class="news-list">${surf}</div></section><section class="brief-section"><h2>海の事故・安全情報</h2><div class="news-list">${safety}</div></section><section class="brief-section"><h2>今日のひとこと</h2><p>${d.closing?sleagueText(d.closing):'<span class="empty">未生成</span>'}</p></section><details class="method-note"><summary>このページのデータについて</summary><p>NAMI TEST / API + SEARCH DATA</p><p>API予報とWeb検索サイズを別表示。${d._hybridSummary?sleagueText(d._hybridSummary):''} NAMIでは古い検索結果もテスト確認用に参考表示します。BCMの公開サンプル（1日前）を補助参考として使える場合は、BCM側と180分以内のKS検索参考を50%ずつで中間化した「参考推定」も表示します。BCM単独や参考推定は「現在確定」には使わず、「現在確定」は90分以内の独立2ソース以上が重なった場合だけです。</p></details><footer class="brief-footer">現在値・予報・ニュース・警報を分離し、未確認の現地体験や人物証言は生成しません。</footer></article>`;
 })
 .catch(()=>{const root=document.querySelector('#brief');if(root)root.innerHTML='<p class="alert">データを読み込めませんでした。推測値は表示しません。</p>';});
 </script>

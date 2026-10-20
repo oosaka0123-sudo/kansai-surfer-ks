@@ -28,7 +28,7 @@ assert policy["enabled"] is True
 assert policy["method"]=="50_50_midpoint"
 assert policy["bcm_role"]=="delayed_public_sample_approx_reference"
 assert policy["ks_role"]=="freshest_non_bcm_search_reference"
-assert policy["ks_fresh_minutes"]==90
+assert policy["ks_reference_max_age_minutes"]==180
 assert policy["bcm_sample_max_age_minutes"]==2160
 assert policy["bcm_requires_delayed_sample_kind"] is True
 assert policy["proxy_mapping_allowed"] is True

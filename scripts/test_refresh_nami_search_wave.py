@@ -50,7 +50,7 @@ base={
  "schema_version":"ks-current-search-v1","verified":True,"preview":True,
  "date":"2026-10-14","checked_at":"2026-10-14T11:51:00+09:00",
  "observations":[],
- "consensus_policy":{"fresh_minutes":90,"aging_minutes":180,"minimum_independent_sources":2,"single_source":"reference_only","source_visibility":"backend_only","reference_midpoint":{"enabled":True,"method":"50_50_midpoint","ks_fresh_minutes":90,"bcm_sample_max_age_minutes":2160,"bcm_requires_delayed_sample_kind":True,"proxy_mapping_allowed":True,"output":"reference_estimate_only","current_confirmation":"unchanged"}}
+ "consensus_policy":{"fresh_minutes":90,"aging_minutes":180,"minimum_independent_sources":2,"single_source":"reference_only","source_visibility":"backend_only","reference_midpoint":{"enabled":True,"method":"50_50_midpoint","ks_reference_max_age_minutes":180,"bcm_sample_max_age_minutes":2160,"bcm_requires_delayed_sample_kind":True,"proxy_mapping_allowed":True,"output":"reference_estimate_only","current_confirmation":"unchanged"}}
 }
 real_parse=collector.parse_source
 collector.SOURCES=[{"id":"test:伊良湖","spot":"伊良湖","url":"https://example.com/","name":"test","parser":"1173"}]

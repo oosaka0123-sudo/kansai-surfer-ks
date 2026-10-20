@@ -96,7 +96,7 @@ jobs:
           midpoint=data['consensus_policy']['reference_midpoint']
           assert midpoint['enabled'] is True
           assert midpoint['method']=='50_50_midpoint'
-          assert midpoint['ks_fresh_minutes']==90
+          assert midpoint['ks_reference_max_age_minutes']==180
           assert midpoint['bcm_sample_max_age_minutes']==2160
           assert midpoint['bcm_requires_delayed_sample_kind'] is True
           assert midpoint['output']=='reference_estimate_only'
