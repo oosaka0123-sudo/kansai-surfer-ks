@@ -197,7 +197,9 @@ jobs:
           midpoint = policy.get('reference_midpoint') or {}
           assert midpoint.get('enabled') is True
           assert midpoint.get('method') == '50_50_midpoint'
-          assert midpoint.get('fresh_minutes') == 90
+          assert midpoint.get('ks_fresh_minutes') == 90
+          assert midpoint.get('bcm_sample_max_age_minutes') == 2160
+          assert midpoint.get('bcm_requires_delayed_sample_kind') is True
           assert midpoint.get('output') == 'reference_estimate_only'
           assert all(x.get('normalized_low') is not None and x.get('normalized_high') is not None for x in search_data['observations'])
 

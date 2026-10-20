@@ -248,15 +248,18 @@ Normal days should remain concise. Major typhoon, earthquake, tsunami, high-wave
 - A NAMI site redeploy must not overwrite the runtime `data/current-search-observations.json`; that file is owned by the refresh workflow.
 
 ### BCM approximate reference policy
-- BCM may be used as an internal approximate wave-size reference when a corresponding KS-side fresh search observation exists for the same spot.
-- Do not copy or republish BCM article text, images, or source labels into the reader-facing morning page. Source metadata remains backend-only.
-- Normalize both BCM and KS-side search size ranges onto the existing body-size scale before combining them.
-- The default estimate is a 50/50 midpoint between the center of the BCM range and the center of the freshest non-BCM KS search range.
+- BCM's publicly visible delayed sample may be used as an internal approximate wave-size reference; it is not treated as a live current observation.
+- The NAMI collector reads only the delayed public sample's compact size/check metadata. Do not copy or republish BCM article text, images, advice, condition prose, or source labels into the reader-facing morning page. Source metadata remains backend-only.
+- BCM exact mappings currently used: 磯ノ浦, 国府の浜・テトラ前→国府の浜, 生見, ロングビーチ→伊良湖, 静波, 鳥取・白兎→白兎.
+- Approximate nearby proxies may be used only as `参考推定`: 京都・八丁浜→浜詰 and 福井・鳥居浜→高浜. 小松海岸 has no BCM proxy in this rule.
+- Normalize BCM and KS-side search size ranges onto the existing body-size scale before combining them.
+- The default estimate is a 50/50 midpoint between the center of the BCM delayed-sample range and the center of the freshest non-BCM KS search range.
 - Example: BCM `腰〜腹` (center 4.5) + KS `モモ〜腰` (center 3.5) => midpoint 4.0 => `腰前後`.
-- Use only observations inside the fresh 90-minute window for this midpoint estimate.
+- KS-side data used for the midpoint must be within 90 minutes. A BCM delayed sample may be used for this approximate calculation for up to 36 hours from its CHECK time.
 - The result is stored/displayed only as `reference_estimate` / `参考推定`; it must never by itself become `current` / `現在確定`.
-- Existing current-confirmation rule remains unchanged: at least two independent fresh search sources must overlap after normalization.
-- Never mix API forecast values into the BCM+KS current-reference midpoint.
+- BCM delayed-sample observations are excluded from the current-confirmation consensus even if their timestamps or page behavior change unexpectedly.
+- Existing current-confirmation rule remains unchanged: at least two independent fresh non-BCM search sources must overlap after normalization.
+- Never mix API forecast values into the BCM+KS reference midpoint.
 
 ### Data and generation guardrails
 - Current observations, forecasts, alerts, and news must remain separate fields in source data.
