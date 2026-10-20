@@ -64,12 +64,12 @@
       "method": "50_50_midpoint",
       "bcm_role": "delayed_public_sample_approx_reference",
       "ks_role": "freshest_non_bcm_search_reference",
-      "ks_fresh_minutes": 90,
       "bcm_sample_max_age_minutes": 2160,
       "bcm_requires_delayed_sample_kind": true,
       "proxy_mapping_allowed": true,
       "output": "reference_estimate_only",
-      "current_confirmation": "unchanged"
+      "current_confirmation": "unchanged",
+      "ks_reference_max_age_minutes": 180
     }
   }
 }
