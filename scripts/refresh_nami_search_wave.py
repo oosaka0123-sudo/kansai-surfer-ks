@@ -18,9 +18,17 @@ JST=timezone(timedelta(hours=9))
 SCHEMA_VERSION="ks-current-search-v1"
 DEFAULT_INPUT=Path("prototype/ks-redesign/data/current-search-observations.json")
 SOURCES=[
-    {"spot":"磯ノ浦","url":"https://www.1173life.com/wakayama-wave-info","name":"1173life","file":"isonoura.html"},
-    {"spot":"伊良湖","url":"https://www.1173life.com/irako-wave-info","name":"1173life","file":"irago.html"},
-    {"spot":"静波","url":"https://www.1173life.com/shizunami-wave-info","name":"1173life","file":"shizunami.html"},
+    {"id":"1173:磯ノ浦","spot":"磯ノ浦","url":"https://www.1173life.com/wakayama-wave-info","name":"1173life","parser":"1173","file":"isonoura.html","mapping_kind":"exact"},
+    {"id":"1173:伊良湖","spot":"伊良湖","url":"https://www.1173life.com/irako-wave-info","name":"1173life","parser":"1173","file":"irago.html","mapping_kind":"exact"},
+    {"id":"1173:静波","spot":"静波","url":"https://www.1173life.com/shizunami-wave-info","name":"1173life","parser":"1173","file":"shizunami.html","mapping_kind":"exact"},
+    {"id":"bcm:磯ノ浦","spot":"磯ノ浦","url":"https://m.bc01.com/wave/10/123","name":"BCM","parser":"bcm_sample","file":"bcm-isonoura.html","source_spot":"和歌山・磯ノ浦","mapping_kind":"exact"},
+    {"id":"bcm:国府の浜","spot":"国府の浜","url":"https://m.bc01.com/wave/10/114","name":"BCM","parser":"bcm_sample","file":"bcm-kou.html","source_spot":"国府の浜・テトラ前","mapping_kind":"exact"},
+    {"id":"bcm:生見","spot":"生見","url":"https://m.bc01.com/wave/11/125","name":"BCM","parser":"bcm_sample","file":"bcm-ikumi.html","source_spot":"生見","mapping_kind":"exact"},
+    {"id":"bcm:伊良湖","spot":"伊良湖","url":"https://m.bc01.com/wave/9/103","name":"BCM","parser":"bcm_sample","file":"bcm-irago.html","source_spot":"ロングビーチ","mapping_kind":"exact"},
+    {"id":"bcm:静波","spot":"静波","url":"https://m.bc01.com/wave/8/90","name":"BCM","parser":"bcm_sample","file":"bcm-shizunami.html","source_spot":"静波","mapping_kind":"exact"},
+    {"id":"bcm:浜詰","spot":"浜詰","url":"https://m.bc01.com/wave/13/193","name":"BCM","parser":"bcm_sample","file":"bcm-hatchohama.html","source_spot":"京都・八丁浜","mapping_kind":"nearby_proxy"},
+    {"id":"bcm:高浜","spot":"高浜","url":"https://m.bc01.com/wave/13/142","name":"BCM","parser":"bcm_sample","file":"bcm-torihama.html","source_spot":"福井・鳥居浜","mapping_kind":"nearby_proxy"},
+    {"id":"bcm:白兎","spot":"白兎","url":"https://m.bc01.com/wave/14/1007","name":"BCM","parser":"bcm_sample","file":"bcm-hakuto.html","source_spot":"鳥取・白兎","mapping_kind":"exact"},
 ]
 BODY_VALUES={"スネ":1,"ヒザ":2,"モモ":3,"腰":4,"腹":5,"胸":6,"肩":7,"頭":8}
 BODY_PATTERN=r"(?:フラット|スネ|すね|ヒザ|ひざ|膝|モモ|もも|コシ|こし|腰|ハラ|はら|腹|ムネ|むね|胸|カタ|かた|肩|アタマ|あたま|頭)(?:\s*[〜～~\-]\s*(?:スネ|すね|ヒザ|ひざ|膝|モモ|もも|コシ|こし|腰|ハラ|はら|腹|ムネ|むね|胸|カタ|かた|肩|アタマ|あたま|頭)(?:肩|胸|腹|腰|モモ|ヒザ|スネ)?)?"
@@ -62,7 +70,8 @@ def canonical_size(raw):
         ("すね","スネ"),("ひざ","ヒザ"),("膝","ヒザ"),("もも","モモ"),
         ("コシ","腰"),("こし","腰"),("ハラ","腹"),("はら","腹"),
         ("ムネ","胸"),("むね","胸"),("カタ","肩"),("かた","肩"),
-        ("アタマ","頭"),("あたま","頭"),("～","〜"),("~","〜"),
+        ("アタマ","頭"),("あたま","頭"),("ほぼフラット","フラット"),
+        ("～","〜"),("~","〜"),("－","-"),
     ]
     for a,b in replacements:
         s=s.replace(a,b)
@@ -105,14 +114,81 @@ def rendered_text(path):
     p=TextParser(); p.feed(page)
     return re.sub(r"\s+"," ",html.unescape(" ".join(p.parts)))
 
-def parse_source(source, now, source_dir=None):
-    text=None
+def load_source_text(source, source_dir=None):
     if source_dir and source.get("file"):
         path=Path(source_dir)/source["file"]
         if path.exists() and path.stat().st_size>100:
-            text=rendered_text(path)
-    if not text:
-        text=fetch_text(source["url"])
+            return rendered_text(path)
+    return fetch_text(source["url"])
+
+def bounds_label(low, high):
+    if low==0 and high==0:
+        return "フラット"
+    rev={v:k for k,v in BODY_VALUES.items()}
+    if low==high:
+        return rev.get(low, "?")
+    return f"{rev.get(low,'?')}〜{rev.get(high,'?')}"
+
+def parse_bcm_check_at(text, now):
+    m=re.search(r"CHECK\s*(\d{1,2})/(\d{1,2})(?:\([^)]*\))?\s*(\d{1,2}):(\d{2})", text, re.I)
+    if not m:
+        raise ValueError("BCM CHECK timestamp not found")
+    mo,d,h,mi=map(int,m.groups())
+    local_now=now.astimezone(JST)
+    year=local_now.year
+    candidate=datetime(year,mo,d,h,mi,tzinfo=JST)
+    if candidate>local_now+timedelta(days=2):
+        candidate=candidate.replace(year=year-1)
+    return candidate
+
+def parse_bcm_sample_source(source, now, source_dir=None):
+    text=load_source_text(source,source_dir=source_dir)
+    if "1日前の情報をサンプル表示" not in text:
+        raise ValueError("BCM delayed public sample marker missing")
+
+    check=re.search(r"CHECK\s*\d{1,2}/\d{1,2}(?:\([^)]*\))?\s*\d{1,2}:\d{2}",text,re.I)
+    if not check:
+        raise ValueError("BCM CHECK block missing")
+
+    before=text[max(0,check.start()-140):check.start()]
+    terms=list(re.finditer(r"(?:ほぼ)?フラット|スネ|すね|ヒザ|ひざ|膝|モモ|もも|コシ|こし|腰|ハラ|はら|腹|ムネ|むね|胸|カタ|かた|肩|アタマ|あたま|頭",before))
+    if not terms:
+        raise ValueError("BCM sample size expression not found")
+
+    selected=[terms[-1]]
+    for prev in reversed(terms[:-1]):
+        if selected[0].start()-prev.end()<=18:
+            selected.insert(0,prev)
+        else:
+            break
+    raw_size=before[selected[0].start():selected[-1].end()].strip()
+    low,high=size_bounds(raw_size)
+    if low is None:
+        raise ValueError("BCM sample size normalization failed")
+    normalized=bounds_label(low,high)
+    observed=parse_bcm_check_at(text,now)
+
+    return {
+        "spot":source["spot"],
+        "raw_size":raw_size,
+        "normalized_size":normalized,
+        "wave_m":None,
+        "wind":None,
+        "observed_at":iso(observed),
+        "source_url":source["url"],
+        "source_checked_at":iso(now),
+        "source_name":source["name"],
+        "source_spot":source.get("source_spot") or source["spot"],
+        "mapping_kind":source.get("mapping_kind") or "exact",
+        "source_kind":"bcm_delayed_public_sample_reference",
+        "confidence":"delayed_sample_reference",
+        "sample_delay_days":1,
+        "normalized_low":low,
+        "normalized_high":high,
+    }
+
+def parse_1173_source(source, now, source_dir=None):
+    text=load_source_text(source,source_dir=source_dir)
 
     markers=["いまの波","今の波","現在の波"]
     windows=[]
@@ -167,9 +243,18 @@ def parse_source(source, now, source_dir=None):
         "source_name":source["name"],
         "source_kind":"free_public_wave_search",
         "confidence":"single_source_reference",
+        "mapping_kind":source.get("mapping_kind") or "exact",
         "normalized_low":low,
         "normalized_high":high,
     }
+
+def parse_source(source, now, source_dir=None):
+    parser=source.get("parser") or "1173"
+    if parser=="bcm_sample":
+        return parse_bcm_sample_source(source,now,source_dir=source_dir)
+    if parser=="1173":
+        return parse_1173_source(source,now,source_dir=source_dir)
+    raise ValueError(f"unknown source parser: {parser}")
 
 def canonical_consensus_policy():
     fixture=json.loads(DEFAULT_INPUT.read_text(encoding="utf-8"))
@@ -189,11 +274,11 @@ def refresh(base, now, source_dir=None):
         try:
             item=parse_source(src,now,source_dir=source_dir)
             observations.append(item)
-            status[src["spot"]]={"ok":True,"source_url":src["url"],"observed_at":item["observed_at"]}
+            status[src.get("id") or f'{src["name"]}:{src["spot"]}']={"ok":True,"spot":src["spot"],"source_name":src["name"],"source_url":src["url"],"observed_at":item["observed_at"]}
         except Exception as exc:
             if key in old:
                 observations.append(old[key])
-            status[src["spot"]]={"ok":False,"source_url":src["url"],"error":type(exc).__name__,"detail":str(exc)[:160]}
+            status[src.get("id") or f'{src["name"]}:{src["spot"]}']={"ok":False,"spot":src["spot"],"source_name":src["name"],"source_url":src["url"],"error":type(exc).__name__,"detail":str(exc)[:160]}
 
     # Preserve observations from other independent sources (for future GPT/search enrichers).
     source_urls={s["url"] for s in SOURCES}
@@ -211,7 +296,7 @@ def refresh(base, now, source_dir=None):
         "checked_at":iso(now),
         "observations":observations,
         "source_fetch_status":status,
-        "refresh_mode":"hourly_allowlist_plus_gpt_search_enrichment",
+        "refresh_mode":"hourly_allowlist_with_bcm_delayed_sample_reference",
     })
     return out
 
@@ -227,8 +312,8 @@ def main():
     args.output.write_text(json.dumps(out,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     ok=sum(1 for x in out["source_fetch_status"].values() if x["ok"])
     print(f"SEARCH_REFRESH_OK={ok}/{len(SOURCES)}")
-    for spot,s in out["source_fetch_status"].items():
-        print(f"SOURCE[{spot}]={'OK' if s['ok'] else 'FAIL'} {s.get('observed_at') or s.get('error')} {s.get('detail','')}")
+    for source_id,s in out["source_fetch_status"].items():
+        print(f"SOURCE[{source_id}]={'OK' if s['ok'] else 'FAIL'} {s.get('observed_at') or s.get('error')} {s.get('detail','')}")
 
 if __name__=="__main__":
     main()
