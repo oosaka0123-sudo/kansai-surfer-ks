@@ -106,3 +106,6 @@ jobs:
           grep -q 'minimum_independent_sources' prototype/ks-redesign/data/current-search-observations.json
           grep -q 'BCM公開サンプル＋KS参考の中間値' prototype/ks-redesign/morning-brief.html
           grep -q '"method": "50_50_midpoint"' prototype/ks-redesign/data/current-search-observations.json
+          ! grep -q 'const weatherMeta=' prototype/ks-redesign/morning-brief.html
+          ! grep -q 'const topicMeta=' prototype/ks-redesign/morning-brief.html
+          ! grep -q '記事生成 ' prototype/ks-redesign/morning-brief.html

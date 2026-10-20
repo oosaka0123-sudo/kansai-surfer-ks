@@ -188,6 +188,12 @@ The morning blog is being redesigned as a short, fact-grounded surf morning edit
 - Use a friendly, popular-host tone, but never fabricate personal observation, friend reports, or lived experience.
 - Weather and current-affairs facts must be sourced/verified before publication.
 
+### Reader-facing metadata policy
+- Keep observation, publication, forecast-check, and collector timestamps in backend JSON for verification and freshness logic.
+- Do not show raw ISO timestamps or labels such as `観測`, `発表`, `確認`, or `記事生成` in the normal morning-blog reading flow; they make the article feel machine-generated.
+- Normal weather/topic/competition/surf-news sections should read like editorial prose without source-timing metadata.
+- Safety alerts may retain issued/checked timing when it is materially important to understanding whether a warning is current.
+
 ### Morning brief editorial UI
 - NAMI morning brief should read like a surf-media morning blog, not a developer dashboard.
 - Use an editorial paper layout with strong masthead/date, human opening, clear TOP5, compact nine-spot entries, article-style news, safety block, closing comment, and a small expandable data-method note.
