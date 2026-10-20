@@ -1,0 +1,40 @@
+name: Validate borderless Top share button
+
+on:
+  push:
+    branches:
+      - fix/top-share-borderless-20261020
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify borderless share control and responsive render
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'id="topShareBtn"' index.html
+          grep -q 'border: 0;' index.html
+          grep -q 'background: transparent;' index.html
+          grep -q 'navigator.share' index.html
+          python3 -m http.server 8765 >/tmp/top-share-borderless.log 2>&1 &
+          PID=$!
+          trap 'kill $PID || true' EXIT
+          sleep 1
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium)"
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --hide-scrollbars             --window-size=390,844 --screenshot="$RUNNER_TEMP/share-390.png"             http://127.0.0.1:8765/index.html
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --hide-scrollbars             --window-size=1440,900 --screenshot="$RUNNER_TEMP/share-1440.png"             http://127.0.0.1:8765/index.html
+          test -s "$RUNNER_TEMP/share-390.png"
+          test -s "$RUNNER_TEMP/share-1440.png"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: borderless-share-preview
+          path: |
+            ${{ runner.temp }}/share-390.png
+            ${{ runner.temp }}/share-1440.png
+          retention-days: 3
