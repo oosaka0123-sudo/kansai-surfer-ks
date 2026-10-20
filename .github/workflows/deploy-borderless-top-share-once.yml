@@ -1,0 +1,60 @@
+name: Deploy borderless Top share once
+on:
+  push:
+    paths:
+      - '.github/workflows/deploy-borderless-top-share-once.yml'
+permissions:
+  contents: read
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    env:
+      SOURCE_SHA: cd1a713631d8ec0b4f9185c3f63bd03294f6f7b1
+      PREVIOUS_SHA: 3eba06f048339a5c00800acf1518a69e1f163eb2
+      SITE_URL: https://kansai.rss7.net/index.html
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+          fetch-depth: 0
+      - name: Verify source and unchanged live Top
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'id="topShareBtn"' index.html
+          grep -q 'border: 0;' index.html
+          git show "$PREVIOUS_SHA:index.html" > "$RUNNER_TEMP/previous.html"
+          curl --fail --silent --show-error --location --retry 4 --retry-delay 2 "$SITE_URL?v=$GITHUB_RUN_ID" -o "$RUNNER_TEMP/live-before.html"
+          cmp -s "$RUNNER_TEMP/previous.html" "$RUNNER_TEMP/live-before.html"
+      - run: sudo apt-get update -qq && sudo apt-get install -y lftp
+      - name: Upload Top only and verify
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          W="$RUNNER_TEMP/borderless-share"
+          mkdir -p "$W"
+          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp -e "set cmd:fail-exit true; set ftp:ssl-force true; set ftp:ssl-protect-data true; set ftp:passive-mode true; get /kansai/index.html -o \"$W/backup.html\"; bye"
+          rollback(){ lftp -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp -e "set cmd:fail-exit true; set ftp:ssl-force true; set ftp:ssl-protect-data true; put \"$W/backup.html\" -o /kansai/index.html; bye" || true; }
+          trap rollback ERR
+          cmp -s "$W/backup.html" "$RUNNER_TEMP/live-before.html"
+          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp -e "set cmd:fail-exit true; set ftp:ssl-force true; set ftp:ssl-protect-data true; set ftp:passive-mode true; put index.html -o /kansai/index.html; get /kansai/index.html -o \"$W/verify.html\"; bye"
+          cmp -s index.html "$W/verify.html"
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 2 "$SITE_URL?v=$GITHUB_RUN_ID" -o "$W/live.html"
+          cmp -s index.html "$W/live.html"
+          grep -q 'id="topShareBtn"' "$W/live.html"
+          grep -q 'border: 0;' "$W/live.html"
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium)"
+          timeout 45s "$CHROME" --headless=new --no-sandbox --disable-gpu --hide-scrollbars --virtual-time-budget=1600 --window-size=390,844 --screenshot="$W/live-390.png" "$SITE_URL?v=$GITHUB_RUN_ID"
+          test -s "$W/live-390.png"
+          trap - ERR
+          echo BORDERLESS_TOP_SHARE_OK
+      - uses: actions/upload-artifact@v4
+        with:
+          name: borderless-top-share-live
+          path: ${{ runner.temp }}/borderless-share/live-390.png
+          retention-days: 3
