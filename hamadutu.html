@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>浜詰 波情報｜ライブカメラ・風向き・波予想【関西サーファー】</title>
+<meta name="description" content="浜詰 波情報・ライブカメラ・風向き・波予想・潮汐情報を毎日更新。今日の浜詰の波サイズやサーフィンコンディションをリアルタイムで確認できます。"/>
+<link rel="icon" href="img/favicon.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@400;600;800&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,300&family=Noto+Sans+JP:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="nami_common.css?v=1018">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0a1520">
+<link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "ホーム",
+      "item": "https://kansai.rss7.net/index.html"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "浜詰（京都・日本海）",
+      "item": "https://kansai.rss7.net/hamadutu.html"
+    }
+  ]
+}
+</script>
+</head>
+<body>
+
+<header class="top-bar">
+  <a href="index.html" class="logo" style="text-decoration:none;">
+    <img src="img/logo-ks-white.png" alt="KS" style="height:36px;width:auto;margin-right:8px;vertical-align:middle;">
+    <span class="en">Kansai Surf</span>
+  </a>
+  <nav class="nav-pc">
+    <a href="isonoura.html"><i class="fa-solid fa-water"></i>磯ノ浦</a>
+    <a href="kounohama.html"><i class="fa-solid fa-water"></i>国府の浜</a>
+    <a href="ikumi.html"><i class="fa-solid fa-water"></i>生見</a>
+    <a href="komatsu.html"><i class="fa-solid fa-water"></i>小松海岸</a>
+    <a href="irago.html"><i class="fa-solid fa-water"></i>伊良湖</a>
+    <a href="shizunami.html"><i class="fa-solid fa-water"></i>静波</a>
+    <a href="hamadutu.html" class="active"><i class="fa-solid fa-water"></i>浜詰</a>
+    <a href="takahama.html"><i class="fa-solid fa-water"></i>高浜</a>
+    <a href="hakuto.html"><i class="fa-solid fa-water"></i>白兎</a>
+    <a href="contact.html"><i class="fa-solid fa-envelope"></i>お問い合わせ</a>
+    <a href="about.html"><i class="fa-solid fa-circle-info"></i>当サイトについて</a>
+  </nav>
+  <button class="hamburger" id="hamburger" aria-label="メニュー">
+    <span></span><span></span><span></span>
+  </button>
+  <span class="tag-live" id="clockTag"><span class="dot"></span>LIVE --:--</span>
+</header>
+
+<div class="mobile-menu" id="mobileMenu">
+  <div class="mm-section">メインメニュー</div>
+  <a href="index.html"><span class="mm-left"><i class="fa-solid fa-house"></i>ホーム</span></a>
+  <a href="blog/index.php"><span class="mm-left"><i class="fa-solid fa-newspaper"></i>ブログ</span></a>
+  <a href="https://suzuri.jp/kansaisurfer" target="_blank" rel="noopener"><span class="mm-left"><i class="fa-solid fa-shirt"></i>ショップ</span></a>
+  <div class="mm-section">サーフポイント</div>
+  <a href="isonoura.html"><span class="mm-left"><i class="fa-solid fa-water"></i>磯ノ浦（和歌山）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='isonoura_guide.html';">GUIDE</span></a>
+  <a href="kounohama.html"><span class="mm-left"><i class="fa-solid fa-water"></i>伊勢・国府の浜（三重）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='kounohama_guide.html';">GUIDE</span></a>
+  <a href="ikumi.html"><span class="mm-left"><i class="fa-solid fa-water"></i>四国・生見（高知）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='ikumi_guide.html';">GUIDE</span></a>
+  <a href="komatsu.html"><span class="mm-left"><i class="fa-solid fa-water"></i>四国・小松海岸（徳島）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='komatsu_guide.html';">GUIDE</span></a>
+  <a href="irago.html"><span class="mm-left"><i class="fa-solid fa-water"></i>伊良湖（愛知）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='irago_guide.html';">GUIDE</span></a>
+  <a href="shizunami.html"><span class="mm-left"><i class="fa-solid fa-water"></i>静波（静岡）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='shizunami_guide.html';">GUIDE</span></a>
+  <a href="hamadutu.html" class="active"><span class="mm-left"><i class="fa-solid fa-water"></i>浜詰（京都・日本海）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='hamadutu_guide.html';">GUIDE</span></a>
+  <a href="takahama.html"><span class="mm-left"><i class="fa-solid fa-water"></i>高浜（福井・日本海）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='takahama_guide.html';">GUIDE</span></a>
+  <a href="hakuto.html"><span class="mm-left"><i class="fa-solid fa-water"></i>白兎（鳥取・日本海）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='hakuto_guide.html';">GUIDE</span></a>
+  <div class="mm-section">その他</div>
+  <a href="about.html"><span class="mm-left"><i class="fa-solid fa-circle-info"></i>当サイトについて</span></a>
+  <a href="contact.html"><span class="mm-left"><i class="fa-solid fa-envelope"></i>お問い合わせ</span></a>
+  <a href="https://kansai.rss7.net/secret/test.php"><span class="mm-left"><i class="fa-solid fa-lock"></i>SECRET MODE</span></a>
+</div>
+
+<div class="top-strip">
+  <div class="crumbs">
+    <a href="index.html"><i class="fa-solid fa-house"></i> ホーム</a>
+    <span class="sep">/</span><a href="#">京都</a><span class="sep">/</span><a href="#">京丹後市</a><span class="sep">/</span><span class="now">浜詰</span>
+  </div>
+  <div class="update-info" id="updateInfo">
+    <span class="sync-ico"><i class="fa-solid fa-arrows-rotate"></i></span>
+    <span>最終更新: <span id="lastUpdate">--:--</span></span>
+    <button class="refresh-btn" id="refreshBtn"><i class="fa-solid fa-rotate-right"></i> 更新</button>
+  </div>
+</div>
+
+<section class="verdict-banner">
+  <div class="verdict-text" id="verdictText"><i class="fa-solid fa-spinner fa-spin"></i> 読み込み中...</div>
+  <div class="verdict-stars" id="verdictStars">☆☆☆☆☆</div>
+  <div class="verdict-score-row">
+    <div class="verdict-score"><span id="scoreNum">--</span><span class="denom">/10</span></div>
+    <div class="verdict-best-time">ベスト時間 <strong id="bestTime">--</strong></div>
+  </div>
+</section>
+
+<section class="spot-hero">
+  <div class="spot-hero-grid">
+    <div>
+      <div class="spot-meta">
+        <span><i class="fa-solid fa-map-pin"></i>京都府京丹後市</span>
+        <span><i class="fa-solid fa-umbrella-beach"></i>ビーチブレイク・北向き</span>
+        <span><i class="fa-solid fa-location-crosshairs"></i>京都エリア</span>
+      </div>
+      <h1 class="spot-title">浜詰 波情報<span class="spot-title-en">Hamazutsu Beach</span></h1>
+      <p class="spot-intro">浜詰 波情報・ライブカメラ・風向き・波予想を毎日更新。京都府京丹後市の日本海に面したサーフポイントで、冬の北西うねりで良波が立つ関西日本海側の定番スポットです。</p>
+    </div>
+    <div class="stats-card">
+      <div class="stats-grid">
+        <div class="stat-cell"><span class="stat-ico"><i class="fa-solid fa-water"></i></span><div class="stat-label">波の高さ</div><div class="stat-val" id="waveVal">--<span class="unit">m</span></div></div>
+        <div class="stat-cell"><span class="stat-ico"><i class="fa-solid fa-stopwatch"></i></span><div class="stat-label">周期</div><div class="stat-val" id="periodVal">--<span class="unit">秒</span></div></div>
+        <div class="stat-cell"><span class="stat-ico"><i class="fa-solid fa-wind"></i></span><div class="stat-label">風</div><div class="stat-val" id="windVal" style="font-size:1.1rem;">--</div></div>
+        <div class="stat-cell"><span class="stat-ico"><i class="fa-solid fa-arrows-to-dot"></i></span><div class="stat-label">うねり</div><div class="stat-val" id="swellVal" style="font-size:1.1rem;">--</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="context-call">
+  <div class="head"><i class="fa-solid fa-circle-info"></i> ポイントの特徴</div>
+  <div class="body">京都府京丹後市の<strong>日本海に面したビーチブレイク</strong>。冬の北西うねりがよく入り、関西の日本海サーフィンの定番ポイント。オフショアは<strong>南風</strong>。浜詰は京都府京丹後市にある日本海側を代表するサーフポイントです。北西うねりに反応しやすく、波情報・ライブカメラ・波予想を毎日更新しています。</div>
+</div>
+
+<section class="section" style="padding-top:50px;padding-bottom:50px;">
+  <h2 class="section-title">
+    <span class="no">01</span>
+    <i class="fa-solid fa-lightbulb ico"></i>
+    今日のアドバイス
+  </h2>
+  <div class="local-tips" style="max-width:720px;">
+    <h3><i class="fa-solid fa-lightbulb"></i>今日の狙い方</h3>
+    <p id="todayTip"><i class="fa-solid fa-spinner fa-spin"></i> データ取得後に表示されます。</p>
+  </div>
+</section>
+
+<section class="section">
+  <h2 class="section-title">
+    <span class="no">02</span><i class="fa-solid fa-camera-retro ico"></i>現地波レポート
+  </h2>
+  <div class="wave-report-box" style="margin:0;">
+    <div class="wave-report-head" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:16px;">
+      <p style="margin:0;font-size:0.95rem;color:var(--cream-soft,#e2d9c8);">LINEで届いた現地の写真・動画から、管理者OK済みだけを掲載します。</p>
+      <a href="https://kansai.rss7.net/line/" target="_blank" rel="noopener"
+         style="display:inline-flex;align-items:center;gap:8px;background:#00c300;color:#fff;padding:12px 20px;border-radius:999px;font-weight:900;font-size:0.9rem;text-decoration:none;white-space:nowrap;box-shadow:0 8px 22px rgba(0,0,0,0.18);">
+        <i class="fa-brands fa-line"></i> 現地投稿に参加する（β版）
+      </a>
+    </div>
+    <div class="wave-report-grid" id="ks-line-hamadutu">
+      <div class="wave-report-empty" style="grid-column:1/-1;">
+        <i class="fa-solid fa-spinner fa-spin"></i> レポートを読み込み中...
+      </div>
+    </div>
+  </div>
+</section>
+<script>
+(function(){
+  function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function isVideo(f,t){ return t==='video'||/\.(mp4|mov|m4v|webm)$/i.test(f||''); }
+  fetch('/data/line_posts.json?_='+Date.now(),{cache:'no-store'})
+    .then(function(r){return r.json();})
+    .then(function(posts){
+      var items=posts.filter(function(p){
+        return p.status==='approved'&&p.spot==='hamadutu'&&(p.type==='image'||p.type==='video')&&p.file;
+      }).slice(0,3);
+      var el=document.getElementById('ks-line-hamadutu');
+      if(!el)return;
+      if(items.length===0){
+        el.innerHTML='<div class="wave-report-empty" style="grid-column:1/-1;"><strong>現地波レポート募集中</strong><br>写真・動画は管理者確認後にここへ掲載されます。</div>';
+        return;
+      }
+      el.innerHTML=items.map(function(p){
+        var media=p.file||'',type=p.type||'',name=escHtml(p.name||'現地サーファー'),time=escHtml(p.created_at||'');
+        var comment=escHtml(p.text||'現地レポートが届きました。').replace(/\n/g,'<br>');
+        var mediaHtml=isVideo(media,type)
+          ?'<div class="wave-report-media"><video src="'+escHtml(media)+'" controls playsinline preload="metadata"></video></div>'
+          :'<div class="wave-report-media"><img src="'+escHtml(media)+'" alt="浜詰 現地投稿" loading="lazy"></div>';
+        return '<article class="wave-report-card">'+mediaHtml+'<div class="wave-report-body"><div class="wave-report-meta"><span>'+name+'</span><span>'+time+'</span></div><h3 class="wave-report-title">浜詰</h3><p class="wave-report-comment">'+comment+'</p></div></article>';
+      }).join('');
+    })
+    .catch(function(){
+      var el=document.getElementById('ks-line-hamadutu');
+      if(el)el.innerHTML='<div class="wave-report-empty" style="grid-column:1/-1;">読み込みに失敗しました。</div>';
+    });
+})();
+</script>
+
+<section class="section cam-section">
+  <h2 class="section-title"><span class="no">03</span><i class="fa-solid fa-video ico"></i>ライブカメラ</h2>
+  <p class="cam-intro">浜詰のライブカメラでは最新の波情報や海面状況をリアルタイムで確認できます。サーフィン前はライブカメラと波予想をあわせてチェックすることで、より正確なコンディション判断が可能です。</p>
+  <div class="cam-link-grid">
+    <a href="https://www.city.kyotango.lg.jp/top/soshiki/somu/digital/13/1744.html" target="_blank" rel="noopener" class="cam-link featured">
+      <div class="head-row"><div class="ico-box"><i class="fa-solid fa-video"></i></div><span class="go-arr">→</span></div>
+      <div class="name">京丹後市ライブカメラ<span class="en">京丹後市公式</span></div>
+      <div class="meta"><span>京丹後市</span><span class="badge official">公式</span></div>
+    </a>
+  </div>
+</section>
+
+<section class="section">
+  <h2 class="section-title"><span class="no">04</span><i class="fa-solid fa-chart-line ico"></i>時間別予報</h2>
+  <div class="hourly-chart">
+    <div class="hourly-chart-inner"><svg class="hourly-svg" id="hourlySvg" viewBox="0 0 1200 280" preserveAspectRatio="none"></svg>
+    <div class="hourly-rows" id="hourlyRows">
+      <div class="hrow-label">時刻</div>
+      <div class="hrow-cell" style="grid-column: span 12;"><i class="fa-solid fa-spinner fa-spin"></i> 読込中...</div>
+    </div>
+  </div>
+
+<a href="https://www.umitenki.jp/tenki/2621/tide" target="_blank" rel="noopener" class="umitenki-card">
+  <div class="umi-left">
+    <div class="umi-icon">🌊</div>
+    <div class="umi-info">
+      <div class="umi-title">浜詰 タイドグラフ</div>
+      <div class="umi-tags">
+        <span>📈 潮位グラフ</span>
+        <span>⛅ 天気予報</span>
+        <span>🌡 気温</span>
+        <span>🌊 波高</span>
+        <span>💧 海水温</span>
+      </div>
+      <div class="umi-desc">潮位グラフ・波・天気予報・海水温 · 海天気.jp</div>
+    </div>
+  </div>
+  <div class="umi-btn">浜詰専用ページ →</div>
+</a>
+</div><div class="data-src"><i class="fa-solid fa-database"></i>データ提供 · <a href="https://open-meteo.com" target="_blank">Open-Meteo</a></div>
+</section>
+
+<section class="section">
+  <h2 class="section-title"><span class="no">05</span><i class="fa-solid fa-calendar-week ico"></i>週間予報</h2>
+  <table class="weekly-table">
+    <thead><tr><th><i class="fa-solid fa-calendar-day"></i>日付</th><th><i class="fa-solid fa-cloud-sun"></i>天気</th><th><i class="fa-solid fa-water"></i>波の高さ</th><th><i class="fa-solid fa-stopwatch"></i>周期</th><th><i class="fa-solid fa-wind"></i>風</th><th><i class="fa-solid fa-temperature-half"></i>気温</th><th><i class="fa-solid fa-flag"></i>判定</th></tr></thead>
+    <tbody id="weeklyBody"><tr><td colspan="6" style="text-align:center;color:var(--teal-pale);"><i class="fa-solid fa-spinner fa-spin"></i> データ取得中...</td></tr></tbody>
+  </table>
+</section>
+
+<section class="section">
+  <h2 class="section-title"><span class="no">06</span><i class="fa-solid fa-circle-info ico"></i>スポット情報</h2>
+  <div class="profile-grid">
+    <ul class="profile-list">
+      <li><div class="label"><i class="fa-solid fa-umbrella-beach"></i>ブレイク</div><div class="val">ビーチブレイク。砂地で穏やかな日もある。</div></li>
+      <li><div class="label"><i class="fa-solid fa-compass"></i>ビーチ方位</div><div class="val"><strong>北</strong>向き。</div></li>
+      <li><div class="label"><i class="fa-solid fa-wind"></i>ベスト風向</div><div class="val"><strong>南</strong>のオフショア。</div></li>
+      <li><div class="label"><i class="fa-solid fa-water"></i>サイズ帯</div><div class="val">腰〜肩。冬の本格スウェルで頭オーバー。</div></li>
+      <li><div class="label"><i class="fa-solid fa-leaf"></i>ベストシーズン</div><div class="val">冬（11〜3月）の北西うねり。</div></li>
+      <li><div class="label"><i class="fa-solid fa-users"></i>レベル</div><div class="val">初級〜中級向け。</div></li>
+      <li><div class="label"><i class="fa-solid fa-car"></i>アクセス</div><div class="val">関西から車で約2時間半。</div></li>
+    </ul>
+  </div>
+</section>
+
+<section class="section" style="background:var(--ink-deep);">
+  <h2 class="section-title">
+    <span class="no">07</span>
+    <i class="fa-solid fa-map ico"></i>
+    広域波高マップ
+  </h2>
+  <p style="color:var(--cream-soft); font-size:0.95rem; line-height:1.9; margin-bottom:20px; max-width:680px;">
+    タップで拡大表示。<strong style="color:var(--coral-soft);">国際気象海洋</strong>提供の現在の波高マップです。
+  </p>
+  <img src="https://www.imocwx.com/cwm/cwm_jp.gif" alt="広域波高マップ" onclick="document.getElementById('waveBig').style.display='flex'" style="width:100%;max-width:720px;border-radius:8px;cursor:pointer;border:1px solid var(--line);">
+  <p style="font-size:0.72rem;color:var(--teal-pale);margin-top:10px;">出典：<a href="https://www.imocwx.com/cwm.php?Area=0&Time=2" target="_blank" rel="noopener" style="color:var(--coral-soft);text-decoration:none;">国際気象海洋株式会社</a> / 気象庁提供</p>
+</section>
+
+<div id="waveBig" onclick="this.style.display='none'" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:99999;align-items:center;justify-content:center;padding:10px;cursor:pointer;">
+  <img src="https://www.imocwx.com/cwm/cwm_jp.gif" alt="拡大表示" style="width:95vw;height:auto;max-height:95vh;object-fit:contain;border-radius:8px;background:#000;">
+</div>
+
+<!-- Elfsight Instagram Feed -->
+<section class="section" style="background:var(--ink-deep);">
+  <h2 class="section-title">
+    <span class="no">08</span>
+    <i class="fa-brands fa-instagram ico"></i>
+    #浜詰 SNS投稿
+  </h2>
+  <p style="color:var(--cream-soft); font-size:0.95rem; line-height:1.9; margin-bottom:30px; max-width:680px;">
+    <strong style="color:var(--coral-soft);">#浜詰</strong> ハッシュタグの最新投稿を表示しています。
+    地元サーファー・遠征者のリアルタイム情報をチェック。
+  </p>
+  <div class="elfsight-wrapper" style="background: var(--cream); padding: 24px; border-radius: 8px;">
+    <script src="https://elfsightcdn.com/platform.js" async></script>
+    <div class="elfsight-app-c707de51-04d9-456f-b8f9-9b10ba9e70a7" data-elfsight-app-lazy></div>
+  </div>
+  <p style="margin-top:14px;max-width:680px;">
+    <a href="instagram://tag?name=浜詰"
+       onclick="setTimeout(function(){ location.href='https://www.instagram.com/explore/tags/浜詰/'; }, 800);"
+       style="color:var(--coral-soft);text-decoration:none;font-weight:700;">
+      Instagramで #浜詰 を見る
+    </a>
+  </p>
+</section>
+
+<!-- ガイドリンクカード -->
+<section class="section" style="background:var(--ink-deep);">
+  <h2 class="section-title">
+    <span class="no">09</span>
+    <i class="fa-solid fa-book-open ico"></i>
+    SURF GUIDE · 浜詰完全ガイド
+  </h2>
+  <a href="hamadutu_guide.html" class="tide-link-card" style="max-width:720px;display:flex;align-items:center;gap:16px;padding:22px 24px;background:rgba(11,29,42,0.6);border:1px solid var(--coral);text-decoration:none;color:var(--cream);transition:all 0.25s;position:relative;overflow:hidden;">
+    <div class="tide-ico">🏄</div>
+    <div class="tide-info">
+      <div class="tide-title">浜詰 完全ガイド</div>
+      <div class="tide-desc">🚗 駐車場　🌊 波の特徴　♨️ 温泉　🍽 グルメ　🗺 観光　🚐 モデルコース</div>
+    </div>
+    <div class="tide-arr">→</div>
+  </a>
+</section>
+
+<a href="https://kansai.rss7.net/line/" target="_blank" rel="noopener" class="floating-line">
+  <div class="fl-icon"><i class="fa-brands fa-line"></i></div>
+  <div class="fl-text">
+    <span class="fl-label">京都専用</span>
+    <span class="fl-sub">LINEコミュニティ</span>
+  </div>
+  <span class="fl-arrow">→</span>
+</a>
+
+<footer>
+  <a href="https://kansai.rss7.net/index.html" class="logo" style="text-decoration:none;justify-content:center;">
+    <img src="https://kansai.rss7.net/img/logo-ks-white.png" alt="KS" style="height:24px;width:auto;margin-right:6px;vertical-align:middle;">
+    <span class="en" style="font-size:0.75rem;">Kansai Surf</span>
+  </a>
+
+  <div class="footer-sns" style="display:flex;align-items:center;justify-content:center;gap:24px;margin:22px 0;padding:8px 0;">
+    <a href="https://www.instagram.com/kansaisurfer.ks/" target="_blank" rel="noopener" aria-label="Instagram" title="Instagram" style="color:var(--cream-soft);font-size:1.7rem;line-height:1;padding:6px;text-decoration:none;"><i class="fa-brands fa-instagram" aria-hidden="true"></i></a>
+    <a href="https://facebook.com/kansaisurfer" target="_blank" rel="noopener" aria-label="Facebook" title="Facebook" style="color:var(--cream-soft);font-size:1.7rem;line-height:1;padding:6px;text-decoration:none;"><i class="fa-brands fa-facebook" aria-hidden="true"></i></a>
+    <a href="https://www.tiktok.com/@ks295223" target="_blank" rel="noopener" aria-label="TikTok" title="TikTok" style="color:var(--cream-soft);font-size:1.7rem;line-height:1;padding:6px;text-decoration:none;"><i class="fa-brands fa-tiktok" aria-hidden="true"></i></a>
+    <a href="https://x.com/kansaisurfer" target="_blank" rel="noopener" aria-label="X" title="X" style="color:var(--cream-soft);font-size:1.7rem;line-height:1;padding:6px;text-decoration:none;"><i class="fa-brands fa-x-twitter" aria-hidden="true"></i></a>
+    <a href="https://www.youtube.com/@kansaisurfes" target="_blank" rel="noopener" aria-label="YouTube" title="YouTube" style="color:var(--cream-soft);font-size:1.7rem;line-height:1;padding:6px;text-decoration:none;"><i class="fa-brands fa-youtube" aria-hidden="true"></i></a>
+  </div>
+
+  <div class="footer-links">
+    <a href="https://kansai.rss7.net/index.html"><i class="fa-solid fa-house" aria-hidden="true"></i> ホーム</a>
+    <a href="https://kansai.rss7.net/blog/index.php"><i class="fa-solid fa-newspaper" aria-hidden="true"></i> ブログ</a>
+    <a href="https://suzuri.jp/kansaisurfer" target="_blank" rel="noopener"><i class="fa-solid fa-shirt" aria-hidden="true"></i> ショップ</a>
+  </div>
+
+  <div class="footer-links">
+    <a href="https://kansai.rss7.net/isonoura.html"><i class="fa-solid fa-water" aria-hidden="true"></i> 磯ノ浦</a>
+    <a href="https://kansai.rss7.net/kounohama.html"><i class="fa-solid fa-water" aria-hidden="true"></i> 伊勢</a>
+    <a href="https://kansai.rss7.net/ikumi.html"><i class="fa-solid fa-water" aria-hidden="true"></i> 生見</a>
+    <a href="https://kansai.rss7.net/komatsu.html"><i class="fa-solid fa-water" aria-hidden="true"></i> 小松</a>
+    <a href="https://kansai.rss7.net/irago.html"><i class="fa-solid fa-water" aria-hidden="true"></i> 伊良湖</a>
+    <a href="https://kansai.rss7.net/shizunami.html"><i class="fa-solid fa-water" aria-hidden="true"></i> 静波</a>
+    <a href="https://kansai.rss7.net/hamadutu.html"><i class="fa-solid fa-water" aria-hidden="true"></i> 浜詰</a>
+    <a href="https://kansai.rss7.net/takahama.html"><i class="fa-solid fa-water" aria-hidden="true"></i> 高浜</a>
+    <a href="https://kansai.rss7.net/hakuto.html"><i class="fa-solid fa-water" aria-hidden="true"></i> 白兎</a>
+  </div>
+
+  <div class="footer-links" style="margin-bottom:16px;">
+    <span style="color:var(--teal-pale);font-family:'JetBrains Mono',monospace;font-size:0.65rem;letter-spacing:0.1em;align-self:center;"><i class="fa-solid fa-book-open" aria-hidden="true"></i> GUIDE</span>
+    <a href="https://kansai.rss7.net/isonoura_guide.html">磯ノ浦ガイド</a>
+    <a href="https://kansai.rss7.net/kounohama_guide.html">国府の浜ガイド</a>
+    <a href="https://kansai.rss7.net/ikumi_guide.html">生見ガイド</a>
+    <a href="https://kansai.rss7.net/komatsu_guide.html">小松ガイド</a>
+    <a href="https://kansai.rss7.net/irago_guide.html">伊良湖ガイド</a>
+    <a href="https://kansai.rss7.net/shizunami_guide.html">静波ガイド</a>
+    <a href="https://kansai.rss7.net/hamadutu_guide.html">浜詰ガイド</a>
+    <a href="https://kansai.rss7.net/takahama_guide.html">高浜ガイド</a>
+    <a href="https://kansai.rss7.net/hakuto_guide.html">白兎ガイド</a>
+  </div>
+
+  <div class="footer-links">
+    <a href="https://kansai.rss7.net/contact.html"><i class="fa-solid fa-envelope" aria-hidden="true"></i> お問い合わせ</a>
+    <a href="https://kansai.rss7.net/about.html"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> 当サイトについて</a>
+    <a href="https://kansai.rss7.net/privacy.html"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> プライバシーポリシー</a>
+  </div>
+
+  <div class="attr"><i class="fa-solid fa-cloud" aria-hidden="true"></i> Weather data by <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo.com</a></div>
+  <div class="attr" style="margin-top:14px;">
+    <a href="https://kiseki.rss7.net/" target="_blank" rel="noopener">映像工房 軌跡</a> ·
+    <a href="https://bitframe.rss7.net/" target="_blank" rel="noopener">AI動画CM制作.bitframe</a> ·
+    <a href="https://rss7.net/" target="_blank" rel="noopener">RSS7 AI Works 総合制作</a> ·
+    <a href="https://sleague.rss7.net/" target="_blank" rel="noopener"><i class="fa-solid fa-trophy" aria-hidden="true"></i> S.LEAGUE NOW</a> ·
+    <a href="https://surfboard.rss7.net/" target="_blank" rel="noopener"><i class="fa-solid fa-person-surfing" aria-hidden="true"></i> Surfboard Finder｜45〜60歳のための次の1本診断</a>
+  </div>
+  <div class="attr">© 2026 関西サーファー.ks · MADE IN OSAKA</div>
+</footer>
+
+
+
+<script>
+const SPOT_CONFIG = {
+  name: '浜詰', nameEn: 'Hamazutsu Beach', region: '京都府',
+  LAT: 35.644, LNG: 135.086,
+  OFFSHORE_START: 120, OFFSHORE_END: 200,
+  SWELL_BEST_MIN: 280, SWELL_BEST_MAX: 360,
+  WAVE_FACTOR: 1.0,
+  REFRESH_INTERVAL_MS: 10 * 60 * 1000,
+  TIP_FLAT: '<strong>うねり弱め</strong>（{wave}m）。浜詰は冬季の北西うねり待ち。',
+  TIP_BLOWN: '<strong>{dir}のオンショア{ws}m/s</strong>。日本海特有の荒れ。',
+  TIP_PERFECT: '<strong>絶好のコンディション</strong>。{dir}オフショア{ws}m/s、周期{p}秒。<strong>日本海ベストデイ</strong>。',
+  TIP_BIG: '<strong>サイズアップ中</strong>（{wave}m／{label}）。冬の本格スウェル。',
+  TIP_NORMAL: '{label}。{condText}。浜詰らしい波。',
+};
+</script>
+<script src="nami_common.js?v=1018"></script>
+<script>
+if (typeof loadWaveReports === "function") loadWaveReports("浜詰");
+</script>
+<script>
+// 波高マップのキャッシュバスト
+(function waveMapRefresh(){
+  document.querySelectorAll('img[src*="cwm_jp.gif"]').forEach(function(img){
+    img.src = img.src.split('?')[0] + '?_=' + Date.now();
+  });
+})();
+</script>
+<script>
+function snsOpen(appUrl, webUrl){ var t=Date.now(); location.href=appUrl; setTimeout(function(){ if(Date.now()-t<2000) location.href=webUrl; },500); }
+document.getElementById('sns-ig').addEventListener('click',function(e){ e.preventDefault(); snsOpen('instagram://user?username=kansaisurfer.ks','https://www.instagram.com/kansaisurfer.ks/'); });
+document.getElementById('sns-fb').addEventListener('click',function(e){ e.preventDefault(); snsOpen('fb://profile/kansaisurfer','https://facebook.com/kansaisurfer'); });
+document.getElementById('sns-tt').addEventListener('click',function(e){ e.preventDefault(); snsOpen('snssdk1233://user/profile?uniqueId=ks295223','https://www.tiktok.com/@ks295223'); });
+document.getElementById('sns-x').addEventListener('click',function(e){ e.preventDefault(); snsOpen('twitter://user?screen_name=kansaisurfer','https://x.com/kansaisurfer'); });
+document.getElementById('sns-yt').addEventListener('click',function(e){ e.preventDefault(); snsOpen('vnd.youtube://www.youtube.com/@kansaisurfers','https://www.youtube.com/@kansaisurfers'); });
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/sw.js').catch(function(err) {
+      console.log('SW登録失敗:', err);
+    });
+  });
+}
+</script>
+</body>
+</html>
