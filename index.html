@@ -321,13 +321,15 @@
 }
 
 /* ---- TOP share button (Top page only) ---- */
-.top-hero {
+.top-strip {
   position: relative;
+  padding-right: 96px;
 }
 .top-share-btn {
   position: absolute;
-  top: 22px;
+  top: 50%;
   right: clamp(18px, 4.5vw, 36px);
+  transform: translateY(-50%);
   z-index: 2;
   width: 46px;
   height: 46px;
@@ -347,7 +349,7 @@
 .top-share-btn:hover {
   color: var(--coral);
   background: transparent;
-  transform: translateY(-1px);
+  transform: translateY(calc(-50% - 1px));
 }
 .top-share-btn:focus-visible {
   outline: 2px solid var(--coral);
@@ -355,8 +357,9 @@
 }
 .top-share-toast {
   position: absolute;
-  top: 29px;
-  right: clamp(76px, calc(4.5vw + 58px), 94px);
+  top: 50%;
+  right: clamp(68px, calc(4.5vw + 54px), 90px);
+  transform: translateY(-50%);
   z-index: 3;
   max-width: min(220px, 58vw);
   padding: 7px 10px;
@@ -369,23 +372,25 @@
   line-height: 1.4;
   opacity: 0;
   pointer-events: none;
-  transform: translateY(-3px);
   transition: opacity .18s ease, transform .18s ease;
 }
 .top-share-toast.show {
   opacity: 1;
-  transform: translateY(0);
+  transform: translateY(-50%);
 }
 @media (max-width: 600px) {
+  .top-strip {
+    padding-right: 78px;
+  }
   .top-share-btn {
-    top: 20px;
-    right: 18px;
+    top: 50%;
+    right: 14px;
     width: 44px;
     height: 44px;
   }
   .top-share-toast {
-    top: 26px;
-    right: 72px;
+    top: 50%;
+    right: 62px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -476,13 +481,13 @@
     <span>最終更新: <span id="lastUpdate">--:--</span></span>
     <button class="refresh-btn" id="refreshBtn"><i class="fa-solid fa-rotate-right"></i> 更新</button>
   </div>
-</div>
-
-<section class="top-hero">
   <button class="top-share-btn" id="topShareBtn" type="button" aria-label="このページを共有" title="このページを共有">
     <i class="fa-solid fa-share-nodes" aria-hidden="true"></i>
   </button>
   <span class="top-share-toast" id="topShareToast" role="status" aria-live="polite"></span>
+</div>
+
+<section class="top-hero">
   <h1 id="top-hero-title">関西サーフィン波情報｜磯ノ浦・生見・国府の浜・伊良湖の無料波予報</h1>
   <div class="subtitle">全9ポイントの波をAPIでリアルタイムチェック</div>
   <p class="lead">
