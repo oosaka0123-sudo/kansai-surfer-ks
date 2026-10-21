@@ -3,7 +3,7 @@
 Fetched by GitHub Actions directly from https://kansai.rss7.net/ for Issue #25.
 These hashes cover only files successfully fetched in this run.
 
-0427598ad161dece0a8fa0679a26c38d08eb44ab613fa4deafd4b35f12155fde  index.html
+311f042e985939c6a5e713a4e05cfe0ddf841d43dd4d2d31426559508b22f08b  index.html
 9205c696a3dd173bd0c6ca27fdcec5c0e8991155f8aefc408913e4e07cfce8ca  isonoura.html
 37e40973c4aad47750935feb95b12381c0e6ee76764f14e5ab056bd5a84f297d  nami_common.css
 034ecc6cd950fbacf6b082336802f0d5fd9927bbd3bf962629e8fc56d44e09fd  nami_common.js
