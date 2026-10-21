@@ -1,0 +1,106 @@
+name: Deploy moved Top share once
+
+on:
+  push:
+    paths:
+      - '.github/workflows/deploy-top-share-strip-once.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    env:
+      SOURCE_SHA: 90ac725a5fbdf56d42bb2cc4b34e909a251ba77f
+      BASELINE_SHA: b39f0db382ec80fe611598de4a077259fb9a398c
+      SITE_URL: https://kansai.rss7.net/index.html
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+          fetch-depth: 0
+
+      - name: Verify source and unchanged live Top
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib,re
+          s=pathlib.Path("index.html").read_text(encoding="utf-8")
+          strip=re.search(r'<div class="top-strip">.*?</div>\s*<section class="top-hero">',s,re.S)
+          if not strip or 'id="topShareBtn"' not in strip.group(0):
+              raise SystemExit("share button is not inside top strip")
+          hero=re.search(r'<section class="top-hero">.*?</section>',s,re.S)
+          if hero and 'id="topShareBtn"' in hero.group(0):
+              raise SystemExit("share button still inside hero")
+          for token in ['border: 0;','background: transparent;','navigator.share','navigator.clipboard']:
+              if token not in s:
+                  raise SystemExit(f"missing {token}")
+          print("TOP_SHARE_STRIP_SOURCE_OK")
+          PY
+
+          git show "$BASELINE_SHA:index.html" > "$RUNNER_TEMP/baseline.html"
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 2             "$SITE_URL?v=$GITHUB_RUN_ID" -o "$RUNNER_TEMP/live-before.html"
+          cmp -s "$RUNNER_TEMP/baseline.html" "$RUNNER_TEMP/live-before.html" || {
+            echo "::error::Production Top changed after baseline sync; refusing upload."
+            exit 1
+          }
+
+      - run: sudo apt-get update -qq && sudo apt-get install -y lftp
+
+      - name: Upload Top only and verify live
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          W="$RUNNER_TEMP/top-share-strip-prod"
+          mkdir -p "$W"
+
+          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp -e "set cmd:fail-exit true; set ftp:ssl-force true; set ftp:ssl-protect-data true; set ftp:passive-mode true; get /kansai/index.html -o \"$W/backup.html\"; bye"
+
+          rollback(){
+            echo "::warning::Verification failed; restoring original Top."
+            lftp -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp -e "set cmd:fail-exit true; set ftp:ssl-force true; set ftp:ssl-protect-data true; put \"$W/backup.html\" -o /kansai/index.html; bye" || true
+          }
+          trap rollback ERR
+
+          cmp -s "$W/backup.html" "$RUNNER_TEMP/live-before.html"
+
+          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp -e "set cmd:fail-exit true; set ftp:ssl-force true; set ftp:ssl-protect-data true; set ftp:passive-mode true; put index.html -o /kansai/index.html; get /kansai/index.html -o \"$W/ftp-verify.html\"; bye"
+          cmp -s index.html "$W/ftp-verify.html"
+
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 2             "$SITE_URL?v=$GITHUB_RUN_ID-final" -o "$W/live.html"
+          cmp -s index.html "$W/live.html"
+
+          python3 - "$W/live.html" <<'PY'
+          import pathlib,re,sys
+          s=pathlib.Path(sys.argv[1]).read_text(encoding="utf-8")
+          strip=re.search(r'<div class="top-strip">.*?</div>\s*<section class="top-hero">',s,re.S)
+          if not strip or 'id="topShareBtn"' not in strip.group(0):
+              raise SystemExit("live share button not in top strip")
+          print("TOP_SHARE_STRIP_LIVE_HTML_OK")
+          PY
+
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium)"
+          set +e
+          timeout 30s "$CHROME" --headless=new --no-sandbox --disable-gpu --hide-scrollbars             --virtual-time-budget=1600 --window-size=390,844             --screenshot="$W/live-390.png"             "$SITE_URL?v=$GITHUB_RUN_ID-final"
+          CHROME_RC=$?
+          set -e
+          test -s "$W/live-390.png" || {
+            echo "::error::Mobile screenshot missing (chrome rc=$CHROME_RC)."
+            false
+          }
+
+          trap - ERR
+          echo TOP_SHARE_STRIP_LIVE_OK
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: top-share-strip-live-proof
+          path: ${{ runner.temp }}/top-share-strip-prod/live-390.png
+          retention-days: 3
