@@ -37,6 +37,73 @@
   ]
 }
 </script>
+<style id="major-spot-share-style">
+/* Borderless share control for the 9 major spot pages */
+.top-strip {
+  position: relative;
+  padding-right: 96px;
+}
+.spot-page-share-btn {
+  position: absolute;
+  top: 50%;
+  right: clamp(18px, 4.5vw, 36px);
+  transform: translateY(-50%);
+  z-index: 3;
+  width: 46px;
+  height: 46px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--cream);
+  font: inherit;
+  font-size: 1.3rem;
+  cursor: pointer;
+  transition: color .2s ease, opacity .2s ease, transform .2s ease;
+}
+.spot-page-share-btn:hover {
+  color: var(--coral);
+  transform: translateY(calc(-50% - 1px));
+}
+.spot-page-share-btn:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 3px;
+}
+.spot-page-share-toast {
+  position: absolute;
+  top: 50%;
+  right: clamp(68px, calc(4.5vw + 54px), 90px);
+  transform: translateY(-50%);
+  z-index: 4;
+  max-width: min(220px, 58vw);
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  background: rgba(11, 29, 42, 0.94);
+  color: var(--cream-soft);
+  font-family: "JetBrains Mono", monospace;
+  font-size: .64rem;
+  letter-spacing: .06em;
+  line-height: 1.4;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .18s ease;
+}
+.spot-page-share-toast.show { opacity: 1; }
+@media (max-width: 600px) {
+  .top-strip { padding-right: 78px; }
+  .spot-page-share-btn {
+    right: 14px;
+    width: 44px;
+    height: 44px;
+  }
+  .spot-page-share-toast { right: 62px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spot-page-share-btn,
+  .spot-page-share-toast { transition: none; }
+}
+</style>
 </head>
 <body>
 
@@ -95,6 +162,10 @@
     <span>最終更新: <span id="lastUpdate">--:--</span></span>
     <button class="refresh-btn" id="refreshBtn"><i class="fa-solid fa-rotate-right"></i> 更新</button>
   </div>
+  <button class="spot-page-share-btn" id="spotPageShareBtn" type="button" aria-label="小松海岸ページを共有" title="小松海岸ページを共有">
+    <i class="fa-solid fa-share-nodes" aria-hidden="true"></i>
+  </button>
+  <span class="spot-page-share-toast" id="spotPageShareToast" role="status" aria-live="polite"></span>
 </div>
 
 <section class="verdict-banner">
@@ -504,6 +575,59 @@ if ('serviceWorker' in navigator) {
     });
   });
 }
+</script>
+<script id="major-spot-share-script">
+(() => {
+  const shareBtn = document.getElementById('spotPageShareBtn');
+  const toast = document.getElementById('spotPageShareToast');
+  if (!shareBtn || !toast) return;
+
+  let toastTimer = 0;
+  const showToast = (message) => {
+    window.clearTimeout(toastTimer);
+    toast.textContent = message;
+    toast.classList.add('show');
+    toastTimer = window.setTimeout(() => toast.classList.remove('show'), 1800);
+  };
+
+  const copyUrl = async (url) => {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(url);
+      return;
+    }
+    const input = document.createElement('textarea');
+    input.value = url;
+    input.setAttribute('readonly', '');
+    input.style.position = 'fixed';
+    input.style.opacity = '0';
+    document.body.appendChild(input);
+    input.select();
+    const ok = document.execCommand('copy');
+    input.remove();
+    if (!ok) throw new Error('copy failed');
+  };
+
+  shareBtn.addEventListener('click', async () => {
+    const url = window.location.href.split('#')[0];
+    const data = { title: document.title, url };
+    try {
+      if (navigator.share) {
+        await navigator.share(data);
+        return;
+      }
+      await copyUrl(url);
+      showToast('URLをコピーしました');
+    } catch (error) {
+      if (error && error.name === 'AbortError') return;
+      try {
+        await copyUrl(url);
+        showToast('URLをコピーしました');
+      } catch (_) {
+        showToast('共有できませんでした');
+      }
+    }
+  });
+})();
 </script>
 </body>
 </html>
