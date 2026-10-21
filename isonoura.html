@@ -39,15 +39,21 @@
 }
 </script>
 
-<style id="isonoura-share-style">
-/* Isonoura share button — page-local, borderless */
-.isonoura-share-btn {
+
+<style id="major-spot-share-style">
+/* Borderless share control for the 9 major spot pages */
+.top-strip {
+  position: relative;
+  padding-right: 96px;
+}
+.spot-page-share-btn {
   position: absolute;
-  top: 18px;
-  right: clamp(16px, 4.5vw, 34px);
+  top: 50%;
+  right: clamp(18px, 4.5vw, 36px);
+  transform: translateY(-50%);
   z-index: 3;
-  width: 44px;
-  height: 44px;
+  width: 46px;
+  height: 46px;
   display: inline-grid;
   place-items: center;
   padding: 0;
@@ -59,18 +65,19 @@
   cursor: pointer;
   transition: color .2s ease, opacity .2s ease, transform .2s ease;
 }
-.isonoura-share-btn:hover {
+.spot-page-share-btn:hover {
   color: var(--coral);
-  transform: translateY(-1px);
+  transform: translateY(calc(-50% - 1px));
 }
-.isonoura-share-btn:focus-visible {
+.spot-page-share-btn:focus-visible {
   outline: 2px solid var(--coral);
   outline-offset: 3px;
 }
-.isonoura-share-toast {
+.spot-page-share-toast {
   position: absolute;
-  top: 26px;
-  right: clamp(68px, calc(4.5vw + 52px), 86px);
+  top: 50%;
+  right: clamp(68px, calc(4.5vw + 54px), 90px);
+  transform: translateY(-50%);
   z-index: 4;
   max-width: min(220px, 58vw);
   padding: 7px 10px;
@@ -83,31 +90,23 @@
   line-height: 1.4;
   opacity: 0;
   pointer-events: none;
-  transform: translateY(-3px);
-  transition: opacity .18s ease, transform .18s ease;
+  transition: opacity .18s ease;
 }
-.isonoura-share-toast.show {
-  opacity: 1;
-  transform: translateY(0);
-}
+.spot-page-share-toast.show { opacity: 1; }
 @media (max-width: 600px) {
-  .isonoura-share-btn {
-    top: 14px;
+  .top-strip { padding-right: 78px; }
+  .spot-page-share-btn {
     right: 14px;
+    width: 44px;
+    height: 44px;
   }
-  .isonoura-share-toast {
-    top: 22px;
-    right: 62px;
-  }
+  .spot-page-share-toast { right: 62px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .isonoura-share-btn,
-  .isonoura-share-toast {
-    transition: none;
-  }
+  .spot-page-share-btn,
+  .spot-page-share-toast { transition: none; }
 }
 </style>
-
 </head>
 <body>
 
@@ -169,14 +168,14 @@
       <i class="fa-solid fa-rotate-right"></i> 更新
     </button>
   </div>
+  <button class="spot-page-share-btn" id="spotPageShareBtn" type="button" aria-label="磯ノ浦ページを共有" title="磯ノ浦ページを共有">
+    <i class="fa-solid fa-share-nodes" aria-hidden="true"></i>
+  </button>
+  <span class="spot-page-share-toast" id="spotPageShareToast" role="status" aria-live="polite"></span>
 </div>
 
 <section class="verdict-banner">
-  <button class="isonoura-share-btn" id="isonouraShareBtn" type="button" aria-label="磯ノ浦ページを共有" title="磯ノ浦ページを共有">
-    <i class="fa-solid fa-share-nodes" aria-hidden="true"></i>
-  </button>
-  <span class="isonoura-share-toast" id="isonouraShareToast" role="status" aria-live="polite"></span>
-  <div class="verdict-text" id="verdictText">
+<div class="verdict-text" id="verdictText">
     <i class="fa-solid fa-spinner fa-spin"></i> 読み込み中...
   </div>
   <div class="verdict-stars" id="verdictStars">☆☆☆☆☆</div>
@@ -679,10 +678,11 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 
-<script>
+
+<script id="major-spot-share-script">
 (() => {
-  const shareBtn = document.getElementById('isonouraShareBtn');
-  const toast = document.getElementById('isonouraShareToast');
+  const shareBtn = document.getElementById('spotPageShareBtn');
+  const toast = document.getElementById('spotPageShareToast');
   if (!shareBtn || !toast) return;
 
   let toastTimer = 0;
@@ -713,7 +713,6 @@ if ('serviceWorker' in navigator) {
   shareBtn.addEventListener('click', async () => {
     const url = window.location.href.split('#')[0];
     const data = { title: document.title, url };
-
     try {
       if (navigator.share) {
         await navigator.share(data);
@@ -733,6 +732,5 @@ if ('serviceWorker' in navigator) {
   });
 })();
 </script>
-
 </body>
 </html>
