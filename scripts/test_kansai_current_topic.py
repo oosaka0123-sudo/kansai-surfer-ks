@@ -8,12 +8,12 @@ spec=importlib.util.spec_from_file_location("builder",ROOT/"scripts"/"build_morn
 builder=importlib.util.module_from_spec(spec); spec.loader.exec_module(builder)
 JST=timezone(timedelta(hours=9))
 
-html=b"""<!doctype html><html><body>
+html="""<!doctype html><html><body>
 <a href="/articles/-/100">全国ニュースだけの見出しです</a>
 <a href="/articles/-/101">大阪・梅田に新スポットがオープン　地域のにぎわいに期待</a>
 <a href="/articles/-/102">京都で交通事故　男性が死亡</a>
 <a href="/articles/-/103">兵庫・神戸で秋のイベント開催へ　地域文化を発信</a>
-</body></html>"""
+</body></html>""".encode("utf-8")
 
 items=builder.parse_mbs_kansai_links(html)
 assert len(items)==4
