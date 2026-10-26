@@ -62,6 +62,10 @@ jobs:
           assert all(x.get('current') is None for x in data['spots'])
           assert sum(1 for x in data['spots'] if x.get('forecast')) == 9
           assert (data.get('opening') or {}).get('osaka_weather',{}).get('current')
+          assert 'mbs_kansai_topic' in src
+          mbs = src['mbs_kansai_topic']
+          if mbs.get('ok') and mbs.get('selected') == 1:
+              assert (data.get('opening') or {}).get('topic',{}).get('kind') == 'kansai_current_affairs'
           assert src['sleague_ranking']['ok'] is True, src['sleague_ranking']
           assert src['sleague_schedule']['ok'] is True, src['sleague_schedule']
           fallback = {x['kind']: x for x in data['competition_fallback']}
@@ -79,6 +83,8 @@ jobs:
           assert src['wsl_kanoa']['reason'] == 'official_stable_source_not_verified'
           print('Live official-source smoke checks passed')
           print('Osaka weather:', data['opening']['osaka_weather']['current'])
+          print('Opening topic:', data['opening'].get('topic'))
+          print('MBS topic adapter:', src.get('mbs_kansai_topic'))
           print('TOP5:', [(x['rank'], x['spot'], x['size']) for x in data['ranking']])
           print('Published fallbacks:', [x['kind'] for x in data['competition_fallback'] if x['publish']])
           print('Safety items:', len(data['safety_news']))
