@@ -49,6 +49,7 @@ MBS_NEWS_HTML = """
   <a href="/articles/-/999003"><span>「香住鶴」新酒の仕込み始まる　兵庫・香美町</span><span>1時間前</span></a>
   <a href="/articles/-/999004"><span>全国の経済ニュース</span><span>1時間前</span></a>
   <a href="/articles/-/999005"><span>【近畿の天気】あすは北風強まり夜は冷え込み</span><span>30分前</span></a>
+  <a href="/articles/-/999006"><span>【気象予報士解説】近畿中部は今夜にかけて雨　気温も低下</span><span>20分前</span></a>
 </div>
 """
 
@@ -136,7 +137,7 @@ def test_kansai_topic_collector():
     now = datetime.fromisoformat("2026-10-26T06:30:00+09:00")
     parser = collector.NewsAnchorParser()
     parser.feed(MBS_NEWS_HTML)
-    assert len(parser.items) == 5
+    assert len(parser.items) == 6
 
     real_fetch = collector.fetch
     collector.fetch = lambda url, *args, **kwargs: MBS_NEWS_HTML.encode("utf-8")
@@ -154,6 +155,7 @@ def test_kansai_topic_collector():
     assert status["mbs_kansai_topic"]["selected"] == 1
     assert "逮捕" not in topic["text"]
     assert "天気" not in topic["text"]
+    assert "気象予報士" not in topic["text"]
 
 
 def test_official_collectors():
