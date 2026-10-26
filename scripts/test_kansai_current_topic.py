@@ -21,8 +21,9 @@ assert items[1]["url"]=="https://newsdig.tbs.co.jp/articles/-/101"
 assert builder.kansai_topic_score(items[0]["title"],0)<0
 assert builder.kansai_topic_score(items[1]["title"],1)>builder.kansai_topic_score(items[2]["title"],2)
 
+article_html="""<!doctype html><html><body><h1>大阪・梅田に新スポットがオープン　地域のにぎわいに期待</h1><p>本文は表示に使いません。</p></body></html>""".encode("utf-8")
 real_fetch=builder.fetch
-builder.fetch=lambda url:html
+builder.fetch=lambda url: article_html if url.endswith("/101") else html
 status={}
 try:
     topic=builder.collect_kansai_current_topic(datetime(2026,10,26,6,50,tzinfo=JST),status)
@@ -31,7 +32,7 @@ finally:
 
 assert topic is not None
 assert topic["kind"]=="kansai_current_affairs"
-assert "大阪・梅田" in topic["text"]
+assert topic["text"]=="大阪・梅田に新スポットがオープン　地域のにぎわいに期待"
 assert topic["source"]=="https://newsdig.tbs.co.jp/articles/-/101"
 assert status["kansai_current_topic"]["ok"] is True
 assert status["kansai_current_topic"]["selected"]==1
