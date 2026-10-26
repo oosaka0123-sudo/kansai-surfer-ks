@@ -32,7 +32,7 @@ finally:
 
 assert topic is not None
 assert topic["kind"]=="kansai_current_affairs"
-assert topic["text"]=="大阪・梅田に新スポットがオープン　地域のにぎわいに期待"
+assert topic["text"]=="大阪・梅田に新スポットがオープン 地域のにぎわいに期待"
 assert topic["source"]=="https://newsdig.tbs.co.jp/articles/-/101"
 assert status["kansai_current_topic"]["ok"] is True
 assert status["kansai_current_topic"]["selected"]==1
