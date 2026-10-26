@@ -194,6 +194,15 @@ The morning blog is being redesigned as a short, fact-grounded surf morning edit
 - Normal weather/topic/competition/surf-news sections should read like editorial prose without source-timing metadata.
 - Safety alerts may retain issued/checked timing when it is materially important to understanding whether a warning is current.
 
+### Kansai current-affairs opening topic
+- The morning opening should normally include one fresh Kansai/近畿 current-affairs headline before the surf report.
+- Use the current MBS Kansai news listing as the primary public headline source for NAMI.
+- Select only region-relevant headlines (大阪・京都・兵庫・滋賀・奈良・和歌山・関西・近畿など).
+- Prefer useful local developments, culture, transport, events, openings, seasonal topics, and community news over routine crime/accident headlines when multiple fresh candidates exist.
+- Do not copy article bodies or images. Store only the selected headline, source URL, and checked timestamp in backend metadata.
+- Reader-facing source URLs/timestamps remain hidden; the opening should read naturally as a blog sentence.
+- If the Kansai collector fails or has no suitable item, fall back to the existing verified surf/competition topic logic rather than inventing a local story.
+
 ### Morning brief editorial UI
 - NAMI morning brief should read like a surf-media morning blog, not a developer dashboard.
 - Use an editorial paper layout with strong masthead/date, human opening, clear TOP5, compact nine-spot entries, article-style news, safety block, closing comment, and a small expandable data-method note.
