@@ -25,6 +25,18 @@ JMA_EXTRA_FEED = "https://www.data.jma.go.jp/developer/xml/feed/extra.xml"
 JMA_EQVOL_FEED = "https://www.data.jma.go.jp/developer/xml/feed/eqvol.xml"
 JCG_RSS_URL = "https://www6.kaiho.mlit.go.jp/rss.xml"
 SURFMEDIA_FEED_URL = "https://surfmedia.jp/feed/"
+MBS_KANSAI_NEWS_URL = "https://newsdig.tbs.co.jp/list/mbs"
+KANSAI_TOPIC_WORDS = (
+    "関西", "近畿", "大阪", "堺", "東大阪", "京都", "兵庫", "神戸", "姫路",
+    "滋賀", "大津", "琵琶湖", "奈良", "和歌山", "泉州", "阪神", "淡路",
+)
+KANSAI_TOPIC_DOWNRANK_WORDS = (
+    "死亡", "殺害", "刺し", "逮捕", "強盗", "性暴力", "遺体", "重体", "火災", "事故",
+)
+KANSAI_TOPIC_UPRANK_WORDS = (
+    "新スポット", "オープン", "開業", "イベント", "祭", "花火", "観光", "グルメ", "鉄道",
+    "交通", "まち", "街", "地域", "発表", "開始", "再開", "文化", "スポーツ", "季節", "紅葉",
+)
 SURFMEDIA_COMPETITION_KEYWORDS = (
     "WSL", "CT", "ISA", "S.LEAGUE", "エスリーグ",
     "ワールド・サーフ・リーグ", "チャンピオンシップ・ツアー", "ワールド・サーフィン・ゲームズ",
@@ -428,6 +440,48 @@ class TextParser(HTMLParser):
             self._row.append(value)
 
 
+class AnchorParser(HTMLParser):
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.items=[]
+        self._href=None
+        self._parts=[]
+        self._skip=0
+
+    def handle_starttag(self,tag,attrs):
+        tag=tag.lower()
+        if tag in ("script","style","noscript"):
+            self._skip+=1
+            return
+        if self._skip:
+            return
+        if tag=="a":
+            self._href=dict(attrs).get("href")
+            self._parts=[]
+
+    def handle_endtag(self,tag):
+        tag=tag.lower()
+        if tag in ("script","style","noscript"):
+            if self._skip:
+                self._skip-=1
+            return
+        if self._skip:
+            return
+        if tag=="a" and self._href is not None:
+            text=re.sub(r"\\s+"," "," ".join(self._parts)).strip()
+            if text:
+                self.items.append((self._href,text))
+            self._href=None
+            self._parts=[]
+
+    def handle_data(self,data):
+        if self._skip or self._href is None:
+            return
+        value=re.sub(r"\\s+"," ",data).strip()
+        if value:
+            self._parts.append(value)
+
+
 def parse_html(raw):
     parser = TextParser()
     parser.feed(raw.decode("utf-8", errors="replace"))
@@ -517,6 +571,69 @@ def parse_sleague_month_schedule(raw, month):
             if event not in events:
                 events.append(event)
     return events[:4]
+
+
+def parse_mbs_kansai_links(raw):
+    parser=AnchorParser()
+    parser.feed(raw.decode("utf-8",errors="replace"))
+    out=[]
+    seen=set()
+    for href,title in parser.items:
+        href=str(href or "").strip()
+        title=re.sub(r"\\s+"," ",html.unescape(str(title or ""))).strip()
+        if not title or len(title)<10:
+            continue
+        if href.startswith("/"):
+            href="https://newsdig.tbs.co.jp"+href
+        if not href.startswith("https://newsdig.tbs.co.jp/articles/"):
+            continue
+        key=(href,title)
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append({"url":href,"title":title})
+    return out
+
+
+def kansai_topic_score(title,index=0):
+    text=str(title or "")
+    if not any(word in text for word in KANSAI_TOPIC_WORDS):
+        return -999
+    score=100-max(0,index)*2
+    score+=sum(12 for word in KANSAI_TOPIC_UPRANK_WORDS if word in text)
+    score-=sum(18 for word in KANSAI_TOPIC_DOWNRANK_WORDS if word in text)
+    if "天気" in text or "台風" in text:
+        score-=20
+    return score
+
+
+def collect_kansai_current_topic(now,status):
+    checked=iso(now)
+    try:
+        raw=fetch(MBS_KANSAI_NEWS_URL)
+        items=parse_mbs_kansai_links(raw)
+        ranked=[]
+        for index,item in enumerate(items[:30]):
+            score=kansai_topic_score(item["title"],index)
+            if score<=0:
+                continue
+            ranked.append((score,-index,item))
+        ranked.sort(reverse=True,key=lambda x:(x[0],x[1]))
+        if not ranked:
+            status["kansai_current_topic"]={"ok":True,"entries":len(items),"selected":0,"source":MBS_KANSAI_NEWS_URL}
+            return None
+        chosen=ranked[0][2]
+        status["kansai_current_topic"]={"ok":True,"entries":len(items),"selected":1,"source":MBS_KANSAI_NEWS_URL}
+        return {
+            "text":chosen["title"],
+            "source":chosen["url"],
+            "published_at":None,
+            "checked_at":checked,
+            "kind":"kansai_current_affairs",
+        }
+    except Exception as exc:
+        status["kansai_current_topic"]={"ok":False,"error":type(exc).__name__,"source":MBS_KANSAI_NEWS_URL}
+        return None
 
 
 def strip_html_fragment(value):
@@ -932,6 +1049,7 @@ def build(now, previous=None):
     source_status = {}
     osaka_weather = collect_osaka_weather(now, source_status)
     spots, ranking = collect_spot_forecasts(now, source_status)
+    kansai_topic = collect_kansai_current_topic(now, source_status)
     competition_news = collect_surfmedia_competition(now, source_status)
     fallbacks = build_sleague_fallbacks(now, previous, source_status)
     if competition_news:
@@ -941,7 +1059,9 @@ def build(now, previous=None):
 
     published_fallback = next((x for x in fallbacks if x.get("publish") is True), None)
     topic = {"text": None, "source": None, "published_at": None, "checked_at": None}
-    if competition_news:
+    if kansai_topic:
+        topic = kansai_topic
+    elif competition_news:
         topic = {
             "text": competition_news[0].get("title"),
             "source": competition_news[0].get("source"),
@@ -983,7 +1103,7 @@ def build(now, previous=None):
         "safety_news": safety,
         "safety_status": {"summary": None, "checked_at": None, "sources": []},
         "closing": closing,
-        "sources_note": "Verified-source candidate: Open-Meteo / KS公開9スポットAPI / SURFMEDIA / S.LEAGUE / 気象庁防災情報XML / 海上保安庁 海の安全情報。現在観測とAPI予報を混同せず、取得失敗項目は推測で補完しません。",
+        "sources_note": "Verified-source candidate: Open-Meteo / KS公開9スポットAPI / MBS関西ニュース / SURFMEDIA / S.LEAGUE / 気象庁防災情報XML / 海上保安庁 海の安全情報。現在観測とAPI予報を混同せず、取得失敗項目は推測で補完しません。",
         "collection_meta": {
             "collector": "ks-morning-official-v2",
             "checked_at": iso(now),
@@ -1014,6 +1134,8 @@ def main():
     if data["ranking"]:
         print("RANKING_TOP=" + " / ".join(f"{x['rank']}位 {x['spot']} {x['size']}" for x in data["ranking"]))
     print("PUBLISHED_FALLBACKS=" + (",".join(published) if published else "(none)"))
+    opening_topic=data.get("opening",{}).get("topic") or {}
+    print("OPENING_TOPIC=" + (str(opening_topic.get("text") or "")[:180] if opening_topic.get("text") else "(none)"))
     print(f"COMPETITION_NEWS={len(data['competition_news'])}")
     for item in data["competition_news"]:
         print("COMPETITION_ITEM=" + " | ".join([str(item.get("title") or "")[:180], str(item.get("published_at") or "")]))
