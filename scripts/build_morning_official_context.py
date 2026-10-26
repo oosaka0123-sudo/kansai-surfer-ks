@@ -25,6 +25,10 @@ JMA_EXTRA_FEED = "https://www.data.jma.go.jp/developer/xml/feed/extra.xml"
 JMA_EQVOL_FEED = "https://www.data.jma.go.jp/developer/xml/feed/eqvol.xml"
 JCG_RSS_URL = "https://www6.kaiho.mlit.go.jp/rss.xml"
 SURFMEDIA_FEED_URL = "https://surfmedia.jp/feed/"
+MBS_KANSAI_NEWS_URL = "https://newsdig.tbs.co.jp/list/news/mbs/latest"
+KANSAI_TOPIC_REGION_WORDS = ("大阪","大阪湾","兵庫","神戸","京都","滋賀","奈良","和歌山","関西","近畿","琵琶湖","関西空港","関空")
+KANSAI_TOPIC_POSITIVE_WORDS = ("秋","紅葉","新酒","祭","イベント","観光","グルメ","海づくり","大阪湾","関空","開業","オープン","鉄道","地域","学生","文化","スポーツ","季節")
+KANSAI_TOPIC_EXCLUDE_WORDS = ("死亡","遺体","殺人","殺害","逮捕","容疑","暴行","強盗","刺","事件","事故","裁判","起訴","不起訴","性被害","虐待","政権","選挙","議会","知事","台風","大雨","警報","地震","津波","行方不明","火災")
 SURFMEDIA_COMPETITION_KEYWORDS = (
     "WSL", "CT", "ISA", "S.LEAGUE", "エスリーグ",
     "ワールド・サーフ・リーグ", "チャンピオンシップ・ツアー", "ワールド・サーフィン・ゲームズ",
@@ -519,6 +523,129 @@ def parse_sleague_month_schedule(raw, month):
     return events[:4]
 
 
+class NewsAnchorParser(HTMLParser):
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.items=[]
+        self._href=None
+        self._parts=[]
+        self._depth=0
+
+    def handle_starttag(self, tag, attrs):
+        if tag.lower()!="a":
+            if self._href is not None:
+                self._depth += 1
+            return
+        href=dict(attrs).get("href") or ""
+        if re.search(r"/articles/-/\d+", href):
+            self._href=href
+            self._parts=[]
+            self._depth=0
+
+    def handle_endtag(self, tag):
+        if self._href is None:
+            return
+        if tag.lower()=="a" and self._depth==0:
+            text=re.sub(r"\s+"," "," ".join(self._parts)).strip()
+            if text:
+                self.items.append((self._href,text))
+            self._href=None
+            self._parts=[]
+            return
+        if self._depth>0:
+            self._depth-=1
+
+    def handle_data(self, data):
+        if self._href is not None:
+            value=re.sub(r"\s+"," ",str(data or "")).strip()
+            if value:
+                self._parts.append(value)
+
+
+def parse_mbs_published(text, now):
+    m=re.search(r"(\d+)\s*分前\s*$",text)
+    if m:
+        return now-timedelta(minutes=int(m.group(1)))
+    m=re.search(r"(\d+)\s*時間前\s*$",text)
+    if m:
+        return now-timedelta(hours=int(m.group(1)))
+    m=re.search(r"(\d+)\s*日前\s*$",text)
+    if m:
+        return now-timedelta(days=int(m.group(1)))
+    m=re.search(r"(20\d{2})/(\d{1,2})/(\d{1,2})\s*$",text)
+    if m:
+        y,mo,d=map(int,m.groups())
+        return datetime(y,mo,d,12,0,tzinfo=JST)
+    return None
+
+
+def clean_mbs_title(text):
+    value=re.sub(r"\s+"," ",str(text or "")).strip()
+    value=re.sub(r"\s+(?:\d+\s*分前|\d+\s*時間前|\d+\s*日前|20\d{2}/\d{1,2}/\d{1,2})\s*$","",value)
+    return value.strip()
+
+
+def kansai_topic_score(title, age_hours):
+    if not title:
+        return -999
+    if any(word in title for word in KANSAI_TOPIC_EXCLUDE_WORDS):
+        return -999
+    region_score=80 if any(word in title for word in ("大阪","大阪湾","関西","近畿","関西空港","関空")) else 45 if any(word in title for word in KANSAI_TOPIC_REGION_WORDS) else 0
+    positive=35 if any(word in title for word in KANSAI_TOPIC_POSITIVE_WORDS) else 0
+    freshness=max(0,40-float(age_hours))
+    return region_score+positive+freshness
+
+
+def collect_kansai_topic(now, status):
+    checked=iso(now)
+    try:
+        raw=fetch(MBS_KANSAI_NEWS_URL,max_bytes=4_000_000)
+        parser=NewsAnchorParser()
+        parser.feed(raw.decode("utf-8",errors="replace"))
+        seen=set()
+        candidates=[]
+        for href,text in parser.items:
+            title=clean_mbs_title(text)
+            published=parse_mbs_published(text,now)
+            if not title or not published:
+                continue
+            if published-now>timedelta(minutes=10):
+                continue
+            age=now-published
+            if age>timedelta(hours=30):
+                continue
+            if not any(word in title for word in KANSAI_TOPIC_REGION_WORDS):
+                continue
+            key=title
+            if key in seen:
+                continue
+            seen.add(key)
+            score=kansai_topic_score(title,age.total_seconds()/3600)
+            if score<0:
+                continue
+            url=href if href.startswith("https://") else "https://newsdig.tbs.co.jp"+href
+            candidates.append((score,published,title,url))
+        candidates.sort(key=lambda x:(x[0],x[1]),reverse=True)
+        if not candidates:
+            status["mbs_kansai_topic"]={"ok":True,"entries":len(parser.items),"selected":0,"source":MBS_KANSAI_NEWS_URL}
+            return None
+        score,published,title,url=candidates[0]
+        status["mbs_kansai_topic"]={
+            "ok":True,"entries":len(parser.items),"selected":1,
+            "candidate_count":len(candidates),"source":MBS_KANSAI_NEWS_URL,
+        }
+        return {
+            "text":title[:180],
+            "source":url,
+            "published_at":iso(published),
+            "checked_at":checked,
+            "kind":"kansai_current_affairs",
+        }
+    except Exception as exc:
+        status["mbs_kansai_topic"]={"ok":False,"error":type(exc).__name__,"source":MBS_KANSAI_NEWS_URL}
+        return None
+
+
 def strip_html_fragment(value):
     raw = str(value or "").encode("utf-8", errors="ignore")
     _, text = parse_html(raw)
@@ -932,6 +1059,7 @@ def build(now, previous=None):
     source_status = {}
     osaka_weather = collect_osaka_weather(now, source_status)
     spots, ranking = collect_spot_forecasts(now, source_status)
+    kansai_topic = collect_kansai_topic(now, source_status)
     competition_news = collect_surfmedia_competition(now, source_status)
     fallbacks = build_sleague_fallbacks(now, previous, source_status)
     if competition_news:
@@ -941,12 +1069,15 @@ def build(now, previous=None):
 
     published_fallback = next((x for x in fallbacks if x.get("publish") is True), None)
     topic = {"text": None, "source": None, "published_at": None, "checked_at": None}
-    if competition_news:
+    if kansai_topic:
+        topic = kansai_topic
+    elif competition_news:
         topic = {
             "text": competition_news[0].get("title"),
             "source": competition_news[0].get("source"),
             "published_at": competition_news[0].get("published_at"),
             "checked_at": competition_news[0].get("checked_at"),
+            "kind": "surf_competition",
         }
     elif published_fallback:
         topic = {
@@ -954,6 +1085,7 @@ def build(now, previous=None):
             "source": published_fallback.get("source"),
             "published_at": None,
             "checked_at": published_fallback.get("checked_at"),
+            "kind": "competition_fallback",
         }
 
     headline = None
@@ -983,7 +1115,7 @@ def build(now, previous=None):
         "safety_news": safety,
         "safety_status": {"summary": None, "checked_at": None, "sources": []},
         "closing": closing,
-        "sources_note": "Verified-source candidate: Open-Meteo / KS公開9スポットAPI / SURFMEDIA / S.LEAGUE / 気象庁防災情報XML / 海上保安庁 海の安全情報。現在観測とAPI予報を混同せず、取得失敗項目は推測で補完しません。",
+        "sources_note": "Verified-source candidate: Open-Meteo / KS公開9スポットAPI / MBS NEWS DIG / SURFMEDIA / S.LEAGUE / 気象庁防災情報XML / 海上保安庁 海の安全情報。現在観測とAPI予報を混同せず、取得失敗項目は推測で補完しません。",
         "collection_meta": {
             "collector": "ks-morning-official-v2",
             "checked_at": iso(now),
@@ -1014,6 +1146,8 @@ def main():
     if data["ranking"]:
         print("RANKING_TOP=" + " / ".join(f"{x['rank']}位 {x['spot']} {x['size']}" for x in data["ranking"]))
     print("PUBLISHED_FALLBACKS=" + (",".join(published) if published else "(none)"))
+    topic=data.get("opening",{}).get("topic") or {}
+    print("OPENING_TOPIC=" + " | ".join([str(topic.get("kind") or ""), str(topic.get("text") or "")[:180]]))
     print(f"COMPETITION_NEWS={len(data['competition_news'])}")
     for item in data["competition_news"]:
         print("COMPETITION_ITEM=" + " | ".join([str(item.get("title") or "")[:180], str(item.get("published_at") or "")]))
