@@ -595,6 +595,16 @@ def parse_mbs_kansai_links(raw):
     return out
 
 
+def parse_article_h1(raw):
+    text=raw.decode("utf-8",errors="replace")
+    m=re.search(r"(?is)<h1[^>]*>(.*?)</h1>",text)
+    if not m:
+        return None
+    cleaned=strip_html_fragment(m.group(1))
+    cleaned=re.sub(r"\\s+"," ",cleaned).strip()
+    return cleaned or None
+
+
 def kansai_topic_score(title,index=0):
     text=str(title or "")
     if not any(word in text for word in KANSAI_TOPIC_WORDS):
@@ -623,9 +633,18 @@ def collect_kansai_current_topic(now,status):
             status["kansai_current_topic"]={"ok":True,"entries":len(items),"selected":0,"source":MBS_KANSAI_NEWS_URL}
             return None
         chosen=ranked[0][2]
+        headline=chosen["title"]
+        try:
+            article_raw=fetch(chosen["url"])
+            article_h1=parse_article_h1(article_raw)
+            if article_h1 and 10<=len(article_h1)<=220:
+                headline=article_h1
+        except Exception:
+            pass
+        headline=re.sub(r"\\s+(?:\\d+分前|\\d+時間前|\\d+日前)$","",headline).strip()
         status["kansai_current_topic"]={"ok":True,"entries":len(items),"selected":1,"source":MBS_KANSAI_NEWS_URL}
         return {
-            "text":chosen["title"],
+            "text":headline,
             "source":chosen["url"],
             "published_at":None,
             "checked_at":checked,
