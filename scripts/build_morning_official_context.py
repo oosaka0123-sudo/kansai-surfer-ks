@@ -529,31 +529,23 @@ class NewsAnchorParser(HTMLParser):
         self.items=[]
         self._href=None
         self._parts=[]
-        self._depth=0
 
     def handle_starttag(self, tag, attrs):
         if tag.lower()!="a":
-            if self._href is not None:
-                self._depth += 1
             return
         href=dict(attrs).get("href") or ""
         if re.search(r"/articles/-/\d+", href):
             self._href=href
             self._parts=[]
-            self._depth=0
 
     def handle_endtag(self, tag):
-        if self._href is None:
+        if tag.lower()!="a" or self._href is None:
             return
-        if tag.lower()=="a" and self._depth==0:
-            text=re.sub(r"\s+"," "," ".join(self._parts)).strip()
-            if text:
-                self.items.append((self._href,text))
-            self._href=None
-            self._parts=[]
-            return
-        if self._depth>0:
-            self._depth-=1
+        text=re.sub(r"\s+"," "," ".join(self._parts)).strip()
+        if text:
+            self.items.append((self._href,text))
+        self._href=None
+        self._parts=[]
 
     def handle_data(self, data):
         if self._href is not None:
