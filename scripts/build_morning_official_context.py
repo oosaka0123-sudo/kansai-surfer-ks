@@ -468,7 +468,7 @@ class AnchorParser(HTMLParser):
         if self._skip:
             return
         if tag=="a" and self._href is not None:
-            text=re.sub(r"\\s+"," "," ".join(self._parts)).strip()
+            text=re.sub(r"\s+"," "," ".join(self._parts)).strip()
             if text:
                 self.items.append((self._href,text))
             self._href=None
@@ -477,7 +477,7 @@ class AnchorParser(HTMLParser):
     def handle_data(self,data):
         if self._skip or self._href is None:
             return
-        value=re.sub(r"\\s+"," ",data).strip()
+        value=re.sub(r"\s+"," ",data).strip()
         if value:
             self._parts.append(value)
 
@@ -580,7 +580,7 @@ def parse_mbs_kansai_links(raw):
     seen=set()
     for href,title in parser.items:
         href=str(href or "").strip()
-        title=re.sub(r"\\s+"," ",html.unescape(str(title or ""))).strip()
+        title=re.sub(r"\s+"," ",html.unescape(str(title or ""))).strip()
         if not title or len(title)<10:
             continue
         if href.startswith("/"):
@@ -601,7 +601,7 @@ def parse_article_h1(raw):
     if not m:
         return None
     cleaned=strip_html_fragment(m.group(1))
-    cleaned=re.sub(r"\\s+"," ",cleaned).strip()
+    cleaned=re.sub(r"\s+"," ",cleaned).strip()
     return cleaned or None
 
 
@@ -641,7 +641,7 @@ def collect_kansai_current_topic(now,status):
                 headline=article_h1
         except Exception:
             pass
-        headline=re.sub(r"\\s+(?:\\d+分前|\\d+時間前|\\d+日前)$","",headline).strip()
+        headline=re.sub(r"\s+(?:\d+分前|\d+時間前|\d+日前)$","",headline).strip()
         status["kansai_current_topic"]={"ok":True,"entries":len(items),"selected":1,"source":MBS_KANSAI_NEWS_URL}
         return {
             "text":headline,
@@ -658,7 +658,7 @@ def collect_kansai_current_topic(now,status):
 def strip_html_fragment(value):
     raw = str(value or "").encode("utf-8", errors="ignore")
     _, text = parse_html(raw)
-    return re.sub(r"\\s+", " ", text).strip()
+    return re.sub(r"\s+", " ", text).strip()
 
 
 def parse_surfmedia_feed(raw):
@@ -734,7 +734,7 @@ def collect_surfmedia_competition(now, status):
         output = []
         for entry in selected:
             body = entry.get("description") or entry["title"]
-            body = re.sub(r"\\s+", " ", body).strip()
+            body = re.sub(r"\s+", " ", body).strip()
             if len(body) > 320:
                 body = body[:317].rstrip() + "…"
             output.append({
