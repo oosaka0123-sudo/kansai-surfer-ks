@@ -42,6 +42,17 @@ JMA_DETAIL = """<?xml version="1.0" encoding="UTF-8"?>
  <Body><Text>和歌山 波浪</Text></Body>
 </Report>"""
 
+MBS_NEWS_HTML = """
+<div>
+  <a href="/articles/-/999001"><span>大阪湾の恵みを丼に！学生たちがレシピ対決　地域の海を味わうイベント</span><span>3時間前</span></a>
+  <a href="/articles/-/999002"><span>バーの客が斧で殴られ男を逮捕　大阪・中央区</span><span>2時間前</span></a>
+  <a href="/articles/-/999003"><span>「香住鶴」新酒の仕込み始まる　兵庫・香美町</span><span>1時間前</span></a>
+  <a href="/articles/-/999004"><span>全国の経済ニュース</span><span>1時間前</span></a>
+  <a href="/articles/-/999005"><span>【近畿の天気】あすは北風強まり夜は冷え込み</span><span>30分前</span></a>
+  <a href="/articles/-/999006"><span>【気象予報士解説】近畿中部は今夜にかけて雨　気温も低下</span><span>20分前</span></a>
+</div>
+"""
+
 JCG_RSS = """<?xml version="1.0" encoding="UTF-8"?>
 <rss><channel>
  <item><title>和歌山県沿岸でサーファーを救助</title>
@@ -120,6 +131,31 @@ def test_schedule():
     assert len(events) == 1
     assert "ALL JAPAN さわかみ 仙台プロ" in events[0]
     assert "10月21日" in events[0]
+
+
+def test_kansai_topic_collector():
+    now = datetime.fromisoformat("2026-10-26T06:30:00+09:00")
+    parser = collector.NewsAnchorParser()
+    parser.feed(MBS_NEWS_HTML)
+    assert len(parser.items) == 6
+
+    real_fetch = collector.fetch
+    collector.fetch = lambda url, *args, **kwargs: MBS_NEWS_HTML.encode("utf-8")
+    try:
+        status = {}
+        topic = collector.collect_kansai_topic(now, status)
+    finally:
+        collector.fetch = real_fetch
+
+    assert topic is not None
+    assert topic["kind"] == "kansai_current_affairs"
+    assert "大阪湾の恵み" in topic["text"]
+    assert topic["source"].startswith("https://newsdig.tbs.co.jp/articles/-/")
+    assert status["mbs_kansai_topic"]["ok"] is True
+    assert status["mbs_kansai_topic"]["selected"] == 1
+    assert "逮捕" not in topic["text"]
+    assert "天気" not in topic["text"]
+    assert "気象予報士" not in topic["text"]
 
 
 def test_official_collectors():
@@ -216,6 +252,7 @@ def test_weather_and_spot_forecasts():
 def main():
     test_ranking()
     test_schedule()
+    test_kansai_topic_collector()
     test_official_collectors()
     test_cooldown()
     test_weather_and_spot_forecasts()

@@ -194,6 +194,14 @@ The morning blog is being redesigned as a short, fact-grounded surf morning edit
 - Normal weather/topic/competition/surf-news sections should read like editorial prose without source-timing metadata.
 - Safety alerts may retain issued/checked timing when it is materially important to understanding whether a warning is current.
 
+### Kansai current-affairs opening topic
+- After the Osaka weather note, prefer one fresh Kansai current-affairs topic before surf/competition fallback content.
+- The source is the public MBS NEWS DIG Kansai/MBS latest-news listing; store article URL and timestamps in backend metadata only.
+- Prefer fresh, conversational regional topics such as local culture, seasonal events, food, transport, tourism, community activity, and Osaka/Kansai lifestyle news.
+- Avoid opening the morning surf blog with violent crime, deaths, arrests, court cases, political conflict, disasters, warnings, or other heavy items when a lighter useful regional topic is available.
+- Use only items no older than about 30 hours. If no suitable Kansai topic is available, fall back to fresh surf competition news and then the existing S.LEAGUE fallback.
+- Reader-facing prose must not show source labels, URLs, or machine-style publication/check timestamps.
+
 ### Morning brief editorial UI
 - NAMI morning brief should read like a surf-media morning blog, not a developer dashboard.
 - Use an editorial paper layout with strong masthead/date, human opening, clear TOP5, compact nine-spot entries, article-style news, safety block, closing comment, and a small expandable data-method note.
