@@ -1,0 +1,81 @@
+name: Deploy gear-only page to Kansai production
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kansai-surfer-production-deploy
+  cancel-in-progress: false
+
+jobs:
+  gear-only:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      FTP_HOST: ftp.lolipop.jp
+      PROD_ROOT: /kansai
+      GEAR_URL: https://kansai.rss7.net/gear/
+
+    steps:
+      - name: Checkout audited gear source
+        uses: actions/checkout@v4
+
+      - name: Validate exact scope and static content
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$FTP_HOST" = 'ftp.lolipop.jp'
+          test "$PROD_ROOT" = '/kansai'
+          test "$GEAR_URL" = 'https://kansai.rss7.net/gear/'
+          test -s gear/index.html
+          test -s gear/gear.css
+          grep -q 'サーファーギア' gear/index.html
+          grep -q 'surf73-22' gear/index.html
+          test "$(grep -o 'class="amazon-link"' gear/index.html | wc -l)" -eq 10
+          ! grep -Eqi '(password|secret_key|api_token)\s*=' gear/index.html
+          echo 'Validated 2-file gear-only deployment source.'
+
+      - name: Install FTPS client
+        run: sudo apt-get update -qq && sudo apt-get install -y lftp
+
+      - name: Deploy only gear HTML and stylesheet
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          test -n "$FTP_USERNAME" || { echo '::error::FTP username missing'; exit 1; }
+          test -n "$FTP_PASSWORD" || { echo '::error::FTP password missing'; exit 1; }
+          # Existing production-only manual LINE workflow uses these same hosting account credentials.
+          # This job writes exclusively to /kansai/gear and never mirrors/deletes files.
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 25
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST"
+          mkdir -p "$PROD_ROOT/gear"
+          put "gear/index.html" -o "$PROD_ROOT/gear/index.html"
+          put "gear/gear.css" -o "$PROD_ROOT/gear/gear.css"
+          bye
+          LFTP_EOF
+
+      - name: Verify live HTML and stylesheet
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "$GEAR_URL?rev=$GITHUB_RUN_ID" -o /tmp/ks-gear.html
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "${GEAR_URL}gear.css?rev=$GITHUB_RUN_ID" -o /tmp/ks-gear.css
+          grep -q 'サーファーギア' /tmp/ks-gear.html
+          grep -q 'surf73-22' /tmp/ks-gear.html
+          grep -q 'gear-item' /tmp/ks-gear.css
+          test "$(grep -o 'class="amazon-link"' /tmp/ks-gear.html | wc -l)" -eq 10
+          echo 'GEAR_ONLY_PRODUCTION_OK'
