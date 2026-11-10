@@ -46,6 +46,8 @@ if(!footBoundary.test(out))throw Error('No gear footer');
 out=out.replace(footBoundary,absolutize(footer));
 if(!out.includes('/nami_common.css'))throw Error('KS shared stylesheet missing from gear HTML');
 if(!out.includes('gear.css'))throw Error('Gear CSS missing');
+const liveFonts=requiredMatch(home,/<link href="(https:\/\/fonts\.googleapis\.com\/css2\?[^"]+)" rel="stylesheet">/,'live web fonts');
+if(!out.includes('href="'+liveFonts+'"'))throw Error('Gear web fonts differ from live KS shell');
 if(!out.includes('id="hamburger"'))throw Error('Hamburger missing');
 if((out.match(/class="amazon-link"/g)||[]).length!==10)throw Error('Amazon category count changed');
 if((out.match(/<header\b/g)||[]).length!==1 || (out.match(/<footer\b/g)||[]).length!==1)throw Error('Header/footer count not 1');
