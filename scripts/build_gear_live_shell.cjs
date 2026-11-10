@@ -11,16 +11,36 @@ function requiredMatch(html,re,name){
   return a[1];
 }
 const header = requiredMatch(home,/(<header class="top-bar">[\s\S]*?<\/header>)/,'live header');
-const menu = requiredMatch(home,/(<div class="mobile-menu" id="mobileMenu">[\s\S]*?<\/div>\s*<\/div>)/,'live menu');
+function getMenu(html){
+  const start=html.indexOf('<div class="mobile-menu" id="mobileMenu">');
+  if(start<0)throw Error('Mobile menu not found');
+  let depth=0;
+  const re=/<\/?div\b[^>]*>/gi;
+  re.lastIndex=start;
+  let m;
+  while((m=re.exec(html))){
+    if(m[0].startsWith('</'))depth--;else depth++;
+    if(depth===0)return {start,end:re.lastIndex,html:html.slice(start,re.lastIndex)};
+  }
+  throw Error('Unclosed mobile menu');
+}
+const menu = getMenu(home).html;
 const footer = requiredMatch(home,/(<footer(?:\s[^>]*)?>[\s\S]*?<\/footer>)/,'live footer');
 const expected=['id="hamburger"','id="clockTag"','class="footer-links"','id="mobileMenu"'];
 for(const token of expected) if(!(header+menu+footer).includes(token))throw Error('Missing live shell token: '+token);
 const absolutize = s=>s.replace(/\b(href|src)=(["'])(?!https?:\/\/|\/\/|#|\/|data:|mailto:|tel:)([^"']+)\2/g,(_,a,q,url)=>a+'='+q+'/'+url+q)
   .replace(/location\.href=(["'])(?!\/|https?:\/\/)([^"']+)\1/g,(_,q,url)=>'location.href='+q+'/'+url+q);
 let out=gear;
-const topBoundary=/<header class="(?:header|top-bar)">[\s\S]*?(?:<div class="mobile-menu" id="mobileMenu">[\s\S]*?<\/div>\s*<\/div>|<\/header>)/;
-if(!topBoundary.test(out))throw Error('No existing gear header');
-out=out.replace(topBoundary,absolutize(header+'\n'+menu));
+const headerStart=out.search(/<header class="(?:header|top-bar)">/);
+if(headerStart<0)throw Error('No gear header');
+const headerEnd=out.indexOf('</header>',headerStart)+9;
+if(headerEnd<9)throw Error('Unclosed gear header');
+let replaceEnd=headerEnd;
+if(out.includes('<div class="mobile-menu" id="mobileMenu">',headerEnd)){
+  const existingMenu=getMenu(out);
+  if(existingMenu.start>headerEnd && existingMenu.start-headerEnd<150)replaceEnd=existingMenu.end;
+}
+out=out.slice(0,headerStart)+absolutize(header+'\n'+menu)+out.slice(replaceEnd);
 const footBoundary=/<footer(?:\s[^>]*)?>[\s\S]*?<\/footer>/;
 if(!footBoundary.test(out))throw Error('No gear footer');
 out=out.replace(footBoundary,absolutize(footer));
