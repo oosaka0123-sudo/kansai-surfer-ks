@@ -12,3 +12,76 @@
 .gear-photo figcaption{position:absolute;bottom:0;right:0;background:rgba(0,15,23,.8);padding:3px 9px;font-size:10px;letter-spacing:.03em;color:#fff}
 @media(max-width:1100px){.gear-item{grid-template-columns:66px minmax(160px,220px) minmax(0,1fr);gap:16px}.amazon-link{grid-column:3;width:max-content;max-width:100%}}
 @media(max-width:700px){.gear-item{grid-template-columns:48px minmax(0,1fr);gap:14px}.gear-photo{grid-column:2;grid-row:1;aspect-ratio:4/3}.item-number{grid-column:1;grid-row:1}.item-body{grid-column:2;grid-row:2}.amazon-link{grid-column:2;grid-row:3;width:100%}}
+
+/* Mobile photograph layout: hard guard against stale desktop grid columns. */
+@media (max-width: 850px) {
+  .wrap .gear-item {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    padding: 26px 0 30px;
+    min-width: 0;
+    max-width: 100%;
+  }
+  .wrap .gear-item > * {
+    box-sizing: border-box;
+    min-width: 0;
+    max-width: 100%;
+    grid-column: auto;
+    grid-row: auto;
+  }
+  .wrap .gear-item .item-number {
+    order: 0;
+    width: auto;
+    font-size: 2.4rem;
+    line-height: 1;
+  }
+  .wrap .gear-item .item-number span {
+    display: inline;
+    margin-left: 10px;
+    font-size: .6rem;
+  }
+  .wrap .gear-item .gear-photo {
+    order: 1;
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+  }
+  .wrap .gear-item .gear-photo img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    object-fit: cover;
+  }
+  .wrap .gear-item .gear-photo figcaption {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    white-space: nowrap;
+  }
+  .wrap .gear-item .item-body {
+    order: 2;
+    width: 100%;
+    overflow-wrap: anywhere;
+  }
+  .wrap .gear-item .item-body h2 {
+    font-size: 1.15rem;
+    line-height: 1.5;
+  }
+  .wrap .gear-item .item-body p {
+    line-height: 1.8;
+  }
+  .wrap .gear-item .amazon-link {
+    order: 3;
+    display: flex;
+    width: 100%;
+    max-width: 100%;
+    min-height: 50px;
+    align-items: center;
+  }
+}
