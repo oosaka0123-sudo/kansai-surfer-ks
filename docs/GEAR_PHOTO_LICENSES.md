@@ -1,0 +1,20 @@
+# KS Gear photo sources / license record
+
+Images are representative editorial photographs, **not** images of the products sold by the Amazon search links.
+Each original image was obtained from its publicly listed Pexels Free Stock Photo page on 2026-11-11 and resized by the official images.pexels.com CDN at 760px.
+Pexels License: https://www.pexels.com/license/ (commercial website use permitted; no endorsement implied).
+
+| # | Credit | Photo URL | What the image really shows |
+|---|---|---|---|
+| 1 | Lucas Andrade | https://www.pexels.com/photo/14540606/ | ワックスの使用シーン |
+| 2 | Kindel Media | https://www.pexels.com/photo/7425766/ | 洗浄・乾燥の参考シーン |
+| 3 | Nick Gosset | https://www.pexels.com/photo/12125314/ | 補修対象の素材の参考写真。接着剤自体は写っていません |
+| 4 | isabel ph | https://www.pexels.com/photo/27016968/ | フィンの取り付けシーン。工具・ネジの製品写真ではありません |
+| 5 | Laker | https://www.pexels.com/photo/5792833/ | ワックスメンテナンスの参考シーン。スクレーパー本体の製品写真ではありません |
+| 6 | ArtHouse Studio | https://www.pexels.com/photo/4330127/ | ボード保管スタンドの参考シーン |
+| 7 | Oleg Prachuk | https://www.pexels.com/photo/8115960/ | 帽子の使用シーン |
+| 8 | Simon Robben | https://www.pexels.com/photo/630960/ | 一般的なポンチョの参考写真。着替え用サーフポンチョそのものではありません |
+| 9 | Jonathan Borba | https://www.pexels.com/photo/19596863/ | リーシュの使用シーン |
+| 10 | Kássia Melo | https://www.pexels.com/photo/15391904/ | バッグ利用の参考写真。防水・濡れ物収納機能を示す製品写真ではありません |
+
+No Amazon images were copied. If replacing an editorial image with product-specific imagery later, verify its rights separately.
