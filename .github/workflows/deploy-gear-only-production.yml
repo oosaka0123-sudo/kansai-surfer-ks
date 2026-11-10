@@ -73,9 +73,9 @@ jobs:
           set net:timeout 25
           set net:max-retries 3
           open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST"
-          mkdir -p "$PROD_ROOT/gear"
-          put "$RUNNER_TEMP/gear-publish/index.html" -o "$PROD_ROOT/gear/index.html"
-          put "$RUNNER_TEMP/gear-publish/gear.css" -o "$PROD_ROOT/gear/gear.css"
+          cd "$PROD_ROOT/gear"
+          put "$RUNNER_TEMP/gear-publish/index.html" -o "index.html"
+          put "$RUNNER_TEMP/gear-publish/gear.css" -o "gear.css"
           bye
           LFTP_EOF
 
