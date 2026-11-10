@@ -33,6 +33,7 @@ jobs:
           test "$GEAR_URL" = 'https://kansai.rss7.net/gear/'
           test -s gear/index.html
           test -s gear/gear.css
+          test "$(find gear/images -maxdepth 1 -type f -name '*.jpg' | wc -l)" -eq 10 || { echo '::error::Expected exactly 10 gear images'; exit 1; }
           grep -q 'サーファーギア' gear/index.html
           grep -q 'surf73-22' gear/index.html
           test "$(grep -o 'class="amazon-link"' gear/index.html | wc -l)" -eq 10
@@ -76,6 +77,7 @@ jobs:
           cd "$PROD_ROOT/gear"
           put "$RUNNER_TEMP/gear-publish/index.html" -o "index.html"
           put "$RUNNER_TEMP/gear-publish/gear.css" -o "gear.css"
+          mirror --reverse --verbose=0 --no-perms "gear/images" "images"
           bye
           LFTP_EOF
 
@@ -92,4 +94,9 @@ jobs:
           grep -q 'class="footer-links"' /tmp/ks-gear.html
           grep -q 'id="mobileMenu"' /tmp/ks-gear.html
           test "$(grep -o 'class="amazon-link"' /tmp/ks-gear.html | wc -l)" -eq 10
+          test "$(grep -o 'class="gear-photo"' /tmp/ks-gear.html | wc -l)" -eq 10
+          for i in $(seq -w 1 10); do
+            curl --fail --silent --show-error --location --retry 3 --retry-delay 2 "${GEAR_URL}images/${i}.jpg?rev=$GITHUB_RUN_ID" -o "/tmp/gear-${i}.jpg"
+            test "$(wc -c < "/tmp/gear-${i}.jpg")" -gt 6000
+          done
           echo 'GEAR_ONLY_PRODUCTION_OK'
