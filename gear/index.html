@@ -6,9 +6,62 @@
 <meta property="og:title" content="サーファーギア Amazon TOP10｜関西サーファーKS">
 <meta property="og:description" content="海に行く前から、帰ったあとまで。KS独自おすすめの10カテゴリ。">
 <meta property="og:type" content="website"><meta property="og:url" content="https://kansai.rss7.net/gear/">
-<link rel="icon" href="/favicon.ico"><link rel="stylesheet" href="gear.css">
+<link rel="icon" href="/img/favicon-32.png"><link rel="stylesheet" href="/nami_common.css?v=1018"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"><link rel="stylesheet" href="gear.css">
 </head><body><a class="skip" href="#main">本文へスキップ</a>
-<header class="header"><a class="brand" href="/">Kansai Surf<span>関西サーファーKS</span></a><nav aria-label="サイトメニュー"><a href="/">波情報</a><a href="/blog/index.php">ブログ</a></nav></header>
+<header class="top-bar">
+  <a href="/index.html" class="logo" style="text-decoration:none;">
+    <img src="/img/logo-ks-white.png" alt="KS" style="height:36px;width:auto;margin-right:8px;vertical-align:middle;">
+    <span class="en">Kansai Surf</span>
+  </a>
+  <nav class="nav-pc">
+    <a href="/isonoura.html"><i class="fa-solid fa-water"></i>磯ノ浦</a>
+    <a href="/kounohama.html"><i class="fa-solid fa-water"></i>国府の浜</a>
+    <a href="/ikumi.html"><i class="fa-solid fa-water"></i>生見</a>
+    <a href="/komatsu.html"><i class="fa-solid fa-water"></i>小松海岸</a>
+    <a href="/irago.html"><i class="fa-solid fa-water"></i>伊良湖</a>
+    <a href="/shizunami.html"><i class="fa-solid fa-water"></i>静波</a>
+    <a href="/hamadutu.html"><i class="fa-solid fa-water"></i>浜詰</a>
+    <a href="/takahama.html"><i class="fa-solid fa-water"></i>高浜</a>
+    <a href="/hakuto.html"><i class="fa-solid fa-water"></i>白兎</a>
+  </nav>
+  <div class="sns-buttons">
+    <a href="https://www.instagram.com/kansaisurfer.ks/" target="_blank" rel="noopener" aria-label="Instagram">
+      <i class="fa-brands fa-instagram"></i>
+    </a>
+    <a href="https://facebook.com/kansaisurfer" target="_blank" rel="noopener" aria-label="Facebook">
+      <i class="fa-brands fa-facebook"></i>
+    </a>
+  </div>
+  <button class="hamburger" id="hamburger" aria-label="メニュー">
+    <span></span><span></span><span></span>
+  </button>
+  <span class="tag-live" id="clockTag"><span class="dot"></span>LIVE --:--</span>
+</header>
+
+<div class="mobile-menu" id="mobileMenu">
+  <div class="mm-section">メインメニュー</div>
+  <a href="/index.html"><span class="mm-left"><i class="fa-solid fa-house"></i>ホーム</span></a>
+  <a href="/blog/index.php"><span class="mm-left"><i class="fa-solid fa-newspaper"></i>ブログ</span></a>
+  <a href="https://suzuri.jp/kansaisurfer" target="_blank" rel="noopener"><span class="mm-left"><i class="fa-solid fa-shirt"></i>ショップ</span></a>
+
+  <div class="mm-section">サーフポイント</div>
+  <a href="/isonoura.html"><span class="mm-left"><i class="fa-solid fa-water"></i>磯ノ浦（和歌山）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='/isonoura_guide.html';">GUIDE</span></a>
+  <a href="/kounohama.html"><span class="mm-left"><i class="fa-solid fa-water"></i>伊勢・国府の浜（三重）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='/kounohama_guide.html';">GUIDE</span></a>
+  <a href="/ikumi.html"><span class="mm-left"><i class="fa-solid fa-water"></i>四国・生見（高知）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='/ikumi_guide.html';">GUIDE</span></a>
+  <a href="/komatsu.html"><span class="mm-left"><i class="fa-solid fa-water"></i>四国・小松海岸（徳島）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='/komatsu_guide.html';">GUIDE</span></a>
+  <a href="/irago.html"><span class="mm-left"><i class="fa-solid fa-water"></i>伊良湖（愛知）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='/irago_guide.html';">GUIDE</span></a>
+  <a href="/shizunami.html"><span class="mm-left"><i class="fa-solid fa-water"></i>静波（静岡）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='/shizunami_guide.html';">GUIDE</span></a>
+  <a href="/hamadutu.html"><span class="mm-left"><i class="fa-solid fa-water"></i>浜詰（京都・日本海）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='/hamadutu_guide.html';">GUIDE</span></a>
+  <a href="/takahama.html"><span class="mm-left"><i class="fa-solid fa-water"></i>高浜（福井・日本海）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='/takahama_guide.html';">GUIDE</span></a>
+  <a href="/hakuto.html"><span class="mm-left"><i class="fa-solid fa-water"></i>白兎（鳥取・日本海）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='/hakuto_guide.html';">GUIDE</span></a>
+
+  <div class="mm-section">その他</div>
+  <a href="/about.html"><span class="mm-left"><i class="fa-solid fa-circle-info"></i>当サイトについて</span></a>
+  <a href="/contact.html"><span class="mm-left"><i class="fa-solid fa-envelope"></i>お問い合わせ</span></a>
+  <a href="https://kansai.rss7.net/secret/test.php"><span class="mm-left"><i class="fa-solid fa-lock"></i>SECRET MODE</span></a>
+</div>
+
+
 <main id="main" class="wrap"><section class="hero" aria-labelledby="title">
 <p class="eyebrow">KS GEAR SELECTION / AMAZON</p><h1 id="title">サーファーギア<br>Amazon TOP10<small>海に行く前から、帰ったあとまで。</small></h1>
 <p class="hero-copy">ワックスひとつ、予備のネジひとつ。<br>いつものサーフィンを整える、小さな道具を集めました。必要なものを、Amazonの検索結果で比べてください。</p>
@@ -83,4 +136,64 @@
 <p>追加提案のリーシュコードは、FCS公式の用途別・長さ別の製品展開を参考に選定。ウェットバッグは、Rip Curl公式のウェット／ドライ分離収納の用途を参考に選定しています。以下は用途の根拠で、Amazonでの順位・在庫の根拠ではありません。</p>
 <ul><li><a href="https://www.surffcs.com/collections/leashes" target="_blank" rel="noopener noreferrer">FCS公式：リーシュコード</a></li><li><a href="https://www.ripcurl.com.au/products/surf-series-anti-chaos-bucket-blackgrey" target="_blank" rel="noopener noreferrer">Rip Curl公式：ウェット／ドライ収納</a></li></ul>
 <p><a href="https://www.amazon.co.jp/gp/bestsellers/sports/15314691" target="_blank" rel="noopener noreferrer">Amazon公式の売れ筋ランキングを確認する ↗</a><br>制作時はランキングページを取得できなかったため、公式順位・価格・レビュー点数は転載していません。</p></details></section>
-</main><footer class="footer"><div class="wrap"><nav aria-label="フッター"><a href="/">KSトップへ</a><a href="/blog/index.php">ブログ</a><a href="https://rss7.net/">RSS7 AI Works</a></nav><p>© 2026 関西サーファーKS · MADE IN OSAKA<br>powered by RSS7.ai Works</p></div></footer></body></html>
+</main><footer>
+  <a href="https://kansai.rss7.net/index.html" class="logo" style="text-decoration:none;justify-content:center;">
+    <img src="https://kansai.rss7.net/img/logo-ks-white.png" alt="KS" style="height:24px;width:auto;margin-right:6px;vertical-align:middle;">
+    <span class="en" style="font-size:0.75rem;">Kansai Surf</span>
+  </a>
+
+  <div class="footer-sns" style="display:flex;align-items:center;justify-content:center;gap:24px;margin:22px 0;padding:8px 0;">
+    <a href="https://www.instagram.com/kansaisurfer.ks/" target="_blank" rel="noopener" aria-label="Instagram" title="Instagram" style="color:var(--cream-soft);font-size:1.7rem;line-height:1;padding:6px;text-decoration:none;"><i class="fa-brands fa-instagram" aria-hidden="true"></i></a>
+    <a href="https://facebook.com/kansaisurfer" target="_blank" rel="noopener" aria-label="Facebook" title="Facebook" style="color:var(--cream-soft);font-size:1.7rem;line-height:1;padding:6px;text-decoration:none;"><i class="fa-brands fa-facebook" aria-hidden="true"></i></a>
+    <a href="https://www.tiktok.com/@ks295223" target="_blank" rel="noopener" aria-label="TikTok" title="TikTok" style="color:var(--cream-soft);font-size:1.7rem;line-height:1;padding:6px;text-decoration:none;"><i class="fa-brands fa-tiktok" aria-hidden="true"></i></a>
+    <a href="https://x.com/kansaisurfer" target="_blank" rel="noopener" aria-label="X" title="X" style="color:var(--cream-soft);font-size:1.7rem;line-height:1;padding:6px;text-decoration:none;"><i class="fa-brands fa-x-twitter" aria-hidden="true"></i></a>
+    <a href="https://www.youtube.com/@kansaisurfes" target="_blank" rel="noopener" aria-label="YouTube" title="YouTube" style="color:var(--cream-soft);font-size:1.7rem;line-height:1;padding:6px;text-decoration:none;"><i class="fa-brands fa-youtube" aria-hidden="true"></i></a>
+  </div>
+
+  <div class="footer-links">
+    <a href="https://kansai.rss7.net/index.html"><i class="fa-solid fa-house" aria-hidden="true"></i> ホーム</a>
+    <a href="https://kansai.rss7.net/blog/index.php"><i class="fa-solid fa-newspaper" aria-hidden="true"></i> ブログ</a>
+    <a href="https://suzuri.jp/kansaisurfer" target="_blank" rel="noopener"><i class="fa-solid fa-shirt" aria-hidden="true"></i> ショップ</a>
+  </div>
+
+  <div class="footer-links">
+    <a href="https://kansai.rss7.net/isonoura.html"><i class="fa-solid fa-water" aria-hidden="true"></i> 磯ノ浦</a>
+    <a href="https://kansai.rss7.net/kounohama.html"><i class="fa-solid fa-water" aria-hidden="true"></i> 伊勢</a>
+    <a href="https://kansai.rss7.net/ikumi.html"><i class="fa-solid fa-water" aria-hidden="true"></i> 生見</a>
+    <a href="https://kansai.rss7.net/komatsu.html"><i class="fa-solid fa-water" aria-hidden="true"></i> 小松</a>
+    <a href="https://kansai.rss7.net/irago.html"><i class="fa-solid fa-water" aria-hidden="true"></i> 伊良湖</a>
+    <a href="https://kansai.rss7.net/shizunami.html"><i class="fa-solid fa-water" aria-hidden="true"></i> 静波</a>
+    <a href="https://kansai.rss7.net/hamadutu.html"><i class="fa-solid fa-water" aria-hidden="true"></i> 浜詰</a>
+    <a href="https://kansai.rss7.net/takahama.html"><i class="fa-solid fa-water" aria-hidden="true"></i> 高浜</a>
+    <a href="https://kansai.rss7.net/hakuto.html"><i class="fa-solid fa-water" aria-hidden="true"></i> 白兎</a>
+  </div>
+
+  <div class="footer-links" style="margin-bottom:16px;">
+    <span style="color:var(--teal-pale);font-family:'JetBrains Mono',monospace;font-size:0.65rem;letter-spacing:0.1em;align-self:center;"><i class="fa-solid fa-book-open" aria-hidden="true"></i> GUIDE</span>
+    <a href="https://kansai.rss7.net/isonoura_guide.html">磯ノ浦ガイド</a>
+    <a href="https://kansai.rss7.net/kounohama_guide.html">国府の浜ガイド</a>
+    <a href="https://kansai.rss7.net/ikumi_guide.html">生見ガイド</a>
+    <a href="https://kansai.rss7.net/komatsu_guide.html">小松ガイド</a>
+    <a href="https://kansai.rss7.net/irago_guide.html">伊良湖ガイド</a>
+    <a href="https://kansai.rss7.net/shizunami_guide.html">静波ガイド</a>
+    <a href="https://kansai.rss7.net/hamadutu_guide.html">浜詰ガイド</a>
+    <a href="https://kansai.rss7.net/takahama_guide.html">高浜ガイド</a>
+    <a href="https://kansai.rss7.net/hakuto_guide.html">白兎ガイド</a>
+  </div>
+
+  <div class="footer-links">
+    <a href="https://kansai.rss7.net/contact.html"><i class="fa-solid fa-envelope" aria-hidden="true"></i> お問い合わせ</a>
+    <a href="https://kansai.rss7.net/about.html"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> 当サイトについて</a>
+    <a href="https://kansai.rss7.net/privacy.html"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> プライバシーポリシー</a>
+  </div>
+
+  <div class="attr"><i class="fa-solid fa-cloud" aria-hidden="true"></i> Weather data by <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo.com</a></div>
+  <div class="attr" style="margin-top:14px;">
+    <a href="https://kiseki.rss7.net/" target="_blank" rel="noopener">映像工房 軌跡</a> ·
+    <a href="https://bitframe.rss7.net/" target="_blank" rel="noopener">AI動画CM制作.bitframe</a> ·
+    <a href="https://rss7.net/" target="_blank" rel="noopener">RSS7 AI Works 総合制作</a> ·
+    <a href="https://sleague.rss7.net/" target="_blank" rel="noopener"><i class="fa-solid fa-trophy" aria-hidden="true"></i> S.LEAGUE NOW</a> ·
+    <a href="https://surfboard.rss7.net/" target="_blank" rel="noopener"><i class="fa-solid fa-person-surfing" aria-hidden="true"></i> Surfboard Finder｜45〜60歳のための次の1本診断</a>
+  </div>
+  <div class="attr">© 2026 関西サーファー.ks · MADE IN OSAKA</div>
+</footer><script>(()=>{const b=document.getElementById('hamburger'),m=document.getElementById('mobileMenu'),c=document.getElementById('clockTag');if(b&&m){b.setAttribute('aria-controls','mobileMenu');b.setAttribute('aria-expanded','false');b.addEventListener('click',()=>{const open=m.classList.toggle('open');b.classList.toggle('active',open);b.setAttribute('aria-expanded',String(open))})}if(c){const tick=()=>{const time=new Intl.DateTimeFormat('ja-JP',{timeZone:'Asia/Tokyo',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date());c.innerHTML='<span class="dot"></span>LIVE '+time+' JST'};tick();setInterval(tick,30000)}})()</script></body></html>
