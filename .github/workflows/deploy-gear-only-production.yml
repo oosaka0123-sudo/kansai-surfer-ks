@@ -39,6 +39,17 @@ jobs:
           ! grep -Eqi '(password|secret_key|api_token)\s*=' gear/index.html
           echo 'Validated 2-file gear-only deployment source.'
 
+      - name: Build gear page with current production navigation
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/gear-publish"
+          curl --fail --silent --show-error --location --retry 4 "https://kansai.rss7.net/index.html?gear_shell=$GITHUB_RUN_ID" -o "$RUNNER_TEMP/ks-live-home.html"
+          node scripts/build_gear_live_shell.cjs "$RUNNER_TEMP/ks-live-home.html" gear/index.html "$RUNNER_TEMP/gear-publish/index.html"
+          cp gear/gear.css "$RUNNER_TEMP/gear-publish/gear.css"
+          grep -q 'class="top-bar"' "$RUNNER_TEMP/gear-publish/index.html"
+          grep -q 'class="footer-links"' "$RUNNER_TEMP/gear-publish/index.html"
+
       - name: Install FTPS client
         run: sudo apt-get update -qq && sudo apt-get install -y lftp
 
@@ -63,8 +74,8 @@ jobs:
           set net:max-retries 3
           open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST"
           mkdir -p "$PROD_ROOT/gear"
-          put "gear/index.html" -o "$PROD_ROOT/gear/index.html"
-          put "gear/gear.css" -o "$PROD_ROOT/gear/gear.css"
+          put "$RUNNER_TEMP/gear-publish/index.html" -o "$PROD_ROOT/gear/index.html"
+          put "$RUNNER_TEMP/gear-publish/gear.css" -o "$PROD_ROOT/gear/gear.css"
           bye
           LFTP_EOF
 
@@ -77,5 +88,8 @@ jobs:
           grep -q 'サーファーギア' /tmp/ks-gear.html
           grep -q 'surf73-22' /tmp/ks-gear.html
           grep -q 'gear-item' /tmp/ks-gear.css
+          grep -q 'class="top-bar"' /tmp/ks-gear.html
+          grep -q 'class="footer-links"' /tmp/ks-gear.html
+          grep -q 'id="mobileMenu"' /tmp/ks-gear.html
           test "$(grep -o 'class="amazon-link"' /tmp/ks-gear.html | wc -l)" -eq 10
           echo 'GEAR_ONLY_PRODUCTION_OK'
