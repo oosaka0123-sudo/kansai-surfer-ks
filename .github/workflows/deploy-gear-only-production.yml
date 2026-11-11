@@ -96,7 +96,7 @@ jobs:
           grep -q 'class="footer-links"' /tmp/ks-gear.html
           grep -q 'id="mobileMenu"' /tmp/ks-gear.html
           test "$(grep -o 'class="amazon-link"' /tmp/ks-gear.html | wc -l)" -eq 10
-          test "$(grep -o 'class="gear-photo"' /tmp/ks-gear.html | wc -l)" -eq 10
+          test "$(grep -o 'class="gear-photo' /tmp/ks-gear.html | wc -l)" -eq 10
           for i in $(seq -w 1 10); do
             curl --fail --silent --show-error --location --retry 3 --retry-delay 2 "${GEAR_URL}images/${i}.jpg?rev=$GITHUB_RUN_ID" -o "/tmp/gear-${i}.jpg"
             test "$(wc -c < "/tmp/gear-${i}.jpg")" -gt 6000
