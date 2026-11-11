@@ -18,3 +18,18 @@ Pexels License: https://www.pexels.com/license/ (commercial website use permitte
 | 10 | Kássia Melo | https://www.pexels.com/photo/15391904/ | バッグ利用の参考写真。防水・濡れ物収納機能を示す製品写真ではありません |
 
 No Amazon images were copied. If replacing an editorial image with product-specific imagery later, verify its rights separately.
+
+## 2026-11-11: category-match photo corrections
+
+The earlier stock photographs for categories 02, 03, 04, 06, 08 and 10 did not accurately depict the category. Those six displayed assets were replaced by original photorealistic AI-generated **representative images**, not photographs of actual products or merchant listings. They are marked in each card and in the disclosure.
+
+| Category | New image | Depiction |
+|---|---|---|
+| 02 | images/02.webp | Wetsuit cleaner bottle and wetsuit |
+| 03 | images/03.webp | Wetsuit seam repair adhesive |
+| 04 | images/04.webp | Six fin grub screws and fin key |
+| 06 | images/06.webp | Surfboard resting on two freestanding board stands |
+| 08 | images/08.webp | Hooded surf changing poncho |
+| 10 | images/10.webp | Roll-top wet/dry carry bag |
+
+The other four displayed images (01,05,07,09) remain licensed photographic assets as documented above. No Amazon product photos were downloaded or used.
