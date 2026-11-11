@@ -36,6 +36,8 @@ jobs:
           test "$(find gear/images -maxdepth 1 -type f -name '*.jpg' | wc -l)" -eq 10 || { echo '::error::Expected exactly 10 gear images'; exit 1; }
           grep -q 'サーファーギア' gear/index.html
           grep -q 'surf73-22' gear/index.html
+          test "$(find gear/images -maxdepth 1 -type f -name '*.webp' | wc -l)" -ge 6 || { echo '::error::Missing category-matched assets'; exit 1; }
+          test "$(grep -o 'src="images/[0-9][0-9].webp"' gear/index.html | wc -l)" -eq 6
           test "$(grep -o 'class="amazon-link"' gear/index.html | wc -l)" -eq 10
           ! grep -Eqi '(password|secret_key|api_token)\s*=' gear/index.html
           echo 'Validated 2-file gear-only deployment source.'
@@ -98,5 +100,12 @@ jobs:
           for i in $(seq -w 1 10); do
             curl --fail --silent --show-error --location --retry 3 --retry-delay 2 "${GEAR_URL}images/${i}.jpg?rev=$GITHUB_RUN_ID" -o "/tmp/gear-${i}.jpg"
             test "$(wc -c < "/tmp/gear-${i}.jpg")" -gt 6000
+          done
+          test "$(grep -o 'AI生成の参考イメージ' /tmp/ks-gear.html | wc -l)" -eq 6
+          for i in 02 03 04 06 08 10; do
+            grep -q "src=\"images/${i}.webp\"" /tmp/ks-gear.html
+            curl --fail --silent --show-error --location --retry 3 --retry-delay 2 "${GEAR_URL}images/${i}.webp?rev=$GITHUB_RUN_ID" -o "/tmp/gear-${i}.webp"
+            test "$(wc -c < "/tmp/gear-${i}.webp")" -gt 1000
+            test "$(head -c 4 "/tmp/gear-${i}.webp")" = "RIFF"
           done
           echo 'GEAR_ONLY_PRODUCTION_OK'
