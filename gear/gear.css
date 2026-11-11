@@ -85,3 +85,11 @@
     align-items: center;
   }
 }
+
+/* Never crop reference products: portrait product images must remain fully visible. */
+.wrap .gear-item .gear-photo-ai { aspect-ratio: 1 / 1; background: #17252e; }
+.wrap .gear-item .gear-photo-ai img { object-fit: contain; object-position: center; }
+@media (max-width: 850px) {
+ .wrap .gear-item .gear-photo-ai { aspect-ratio: 1 / 1; }
+ .wrap .gear-item .gear-photo-ai img { object-fit: contain; }
+}
