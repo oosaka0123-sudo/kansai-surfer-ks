@@ -1,0 +1,129 @@
+name: Deploy KS gear photo banner on homepage (manual)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kansai-surfer-production-deploy
+  cancel-in-progress: false
+
+jobs:
+  add-home-gear-banner:
+    if: github.ref == 'refs/heads/main' && github.actor == 'oosaka0123-sudo'
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      FTP_HOST: ftp.lolipop.jp
+      PROD_ROOT: /kansai
+      HOME_URL: https://kansai.rss7.net/index.html
+      GEAR_URL: https://kansai.rss7.net/gear/
+    steps:
+      - name: Checkout reviewed banner and patcher
+        uses: actions/checkout@v4
+
+      - name: Guard scope and original branding
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$FTP_HOST" = "ftp.lolipop.jp"
+          test "$PROD_ROOT" = "/kansai"
+          test "$HOME_URL" = "https://kansai.rss7.net/index.html"
+          test -s gear/banner.html
+          test -s scripts/patch_gear_banner.cjs
+          grep -q 'KS GEAR BANNER START' gear/banner.html
+          grep -q 'href="/gear/"' gear/banner.html
+          grep -q 'Amazon公式売上順位ではありません' gear/banner.html
+          grep -q '/gear/images/06.jpg' gear/banner.html
+          test "$(grep -o 'ks-gear-promo-link' gear/banner.html | wc -l)" -ge 1
+
+      - name: Install FTPS
+        run: sudo apt-get update -qq && sudo apt-get install -y lftp
+
+      - name: Fetch unchanged production homepage through FTPS
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          test -n "$FTP_USERNAME" && test -n "$FTP_PASSWORD"
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 25
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST"
+          get "$PROD_ROOT/index.html" -o "$RUNNER_TEMP/ks-home-original.html"
+          bye
+          LFTP_EOF
+          test -s "$RUNNER_TEMP/ks-home-original.html"
+
+      - name: Confirm current production identity and generate strictly additive page
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 3 "$HOME_URL?ks_gear_verify=$GITHUB_RUN_ID" -o "$RUNNER_TEMP/ks-home-http.html"
+          # Abort on unexpected differences between public HTML and FTPS source.
+          cmp "$RUNNER_TEMP/ks-home-http.html" "$RUNNER_TEMP/ks-home-original.html"
+          node scripts/patch_gear_banner.cjs "$RUNNER_TEMP/ks-home-original.html" gear/banner.html "$RUNNER_TEMP/ks-home-patched.html"
+          test -s "$RUNNER_TEMP/ks-home-patched.html"
+          grep -q 'KS GEAR BANNER START' "$RUNNER_TEMP/ks-home-patched.html"
+          test "$(grep -o 'KS GEAR BANNER START' "$RUNNER_TEMP/ks-home-patched.html" | wc -l)" -eq 1
+          grep -q '<!-- お問い合わせCTA -->' "$RUNNER_TEMP/ks-home-patched.html"
+          grep -q 'nami_common.js' "$RUNNER_TEMP/ks-home-patched.html"
+          grep -q 'const SPOTS' "$RUNNER_TEMP/ks-home-patched.html"
+          # All original homepage bytes must survive, except for this single inserted banner.
+          node -e 'const fs=require("fs");const old=fs.readFileSync(process.argv[1],"utf8");const modified=fs.readFileSync(process.argv[2],"utf8");const banner=fs.readFileSync("gear/banner.html","utf8");if(modified.replace(banner+"\\n\\n","")!==old)process.exit(1)' "$RUNNER_TEMP/ks-home-original.html" "$RUNNER_TEMP/ks-home-patched.html"
+
+      - name: Retain private rollback copy of homepage in Actions artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ks-home-before-gear-banner-${{ github.run_id }}
+          path: ${{ runner.temp }}/ks-home-original.html
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Upload only homepage index.html
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 25
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST"
+          put "$RUNNER_TEMP/ks-home-patched.html" -o "$PROD_ROOT/index.html"
+          bye
+          LFTP_EOF
+
+      - name: Verify live homepage, promo link and gear images
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 2 "$HOME_URL?ks_gear_published=$GITHUB_RUN_ID" -o "$RUNNER_TEMP/ks-home-after.html"
+          cmp "$RUNNER_TEMP/ks-home-patched.html" "$RUNNER_TEMP/ks-home-after.html"
+          grep -q 'KS GEAR BANNER START' "$RUNNER_TEMP/ks-home-after.html"
+          grep -q 'href="/gear/"' "$RUNNER_TEMP/ks-home-after.html"
+          grep -q 'Amazon公式売上順位ではありません' "$RUNNER_TEMP/ks-home-after.html"
+          grep -q 'nami_common.js' "$RUNNER_TEMP/ks-home-after.html"
+          grep -q 'const SPOTS' "$RUNNER_TEMP/ks-home-after.html"
+          curl --fail --silent --show-error --location "$GEAR_URL" -o "$RUNNER_TEMP/ks-gear.html"
+          grep -q 'おすすめTOP10！' "$RUNNER_TEMP/ks-gear.html"
+          for img in 06.jpg 07.jpg; do
+            curl --fail --silent --show-error --location "${GEAR_URL}images/$img" -o "/tmp/$img"
+            test "$(wc -c < "/tmp/$img")" -gt 6000
+          done
+          echo "KS_GEAR_HOMEPAGE_BANNER_OK"
