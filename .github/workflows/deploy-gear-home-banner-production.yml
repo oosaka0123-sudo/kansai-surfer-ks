@@ -2,6 +2,8 @@ name: Deploy KS gear photo banner on homepage (manual)
 
 on:
   workflow_dispatch:
+  issue_comment:
+    types: [created]
 
 permissions:
   contents: read
@@ -12,7 +14,18 @@ concurrency:
 
 jobs:
   add-home-gear-banner:
-    if: github.ref == 'refs/heads/main' && github.actor == 'oosaka0123-sudo'
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      github.actor == 'oosaka0123-sudo' &&
+      (
+        github.event_name == 'workflow_dispatch' ||
+        (
+          github.event_name == 'issue_comment' &&
+          github.event.issue.pull_request == null &&
+          github.event.issue.title == 'KS gear banner 150px production fix' &&
+          github.event.comment.body == '/deploy-gear-banner-150'
+        )
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 18
     env:
