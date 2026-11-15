@@ -1,8 +1,34 @@
 <!-- KS GEAR BANNER START -->
-<section class="ks-gear-promo" aria-label="サーファーギア特集" style="max-width:1200px;margin:32px auto;padding:24px clamp(20px,4vw,40px);background:#101e2b;border:1px solid #3a565f;color:#f6f3eb;box-sizing:border-box">
-<p style="margin:0 0 8px;color:#85dfd0;font-size:.75rem;letter-spacing:.14em">KS GEAR SELECTION · 広告 / PR</p>
-<a href="/gear/" style="display:block;color:#f6f3eb;text-decoration:underline;text-underline-offset:.2em;font-size:clamp(1.25rem,3.5vw,2rem);font-weight:700;line-height:1.5">サーファーギア Amazon TOP10 <span aria-hidden="true">→</span></a>
-<p style="margin:10px 0 0;font-size:.85rem;line-height:1.8">海に行く前から、帰ったあとまで。ワックス・ウェットケア・フィン小物ほか10カテゴリ。</p>
-<p style="margin:6px 0 0;color:#b7c3cc;font-size:.75rem">KS独自のおすすめ順です。Amazon公式売上順位ではありません。</p>
+<!-- Linked photo banner for Kansai Surfer KS homepage. All art uses existing gear assets. -->
+<style>
+.ks-gear-home-promo{max-width:1200px;margin:28px auto 34px;padding:0 16px;box-sizing:border-box}
+.ks-gear-home-promo a.ks-gear-promo-link{position:relative;isolation:isolate;display:flex;align-items:center;min-height:248px;overflow:hidden;border-radius:17px;background:#07304a;color:#fff;text-decoration:none;box-shadow:0 12px 32px rgba(2,24,38,.22);transition:transform .22s ease,box-shadow .22s ease}
+.ks-gear-home-promo .ks-photo-bg{position:absolute;inset:0;z-index:-2;background-image:linear-gradient(90deg,rgba(2,23,41,.99) 0%,rgba(2,31,52,.94) 35%,rgba(2,36,56,.48) 69%,rgba(4,31,46,.08) 100%),url('/gear/images/06.jpg');background-size:cover;background-position:50% 48%}
+.ks-gear-home-promo .ks-gear-promo-link::after{content:"";position:absolute;inset:auto 0 0;height:5px;background:linear-gradient(90deg,#19cccb,#ffd44f,#ff725e)}
+.ks-gear-home-promo .ks-promo-copy{padding:25px 36px;position:relative;z-index:1;max-width:760px}
+.ks-gear-home-promo .ks-promo-eyebrow{display:block;color:#8dece3;font-weight:800;letter-spacing:.15em;font-size:12px;margin-bottom:8px}
+.ks-gear-home-promo .ks-promo-title{display:block;font-size:clamp(26px,3.5vw,45px);font-weight:900;line-height:1.2;letter-spacing:-.04em;text-shadow:0 2px 8px rgba(0,0,0,.25)}
+.ks-gear-home-promo .ks-promo-title em{font-style:normal;color:#ffdb52}
+.ks-gear-home-promo .ks-promo-desc{display:block;margin-top:11px;font-size:clamp(12px,1.35vw,16px);font-weight:700;color:#ecfaf9}
+.ks-gear-home-promo .ks-promo-cta{display:inline-flex;align-items:center;gap:12px;margin-top:18px;padding:9px 21px;border-radius:999px;background:#ff735f;color:#fff;font-size:14px;font-weight:850}
+.ks-gear-home-promo .ks-promo-disclaimer{display:block;margin-top:8px;color:#e9f3f5;font-size:10px;opacity:.88}
+.ks-gear-home-promo .ks-promo-photo-hat{position:absolute;right:2.5%;bottom:8%;width:21%;height:62%;object-fit:cover;object-position:center;border-radius:10px;border:2px solid rgba(255,255,255,.35);box-shadow:0 8px 28px rgba(0,0,0,.4);transform:rotate(4deg);opacity:.94}
+.ks-gear-home-promo a.ks-gear-promo-link:hover{transform:translateY(-2px);box-shadow:0 15px 36px rgba(2,24,38,.35)}
+.ks-gear-home-promo a.ks-gear-promo-link:focus-visible{outline:3px solid #ffd44f;outline-offset:4px}
+@media(max-width:720px){.ks-gear-home-promo{margin:20px auto 24px;padding:0 12px}.ks-gear-home-promo a.ks-gear-promo-link{min-height:190px;border-radius:13px}.ks-gear-home-promo .ks-promo-copy{padding:22px 19px;max-width:none}.ks-gear-home-promo .ks-photo-bg{background-image:linear-gradient(90deg,rgba(1,22,41,.98) 0%,rgba(1,25,43,.93) 61%,rgba(2,25,43,.48) 100%),url('/gear/images/06.jpg');background-position:65% center}.ks-gear-home-promo .ks-promo-title{font-size:clamp(23px,6.1vw,34px)}.ks-gear-home-promo .ks-promo-desc{font-size:12px;max-width:255px}.ks-gear-home-promo .ks-promo-cta{margin-top:14px;font-size:12px;padding:8px 15px}.ks-gear-home-promo .ks-promo-photo-hat{display:none}.ks-gear-home-promo .ks-promo-eyebrow{font-size:10px}}
+@media(prefers-reduced-motion:reduce){.ks-gear-home-promo a.ks-gear-promo-link{transition:none}}
+</style>
+<section class="ks-gear-home-promo" aria-label="Amazonサーフギア おすすめTOP10">
+  <a class="ks-gear-promo-link" href="/gear/" aria-label="KSが選ぶAmazonサーフギア おすすめTOP10！ギア特集を見る">
+    <span class="ks-photo-bg" aria-hidden="true"></span>
+    <span class="ks-promo-copy">
+      <span class="ks-promo-eyebrow">KS GEAR SELECTION · 広告 / PR</span>
+      <span class="ks-promo-title">Amazonサーフギア<br>おすすめ <em>TOP10！</em></span>
+      <span class="ks-promo-desc">KSが選ぶ、海で役立つ10カテゴリ</span>
+      <span class="ks-promo-cta">ギア特集を見る <span aria-hidden="true">↗</span></span>
+      <span class="ks-promo-disclaimer">KS独自のおすすめ順。Amazon公式売上順位ではありません。</span>
+    </span>
+    <img class="ks-promo-photo-hat" src="/gear/images/07.jpg" alt="" loading="lazy" width="240" height="200" aria-hidden="true">
+  </a>
 </section>
 <!-- KS GEAR BANNER END -->
