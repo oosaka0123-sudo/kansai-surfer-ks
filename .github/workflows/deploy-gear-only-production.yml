@@ -89,7 +89,7 @@ jobs:
           set -euo pipefail
           curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "$GEAR_URL?rev=$GITHUB_RUN_ID" -o /tmp/ks-gear.html
           curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "${GEAR_URL}gear.css?rev=$GITHUB_RUN_ID" -o /tmp/ks-gear.css
-          grep -q 'サーファーギア' /tmp/ks-gear.html
+          grep -q 'Amazonサーフギア' /tmp/ks-gear.html
           grep -q 'surf73-22' /tmp/ks-gear.html
           grep -q 'gear-item' /tmp/ks-gear.css
           grep -q 'class="top-bar"' /tmp/ks-gear.html
