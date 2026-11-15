@@ -80,7 +80,7 @@ jobs:
           grep -q 'const SPOTS' "$RUNNER_TEMP/ks-home-patched.html"
           # Compare both documents with the single marked banner stripped.
           # This proves every other homepage byte is identical after relocation.
-          node -e 'const fs=require("fs");const old=fs.readFileSync(process.argv[1],"utf8");const updated=fs.readFileSync(process.argv[2],"utf8");const re=/<!-- KS GEAR BANNER START -->[\\s\\S]*?<!-- KS GEAR BANNER END -->\\n\\n/;if(!re.test(old)||!re.test(updated)||old.replace(re,"")!==updated.replace(re,""))process.exit(1)' "$RUNNER_TEMP/ks-home-original.html" "$RUNNER_TEMP/ks-home-patched.html"
+          node -e 'const fs=require("fs");const old=fs.readFileSync(process.argv[1],"utf8");const updated=fs.readFileSync(process.argv[2],"utf8");const re=/<!-- KS GEAR BANNER START -->[\s\S]*?<!-- KS GEAR BANNER END -->\n\n/;if(!re.test(old)||!re.test(updated)||old.replace(re,"")!==updated.replace(re,""))process.exit(1)' "$RUNNER_TEMP/ks-home-original.html" "$RUNNER_TEMP/ks-home-patched.html"
           grep -q 'height:150px' "$RUNNER_TEMP/ks-home-patched.html"
           node -e 'const s=require("fs").readFileSync(process.argv[1],"utf8");if(s.indexOf("KS GEAR BANNER START")<s.indexOf("<!-- ============ ALL SPOTS")||s.indexOf("KS GEAR BANNER START")>s.indexOf("<!-- LINEバナー -->"))process.exit(1)' "$RUNNER_TEMP/ks-home-patched.html"
 
