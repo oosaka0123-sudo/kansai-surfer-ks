@@ -33,6 +33,8 @@ jobs:
           test "$HOME_URL" = "https://kansai.rss7.net/index.html"
           test -s gear/banner.html
           test -s scripts/patch_gear_banner.cjs
+          test -s gear/images/home-banner-gear.webp
+          test "$(head -c 4 gear/images/home-banner-gear.webp)" = "RIFF"
           grep -q 'KS GEAR BANNER START' gear/banner.html
           grep -q 'href="/gear/"' gear/banner.html
           grep -q 'Amazon公式売上順位ではありません' gear/banner.html
@@ -95,6 +97,26 @@ jobs:
           path: ${{ runner.temp }}/ks-home-original.html
           retention-days: 14
           if-no-files-found: error
+
+      - name: Upload only matching gear banner photo
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 25
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST"
+          put "gear/images/home-banner-gear.webp" -o "$PROD_ROOT/gear/images/home-banner-gear.webp"
+          bye
+          LFTP_EOF
 
       - name: Upload only homepage index.html
         shell: bash
