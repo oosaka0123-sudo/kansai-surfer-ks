@@ -12,8 +12,9 @@ concurrency:
 
 jobs:
   add-home-gear-banner:
-    if: >-
-      github.ref == 'refs/h    if: github.ref == 'refs/heads/main' && github.actor == 'oosaka0123-sudo't-minutes: 18
+    if: github.ref == 'refs/heads/main' && github.actor == 'oosaka0123-sudo'
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
     env:
       FTP_HOST: ftp.lolipop.jp
       PROD_ROOT: /kansai
