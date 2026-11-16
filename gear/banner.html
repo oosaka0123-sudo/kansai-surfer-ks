@@ -1,23 +1,39 @@
 <!-- KS GEAR BANNER START -->
 <style>
-.ks-gear-home-promo{width:100%;max-width:1200px;margin:14px auto 18px;padding:0 12px;box-sizing:border-box}
-.ks-gear-home-promo .ks-gear-promo-link{height:152px;position:relative;display:flex;align-items:center;overflow:hidden;border-radius:9px;isolation:isolate;background:#06283d;color:#fff;text-decoration:none;box-shadow:0 5px 13px rgba(1,17,28,.19);box-sizing:border-box}
-.ks-gear-home-promo .ks-photo-bg{position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(2,23,40,.98) 0%,rgba(2,28,43,.94) 34%,rgba(2,30,45,.56) 63%,rgba(2,23,40,.03) 100%),url('/gear/images/06.jpg') 73% 47% / cover no-repeat}
-.ks-gear-home-promo .ks-promo-copy{width:100%;padding:10px 24px;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;box-sizing:border-box}
+/* Compact photo banner, immediately followed by the wave-information heading. */
+.ks-gear-home-promo{width:100%;max-width:1200px;margin:9px auto 0;padding:0 12px;box-sizing:border-box}
+.ks-gear-home-promo .ks-gear-promo-link{height:152px;position:relative;display:flex;align-items:center;overflow:hidden;border-radius:9px;isolation:isolate;background:#052438;color:#fff;text-decoration:none;box-shadow:0 5px 13px rgba(1,17,28,.19);box-sizing:border-box}
+.ks-gear-home-promo .ks-photo-bg{position:absolute;inset:0;z-index:-2;background:linear-gradient(90deg,rgba(2,22,37,.98) 0%,rgba(2,26,44,.93) 43%,rgba(2,30,45,.5) 74%,rgba(2,23,40,.22) 100%),url('/gear/images/06.jpg') 75% 47% / cover no-repeat}
+.ks-gear-home-promo .ks-promo-copy{position:relative;z-index:2;width:72%;min-width:0;padding:8px 24px;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;box-sizing:border-box}
 .ks-gear-home-promo .ks-promo-eyebrow{font-size:10px;line-height:1.2;letter-spacing:.14em;font-weight:800;color:#7ce9df;margin-bottom:5px}
-.ks-gear-home-promo .ks-promo-title{font-size:clamp(24px,3.3vw,38px);line-height:1.12;letter-spacing:-.035em;font-weight:900;text-shadow:0 2px 5px rgba(0,0,0,.38)}
+.ks-gear-home-promo .ks-promo-title{font-size:clamp(24px,3.3vw,38px);line-height:1.12;letter-spacing:-.035em;font-weight:900;text-shadow:0 2px 5px rgba(0,0,0,.45)}
 .ks-gear-home-promo .ks-promo-title em{color:#ffdc4f;font-style:normal}
-.ks-gear-home-promo .ks-promo-arrow{display:inline-block;color:#ff8069;margin-left:8px;font-weight:900}
+.ks-gear-home-promo .ks-promo-arrow{display:inline-block;color:#ff8069;margin-left:6px;font-weight:900}
 .ks-gear-home-promo .ks-promo-disclaimer{color:#d5e8e9;font-size:9px;line-height:1.25;margin-top:7px}
 .ks-gear-home-promo .ks-gear-promo-link:focus-visible{outline:3px solid #ffdc4f;outline-offset:3px}
+.ks-gear-home-promo .ks-gear-photos{position:absolute;z-index:1;top:0;right:0;width:35%;height:100%;pointer-events:none}
+.ks-gear-home-promo .ks-gear-photo{position:absolute;width:32%;aspect-ratio:1/1;object-fit:cover;box-sizing:border-box;border:2px solid rgba(255,255,255,.83);border-radius:9px;background:#142d36;box-shadow:0 4px 12px rgba(0,0,0,.35)}
+.ks-gear-home-promo .ks-gear-photo-wax{right:58%;top:19%;transform:rotate(-10deg)}
+.ks-gear-home-promo .ks-gear-photo-fin{right:30%;top:37%;transform:rotate(7deg)}
+.ks-gear-home-promo .ks-gear-photo-hat{right:3%;top:13%;transform:rotate(10deg)}
+/* Home title is the very next sibling: reduce only the gap below this promo. */
+.ks-gear-home-promo + .top-hero{margin-top:0!important;padding-top:12px!important}
+.ks-gear-home-promo + .top-hero h1{margin-top:0!important}
 @media(max-width:720px){
-.ks-gear-home-promo{margin:10px auto 12px;padding:0 8px}
+.ks-gear-home-promo{margin:6px auto 0;padding:0 8px}
 .ks-gear-home-promo .ks-gear-promo-link{height:102px;border-radius:7px;box-shadow:none}
-.ks-gear-home-promo .ks-photo-bg{background:linear-gradient(90deg,rgba(1,21,35,.98) 0%,rgba(2,24,41,.92) 45%,rgba(2,27,44,.15) 100%),url('/gear/images/06.jpg') 67% 49% / cover no-repeat}
-.ks-gear-home-promo .ks-promo-copy{padding:8px 13px}
-.ks-gear-home-promo .ks-promo-eyebrow{font-size:8px;margin-bottom:4px}
-.ks-gear-home-promo .ks-promo-title{font-size:clamp(18px,5.4vw,24px);line-height:1.08}
-.ks-gear-home-promo .ks-promo-disclaimer{font-size:7px;margin-top:5px;max-width:265px}
+.ks-gear-home-promo .ks-photo-bg{background:linear-gradient(90deg,rgba(1,21,35,.98) 0%,rgba(2,24,41,.96) 57%,rgba(2,27,44,.39) 100%),url('/gear/images/06.jpg') 65% 49% / cover no-repeat}
+.ks-gear-home-promo .ks-promo-copy{width:76%;padding:6px 12px}
+.ks-gear-home-promo .ks-promo-eyebrow{font-size:8px;margin-bottom:3px;letter-spacing:.08em}
+.ks-gear-home-promo .ks-promo-title{font-size:clamp(17px,5vw,23px);line-height:1.12}
+.ks-gear-home-promo .ks-promo-disclaimer{font-size:7px;line-height:1.15;margin-top:4px;max-width:255px}
+.ks-gear-home-promo .ks-gear-photos{width:33%;right:0}
+.ks-gear-home-promo .ks-gear-photo{width:55%;border-width:1px;border-radius:5px}
+.ks-gear-home-promo .ks-gear-photo-wax{right:44%;top:5%}
+.ks-gear-home-promo .ks-gear-photo-fin{right:4%;top:32%}
+.ks-gear-home-promo .ks-gear-photo-hat{right:41%;top:57%}
+.ks-gear-home-promo + .top-hero{margin-top:0!important;padding-top:5px!important}
+.ks-gear-home-promo + .top-hero h1{margin-top:0!important}
 }
 </style>
 <section class="ks-gear-home-promo" aria-label="Amazonサーフギア おすすめTOP10">
@@ -27,6 +43,11 @@
 <span class="ks-promo-eyebrow">KS GEAR SELECTION · 広告 / PR</span>
 <span class="ks-promo-title">Amazonサーフギア<br>おすすめ <em>TOP10！</em><span class="ks-promo-arrow" aria-hidden="true">↗</span></span>
 <span class="ks-promo-disclaimer">KS独自のおすすめ順。Amazon公式売上順位ではありません。</span>
+</span>
+<span class="ks-gear-photos" aria-hidden="true">
+<img class="ks-gear-photo ks-gear-photo-wax" src="/gear/images/01.jpg" alt="" width="120" height="120" loading="lazy">
+<img class="ks-gear-photo ks-gear-photo-fin" src="/gear/images/04.webp" alt="" width="120" height="120" loading="lazy">
+<img class="ks-gear-photo ks-gear-photo-hat" src="/gear/images/07.jpg" alt="" width="120" height="120" loading="lazy">
 </span>
 </a>
 </section>
