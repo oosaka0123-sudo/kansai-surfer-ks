@@ -1,37 +1,23 @@
 #!/usr/bin/env node
-// Move the existing homepage gear banner before the LINE CTA, without modifying other content.
-const fs = require('node:fs');
-const path = require('node:path');
-const [source, bannerPath, output] = process.argv.slice(2);
-if (!source || !bannerPath || !output || path.resolve(source) === path.resolve(output)) {
-  throw new Error('Usage: node patch_gear_banner.cjs CURRENT_INDEX BANNER NEW_INDEX (distinct output)');
-}
-const html = fs.readFileSync(source, 'utf8');
-const banner = fs.readFileSync(bannerPath, 'utf8').trimEnd();
-const startMarker = '<!-- KS GEAR BANNER START -->';
-const endMarker = '<!-- KS GEAR BANNER END -->';
-const anchor = '<!-- LINEバナー -->';
-if (!html.includes('関西サーフィン波情報') || !html.includes('nami_common.js')) {
-  throw new Error('Not recognized KS homepage');
-}
-for (const marker of [startMarker, endMarker, anchor]) {
-  if (html.split(marker).length !== 2) throw new Error('Expected unique marker: ' + marker);
-}
-if (!banner.startsWith(startMarker) || !banner.endsWith(endMarker) ||
-    !banner.includes('href="/gear/"') || !banner.includes('Amazon公式売上順位ではありません') ||
-    !banner.includes('height:150px')) throw new Error('New banner invalid');
-const start = html.indexOf(startMarker);
-const markerEnd = html.indexOf(endMarker, start) + endMarker.length;
-const oldAnchor = html.indexOf(anchor);
-if (oldAnchor < 0 || start < oldAnchor || html.slice(markerEnd, markerEnd + 2) !== '\n\n') {
-  throw new Error('Unexpected existing banner location/format. Refuse to change production.');
-}
-const withoutOld = html.slice(0, start) + html.slice(markerEnd + 2);
-if (withoutOld.includes(startMarker) || withoutOld.includes(endMarker)) throw new Error('Old banner removal failed');
-const index = withoutOld.indexOf(anchor);
-if (index <= withoutOld.indexOf('<!-- ============ ALL SPOTS')) throw new Error('New location precedes wave information');
-const patched = withoutOld.slice(0, index) + banner + '\n\n' + withoutOld.slice(index);
-if (patched.replace(banner + '\n\n', '') !== withoutOld) throw new Error('Unexpected homepage mutation');
-if (patched.indexOf(startMarker) > patched.indexOf(anchor)) throw new Error('Banner not before LINE');
-fs.writeFileSync(output, patched, { encoding: 'utf8', flag: 'wx' });
-console.log('Moved and resized existing banner; all original non-banner homepage bytes preserved.');
+// Reposition ONLY existing production gear banner before the first YouTube-wave section.
+const fs=require('node:fs'),path=require('node:path');
+const [source,bannerPath,output]=process.argv.slice(2);
+if(!source||!bannerPath||!output||path.resolve(source)===path.resolve(output))throw Error('Usage: node patch_gear_banner.cjs CURRENT_INDEX BANNER NEW_INDEX');
+const html=fs.readFileSync(source,'utf8');
+const banner=fs.readFileSync(bannerPath,'utf8').trimEnd();
+const start='<!-- KS GEAR BANNER START -->',end='<!-- KS GEAR BANNER END -->';
+if(!html.includes('関西サーフィン波情報')||!html.includes('nami_common.js'))throw Error('Unrecognized production homepage');
+for(const marker of [start,end])if(html.split(marker).length!==2)throw Error('Missing or duplicate banner '+marker);
+if(!banner.startsWith(start)||!banner.endsWith(end)||!banner.includes('href="/gear/"')||!banner.includes('Amazon公式売上順位ではありません')||!banner.includes('height:102px'))throw Error('New banner is invalid');
+const from=html.indexOf(start),until=html.indexOf(end,from)+end.length;
+if(from<0||until<end.length||html.slice(until,until+2)!=='\n\n')throw Error('Unexpected old banner boundaries');
+const without=html.slice(0,from)+html.slice(until+2);
+const anchors=[...without.matchAll(/<!--[^>]*YouTube[^>]*-->/g)];
+if(anchors.length!==1)throw Error('Cannot uniquely locate first YouTube wave information section: '+anchors.length);
+const at=anchors[0].index;
+if(at<without.indexOf('<h1')||at>without.indexOf('<!-- ============ TODAY'))throw Error('YouTube anchor is not at upper homepage');
+const updated=without.slice(0,at)+banner+'\n\n'+without.slice(at);
+if(updated.replace(banner+'\n\n','')!==without)throw Error('Non-banner homepage bytes changed');
+if(updated.indexOf(start)>=updated.indexOf(anchors[0][0]))throw Error('Not before YouTube');
+fs.writeFileSync(output,updated,{encoding:'utf8',flag:'wx'});
+console.log('KS banner relocated to upper homepage, ahead of YouTube; all other bytes preserved.');
