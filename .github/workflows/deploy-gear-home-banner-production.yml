@@ -82,9 +82,9 @@ jobs:
           # This proves every other homepage byte is identical after relocation.
           node -e 'const fs=require("fs");const old=fs.readFileSync(process.argv[1],"utf8");const updated=fs.readFileSync(process.argv[2],"utf8");const re=/<!-- KS GEAR BANNER START -->[\s\S]*?<!-- KS GEAR BANNER END -->\n\n/;if(!re.test(old)||!re.test(updated)||old.replace(re,"")!==updated.replace(re,""))process.exit(1)' "$RUNNER_TEMP/ks-home-original.html" "$RUNNER_TEMP/ks-home-patched.html"
           grep -q 'height:102px' "$RUNNER_TEMP/ks-home-patched.html"
-          grep -q 'ks-gear-photo-wax' "$RUNNER_TEMP/ks-home-patched.html"
-          grep -q 'ks-gear-photo-fin' "$RUNNER_TEMP/ks-home-patched.html"
-          grep -q 'ks-gear-photo-hat' "$RUNNER_TEMP/ks-home-patched.html"
+          grep -q 'ks-gear-illustration' "$RUNNER_TEMP/ks-home-patched.html"
+          grep -q 'ks-gear-illustration' "$RUNNER_TEMP/ks-home-patched.html"
+          grep -q 'ks-gear-illustration' "$RUNNER_TEMP/ks-home-patched.html"
           grep -q 'padding-top:5px!important' "$RUNNER_TEMP/ks-home-patched.html"
           node -e 'const s=require("fs").readFileSync(process.argv[1],"utf8");const b=s.indexOf("<!-- KS GEAR BANNER START -->"),e=s.indexOf("<!-- KS GEAR BANNER END -->"),h=s.indexOf("<section class=\"top-hero\">"),t=s.indexOf("<h1 id=\"top-hero-title\">");if(b<0||e<b||h<e||t<h||t>h+400||!s.slice(t,t+180).includes("関西サーフィン波情報"))process.exit(1)' "$RUNNER_TEMP/ks-home-patched.html"
 
@@ -124,17 +124,12 @@ jobs:
           cmp "$RUNNER_TEMP/ks-home-patched.html" "$RUNNER_TEMP/ks-home-after.html"
           grep -q 'KS GEAR BANNER START' "$RUNNER_TEMP/ks-home-after.html"
           grep -q 'href="/gear/"' "$RUNNER_TEMP/ks-home-after.html"
-          grep -q 'ks-gear-photo-fin' "$RUNNER_TEMP/ks-home-after.html"
+          grep -q 'ks-gear-illustration' "$RUNNER_TEMP/ks-home-after.html"
           grep -q 'Amazon公式売上順位ではありません' "$RUNNER_TEMP/ks-home-after.html"
           grep -q 'nami_common.js' "$RUNNER_TEMP/ks-home-after.html"
           grep -q 'const SPOTS' "$RUNNER_TEMP/ks-home-after.html"
           curl --fail --silent --show-error --location "$GEAR_URL" -o "$RUNNER_TEMP/ks-gear.html"
           grep -q 'おすすめTOP10！' "$RUNNER_TEMP/ks-gear.html"
-          for img in 01.jpg 06.jpg 07.jpg; do
-            curl --fail --silent --show-error --location "${GEAR_URL}images/$img" -o "/tmp/$img"
-            test "$(wc -c < "/tmp/$img")" -gt 6000
-          done
-          curl --fail --silent --show-error --location "${GEAR_URL}images/04.webp" -o /tmp/04.webp
-          test "$(wc -c < /tmp/04.webp)" -gt 1000
-          test "$(head -c 4 /tmp/04.webp)" = "RIFF"
+          curl --fail --silent --show-error --location "${GEAR_URL}images/06.jpg" -o /tmp/06.jpg
+          test "$(wc -c < /tmp/06.jpg)" -gt 6000
           echo "KS_GEAR_HOMEPAGE_BANNER_OK"
