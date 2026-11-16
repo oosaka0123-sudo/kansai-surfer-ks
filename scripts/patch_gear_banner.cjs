@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Reposition ONLY existing production gear banner before the first YouTube-wave section.
+// Reposition ONLY existing production gear banner immediately before the top-hero section and its H1.
 const fs=require('node:fs'),path=require('node:path');
 const [source,bannerPath,output]=process.argv.slice(2);
 if(!source||!bannerPath||!output||path.resolve(source)===path.resolve(output))throw Error('Usage: node patch_gear_banner.cjs CURRENT_INDEX BANNER NEW_INDEX');
@@ -12,12 +12,14 @@ if(!banner.startsWith(start)||!banner.endsWith(end)||!banner.includes('href="/ge
 const from=html.indexOf(start),until=html.indexOf(end,from)+end.length;
 if(from<0||until<end.length||html.slice(until,until+2)!=='\n\n')throw Error('Unexpected old banner boundaries');
 const without=html.slice(0,from)+html.slice(until+2);
-const anchors=[...without.matchAll(/<!--[^>]*YouTube[^>]*-->/g)];
-if(anchors.length!==1)throw Error('Cannot uniquely locate first YouTube wave information section: '+anchors.length);
-const at=anchors[0].index;
-if(at<without.indexOf('<h1')||at>without.indexOf('<!-- ============ TODAY'))throw Error('YouTube anchor is not at upper homepage');
+const anchor='<section class="top-hero">';
+if(without.split(anchor).length!==2)throw Error('Top hero section marker missing or duplicated');
+const at=without.indexOf(anchor);
+const h1=without.indexOf('<h1 id="top-hero-title">',at);
+if(h1<at||h1>at+400)throw Error('Expected wave information H1 immediately inside top hero');
+if(!without.slice(h1,h1+180).includes('関西サーフィン波情報'))throw Error('Unexpected H1 text; refuse to move banner');
 const updated=without.slice(0,at)+banner+'\n\n'+without.slice(at);
 if(updated.replace(banner+'\n\n','')!==without)throw Error('Non-banner homepage bytes changed');
-if(updated.indexOf(start)>=updated.indexOf(anchors[0][0]))throw Error('Not before YouTube');
+if(updated.indexOf(start)>=updated.indexOf(anchor))throw Error('Banner not immediately before top hero');
 fs.writeFileSync(output,updated,{encoding:'utf8',flag:'wx'});
-console.log('KS banner relocated to upper homepage, ahead of YouTube; all other bytes preserved.');
+console.log('KS banner relocated directly before wave information top-hero H1; all other bytes preserved.');
