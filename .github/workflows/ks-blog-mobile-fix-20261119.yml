@@ -9,7 +9,7 @@ concurrency:
   group: kansai-surfer-production-deploy
   cancel-in-progress: false
 env:
-  KS_BLOG_DEPLOY_MODE: dry-run
+  KS_BLOG_DEPLOY_MODE: deploy
 jobs:
   blog-mobile-fix:
     runs-on: ubuntu-latest
