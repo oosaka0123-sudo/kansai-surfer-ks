@@ -45,7 +45,9 @@ jobs:
           if live==approved: raise ValueError('Fix already deployed; STOP')
           a=live.decode('utf-8');b=approved.decode('utf-8')
           ops=[o for o in difflib.SequenceMatcher(a=a.splitlines(),b=b.splitlines(),autojunk=False).get_opcodes() if o[0]!='equal']
-          if len(ops)!=3: raise ValueError('Unexpected number of modified blocks: '+str(len(ops)))
+          if len(ops)!=4: raise ValueError('Unexpected number of modified blocks: '+str(len(ops)))
+          if hashlib.sha256(live).hexdigest() != 'b5b4717c6ea04c3c92fd64a886377a703eb2f552c90fafab13b3e62d13b52d99': raise ValueError('Baseline changed; abort')
+          if hashlib.sha256(approved).hexdigest() != '782d5c34763931e80a7210cd3c2348a4a2934b971ea56e1f6ef593de89902de2': raise ValueError('Approved file changed; abort')
           if "category === '波予想'" not in b or "category === '波予報'" not in b or 'seenTitles[title]' not in b: raise ValueError('Missing editorial filter or dedup')
           if 'id="hakutoSpotBlogGrid" class="all-spots-grid" style=' in b: raise ValueError('Mobile hard-coded grid still present')
           if '<title>白兎 波情報・波予想｜関西サーファーKS</title>' not in b: raise ValueError('SEO title modified')
