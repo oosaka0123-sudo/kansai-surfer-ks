@@ -1,0 +1,104 @@
+name: Read-only KS blog article diagnosis 20261119
+on:
+  push:
+    branches:
+      - audit/ks-blog-individual-error-20261119
+    paths:
+      - .github/workflows/ks-blog-diagnostic-20261119.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Public article links and status (read-only)
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from html.parser import HTMLParser
+          from urllib.request import Request,urlopen
+          from urllib.error import HTTPError,URLError
+          from urllib.parse import urljoin,urlparse
+          import re
+          BASE='https://kansai.rss7.net'
+          class Links(HTMLParser):
+            def __init__(self): super().__init__(); self.links=[]; self.scripts=[]
+            def handle_starttag(self,tag,attrs):
+              a=dict(attrs)
+              if tag=='a' and 'href' in a: self.links.append(a['href'])
+              if tag=='script' and 'src' in a: self.scripts.append(a['src'])
+          paths=['/blog/index.php','/ikumi.html','/hakuto.html','/komatsu.html']
+          checked=set()
+          for path in paths:
+            try:
+              with urlopen(Request(BASE+path,headers={'User-Agent':'KS-blog-readonly-audit/1.0'}),timeout=30) as r:
+                html=r.read().decode('utf-8','replace')
+                print('PAGE',path,r.status,'bytes',len(html))
+              p=Links(); p.feed(html)
+              bloglinks=[]
+              for href in p.links:
+                full=urljoin(BASE+path,href)
+                u=urlparse(full)
+                if u.netloc=='kansai.rss7.net' and ('/blog/' in u.path or 'post.php' in u.path or 'article.php' in u.path):
+                  if full not in checked: bloglinks.append(full); checked.add(full)
+              print('BLOG_LINKS',path,len(bloglinks),[x.replace(BASE,'') for x in bloglinks[:24]])
+              print('SCRIPTS',path,[u for u in p.scripts if '/blog/' in u or 'blog' in u][:12])
+              candidates=re.findall(r"[\w/.-]+\.php(?:\?[^'\"\s<>]+)?",html)
+              print('PHP_PATTERNS',path,list(dict.fromkeys(x[:160] for x in candidates if 'blog' in x or 'post' in x or 'article' in x))[:20])
+            except Exception as e: print('PAGE_ERR',path,type(e).__name__,str(e)[:120])
+          for url in list(checked)[:12]+[BASE+'/blog/post.php?id=1',BASE+'/blog/article.php?id=1',BASE+'/blog/view.php?id=1',BASE+'/blog/detail.php?id=1']:
+            try:
+              with urlopen(Request(url,headers={'User-Agent':'KS-blog-readonly-audit/1.0'}),timeout=15) as r:
+                t=r.read(1500).decode('utf-8','replace')
+                print('LINK_STATUS',url.replace(BASE,''),r.status,'TITLE',re.search('<title[^>]*>(.*?)</title>',t,re.I|re.S).group(1)[:65] if re.search('<title[^>]*>(.*?)</title>',t,re.I|re.S) else 'none')
+            except HTTPError as e: print('LINK_STATUS',url.replace(BASE,''),e.code)
+            except Exception as e: print('LINK_ERR',url.replace(BASE,''),type(e).__name__,str(e)[:80])
+          PY
+      - name: Read-only FTPS directory listing and PHP syntax check
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          test -n "$FTP_USERNAME" && test -n "$FTP_PASSWORD"
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq lftp php-cli >/dev/null
+          mkdir -p "$RUNNER_TEMP/ks-blog-php"
+          lftp <<LFTP_EOF > "$RUNNER_TEMP/ks-blog-entries.txt"
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 20
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          cd /kansai/blog
+          cls -1
+          bye
+          LFTP_EOF
+          echo "BLOG_PHP_FILES:"
+          grep -E '^[A-Za-z0-9_.-]+\.php$' "$RUNNER_TEMP/ks-blog-entries.txt" | grep -Ev '^(config|secret|password|admin)' | head -30 || true
+          echo "BLOG_ENTRY_CANDIDATES:"
+          for filename in index.php post.php article.php view.php detail.php single.php; do
+            if ! grep -qx "$filename" "$RUNNER_TEMP/ks-blog-entries.txt"; then echo "$filename ABSENT"; continue; fi
+            lftp <<LFTP_EOF >/dev/null
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 20
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          cd /kansai/blog
+          lcd "$RUNNER_TEMP/ks-blog-php"
+          get "$filename"
+          bye
+          LFTP_EOF
+            php -l "$RUNNER_TEMP/ks-blog-php/$filename" || true
+            echo "$filename SIZE $(wc -c < "$RUNNER_TEMP/ks-blog-php/$filename")"
+          done
+          echo "NO PHP SOURCE OR CREDENTIALS EXPORTED."
