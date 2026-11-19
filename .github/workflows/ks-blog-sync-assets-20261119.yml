@@ -1,0 +1,43 @@
+name: Snapshot deployed KS blog CSS and thumbnail (once)
+on:
+  push:
+    branches: [fix/ks-blog-related-mobile-20261119]
+    paths: [.github/workflows/ks-blog-sync-assets-20261119.yml]
+permissions:
+  contents: write
+jobs:
+  snapshot:
+    if: github.ref == 'refs/heads/fix/ks-blog-related-mobile-20261119'
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - name: Checkout source branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/ks-blog-related-mobile-20261119
+      - name: Fetch only verified public CSS and placeholder image
+        run: |
+          set -euo pipefail
+          mkdir -p blog/img
+          curl --fail --silent --show-error --location --retry 3 --max-time 35 \
+            "https://kansai.rss7.net/blog/blog_cms.css?git_snapshot=20261119" -o blog/blog_cms.css
+          curl --fail --silent --show-error --location --retry 3 --max-time 35 \
+            "https://kansai.rss7.net/blog/img/noimage.jpg?git_snapshot=20261119" -o blog/img/noimage.jpg
+          grep -q 'KS_BLOG_RELATED_MOBILE_V1' blog/blog_cms.css
+          test "$(wc -c <blog/blog_cms.css)" -gt 6200
+          test "$(wc -c <blog/img/noimage.jpg)" -gt 500
+          file --brief --mime-type blog/img/noimage.jpg | grep -qx image/jpeg
+          echo "Public, exact deployed CSS and JPEG fetched; no private data downloaded."
+      - name: Commit exact public artifacts to branch only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add blog/blog_cms.css blog/img/noimage.jpg
+          if git diff --cached --quiet; then
+            echo "Already synced."
+          else
+            git commit -m "chore: snapshot live blog mobile fix CSS and placeholder"
+            git push origin HEAD:refs/heads/fix/ks-blog-related-mobile-20261119
+          fi
