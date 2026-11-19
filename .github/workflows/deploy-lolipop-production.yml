@@ -21,7 +21,7 @@ jobs:
       FTP_USER: ${{ secrets.KS_NAMI_FTP_USER }}
       FTP_PASS: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
       FTP_SERVER: ftp.lolipop.jp
-      STAGE: ${{ runner.temp }}/ks-seo9
+      STAGE: /tmp/ks-seo9
     steps:
       - uses: actions/checkout@v4
         with:
@@ -81,7 +81,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ks9-original-${{ github.run_id }}
-          path: ${{ runner.temp }}/ks-seo9/backup/
+          path: /tmp/ks-seo9/backup/
           retention-days: 30
           if-no-files-found: error
       - name: Publish approved 9 HTML only
