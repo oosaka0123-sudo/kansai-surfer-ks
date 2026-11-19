@@ -1,107 +1,166 @@
-name: Deploy Kansai Surfer KS to Lolipop production
-
+name: KS guarded 6 spot deployment
 on:
   workflow_dispatch:
-
+    inputs:
+      publish:
+        description: "true = deploy 6 files; false = read-only backup check"
+        required: true
+        type: boolean
+        default: false
 permissions:
   contents: read
-
 concurrency:
-  group: kansai-surfer-production-deploy
+  group: ks6-spot-production
   cancel-in-progress: false
-
 jobs:
   deploy:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/deploy/ks-livecam-titles-only-20261119'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     env:
+      FTP_USER: ${{ secrets.KS_NAMI_FTP_USER }}
+      FTP_PASS: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
       FTP_SERVER: ftp.lolipop.jp
-      FTP_SERVER_DIR: /kansai
-      SITE_URL: https://kansai.rss7.net/
-
+      STAGE: /tmp/ks-seo6
     steps:
-      - name: Checkout main
-        uses: actions/checkout@v4
-
-      - name: Validate production source is present
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify exact approved source
         shell: bash
         run: |
           set -euo pipefail
-          test -f index.html || { echo '::error::Production index.html is not present on main; refusing deployment.'; exit 1; }
-          test -f isonoura.html || { echo '::error::Production isonoura.html is not present on main; refusing deployment.'; exit 1; }
-
-      - name: Prepare safe deployment bundle
-        shell: bash
-        run: |
-          set -euo pipefail
-          STAGE="$RUNNER_TEMP/kansai-production"
-          rm -rf "$STAGE"
-          mkdir -p "$STAGE"
-
-          rsync -a ./ "$STAGE/" \
-            --exclude '.git/' \
-            --exclude '.github/' \
-            --exclude '.gitignore' \
-            --exclude 'docs/' \
-            --exclude 'prototype/' \
-            --exclude 'AGENTS.md' \
-            --exclude 'HANDOFF.md' \
-            --exclude 'PROJECT_SPEC.md' \
-            --exclude 'README.md' \
-            --exclude 'data/' \
-            --exclude 'realtime/' \
-            --exclude 'logs/'
-
-          test -f "$STAGE/index.html"
-          test -f "$STAGE/isonoura.html"
-          test ! -e "$STAGE/.github"
-          test ! -e "$STAGE/prototype"
-          echo 'KS production bundle prepared. Runtime data/log directories are preserved on the server.'
-
+          mkdir -p "$STAGE/source" "$STAGE/baseline" "$STAGE/backup" "$STAGE/verify" "$STAGE/http"
+          for f in ikumi.html komatsu.html irago.html hamadutu.html takahama.html hakuto.html; do
+            test -f "$f"
+            git show "ac11c53c6387a57a179d6bfc9b0702cd39abb79f:$f" > "$STAGE/source/$f"
+            git show "3e47446a7bab5533f7aac67d4ea594696e47ed9e:$f" > "$STAGE/baseline/$f"
+            cmp "$f" "$STAGE/source/$f"
+            grep -q 'rel="canonical"' "$f"
+          done
+          test -n "$FTP_USER" && test -n "$FTP_PASS"
+          test "$FTP_SERVER" = "ftp.lolipop.jp"
+          echo "SOURCE_CHECK_OK"
       - name: Install lftp
-        run: sudo apt-get update -qq && sudo apt-get install -y lftp
-
-      - name: Validate production FTPS settings
+        run: sudo apt-get -qq update && sudo apt-get install -y -qq lftp
+      - name: Read-only FTPS backup and baseline safety check
         shell: bash
-        env:
-          FTP_USERNAME: ${{ secrets.KS_PROD_FTP_USER }}
-          FTP_PASSWORD: ${{ secrets.KS_PROD_FTP_PASSWORD }}
         run: |
           set -euo pipefail
           set +x
-          test -n "$FTP_USERNAME" || { echo '::error::KS_PROD_FTP_USER is not configured.'; exit 1; }
-          test -n "$FTP_PASSWORD" || { echo '::error::KS_PROD_FTP_PASSWORD is not configured.'; exit 1; }
-          [ "$FTP_SERVER" = 'ftp.lolipop.jp' ] || { echo '::error::Unexpected FTP host.'; exit 1; }
-          [ "$FTP_SERVER_DIR" = '/kansai' ] || { echo '::error::Unexpected production directory.'; exit 1; }
-          [ "$SITE_URL" = 'https://kansai.rss7.net/' ] || { echo '::error::Unexpected production URL.'; exit 1; }
-
-      - name: Upload to Lolipop without remote deletion
-        shell: bash
-        env:
-          FTP_USERNAME: ${{ secrets.KS_PROD_FTP_USER }}
-          FTP_PASSWORD: ${{ secrets.KS_PROD_FTP_PASSWORD }}
-        run: |
-          set -euo pipefail
-          set +x
-          STAGE="$RUNNER_TEMP/kansai-production"
-          lftp <<LFTP_EOF
+          lftp <<LFTP
           set cmd:fail-exit true
           set ftp:ssl-force true
           set ftp:ssl-protect-data true
           set ftp:passive-mode true
           set net:timeout 20
-          set net:max-retries 3
-          open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER"
-          mirror --reverse --verbose=1 --no-perms "$STAGE" "$FTP_SERVER_DIR"
+          set net:max-retries 2
+          open -u "$FTP_USER","$FTP_PASS" "$FTP_SERVER"
+          cd /kansai
+          lcd "$STAGE/backup"
+          get "ikumi.html" -o "ikumi.html"
+          get "komatsu.html" -o "komatsu.html"
+          get "irago.html" -o "irago.html"
+          get "hamadutu.html" -o "hamadutu.html"
+          get "takahama.html" -o "takahama.html"
+          get "hakuto.html" -o "hakuto.html"
           bye
-          LFTP_EOF
-
-      - name: Verify production pages
+          LFTP
+          for f in ikumi.html komatsu.html irago.html hamadutu.html takahama.html hakuto.html; do test -s "$STAGE/backup/$f"; done
+          python3 - "$STAGE" ikumi.html komatsu.html irago.html hamadutu.html takahama.html hakuto.html <<'PY'
+          import pathlib,sys
+          b=pathlib.Path(sys.argv[1])
+          bad=[name for name in sys.argv[2:] if (b/"backup"/name).read_bytes().rstrip(b"\r\n") != (b/"baseline"/name).read_bytes().rstrip(b"\r\n")]
+          if bad: raise SystemExit("ABORT: production diverged from approved backup baseline: "+str(bad))
+          print("FTP_READ_ONLY_CHECK_OK six pages match audited baseline")
+          PY
+      - name: Archive original production files
+        uses: actions/upload-artifact@v4
+        with:
+          name: ks6-original-${{ github.run_id }}
+          path: /tmp/ks-seo6/backup/
+          retention-days: 30
+          if-no-files-found: error
+      - name: Publish approved 6 HTML only
+        id: upload
+        if: inputs.publish == true
+        continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
-          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "$SITE_URL" >/tmp/ks-home.html
-          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "${SITE_URL}isonoura.html" >/tmp/ks-isonoura.html
-          grep -qi '<html' /tmp/ks-home.html
-          grep -qi '<html' /tmp/ks-isonoura.html
-          echo 'Kansai Surfer KS production verification succeeded.'
+          set +x
+          lftp <<LFTP
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 20
+          set net:max-retries 2
+          open -u "$FTP_USER","$FTP_PASS" "$FTP_SERVER"
+          cd /kansai
+          lcd "$STAGE/source"
+          put "ikumi.html" -o "ikumi.html"
+          put "komatsu.html" -o "komatsu.html"
+          put "irago.html" -o "irago.html"
+          put "hamadutu.html" -o "hamadutu.html"
+          put "takahama.html" -o "takahama.html"
+          put "hakuto.html" -o "hakuto.html"
+          lcd "$STAGE/verify"
+          get "ikumi.html" -o "ikumi.html"
+          get "komatsu.html" -o "komatsu.html"
+          get "irago.html" -o "irago.html"
+          get "hamadutu.html" -o "hamadutu.html"
+          get "takahama.html" -o "takahama.html"
+          get "hakuto.html" -o "hakuto.html"
+          bye
+          LFTP
+          for f in ikumi.html komatsu.html irago.html hamadutu.html takahama.html hakuto.html; do cmp "$STAGE/source/$f" "$STAGE/verify/$f"; done
+          for f in ikumi.html komatsu.html irago.html hamadutu.html takahama.html hakuto.html; do
+            curl -fsSL --retry 2 --max-time 20 "https://kansai.rss7.net/$f?verify=${{ github.run_id }}" > "$STAGE/http/$f"
+            python3 - "$STAGE/source/$f" "$STAGE/http/$f" "$f" <<'PY'
+          import pathlib,re,sys,html
+          a=pathlib.Path(sys.argv[1]).read_text(encoding="utf-8")
+          b=pathlib.Path(sys.argv[2]).read_text(encoding="utf-8")
+          def extract(s,p):
+            m=re.search(p,s,re.I|re.S)
+            if not m: raise SystemExit("Missing markup "+sys.argv[3])
+            return re.sub(r"<[^>]+>","",html.unescape(m.group(1))).strip()
+          for pat in [r"<title>(.*?)</title>",r"<h1\b[^>]*>(.*?)</h1>"]:
+            if extract(a,pat)!=extract(b,pat): raise SystemExit("HTTP title/H1 mismatch "+sys.argv[3])
+          if 'rel="canonical"' not in b: raise SystemExit("No canonical "+sys.argv[3])
+          print("VERIFIED",sys.argv[3])
+          PY
+          done
+          echo "DEPLOYED_6_HTML_ONLY"
+      - name: Auto-rollback on publish or verification error
+        if: steps.upload.outcome == 'failure'
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +x
+          echo "::warning::Partial deploy or verification failure. Restoring original six HTML files."
+          lftp <<LFTP
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 20
+          set net:max-retries 2
+          open -u "$FTP_USER","$FTP_PASS" "$FTP_SERVER"
+          cd /kansai
+          lcd "$STAGE/backup"
+          put "ikumi.html" -o "ikumi.html"
+          put "komatsu.html" -o "komatsu.html"
+          put "irago.html" -o "irago.html"
+          put "hamadutu.html" -o "hamadutu.html"
+          put "takahama.html" -o "takahama.html"
+          put "hakuto.html" -o "hakuto.html"
+          bye
+          LFTP
+          echo "ROLLBACK_DONE"
+      - name: Mark attempted deploy as failed
+        if: steps.upload.outcome == 'failure'
+        run: exit 1
+      - name: Report outcome
+        if: success()
+        run: echo "Safe six-page job finished (publish=${{ inputs.publish }})"
