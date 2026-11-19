@@ -181,15 +181,16 @@ jobs:
           set net:max-retries 3
           open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
           cd /kansai
-          put -o isonoura.html "$STAGE/isonoura.html"
-          put -o kounohama.html "$STAGE/kounohama.html"
-          put -o ikumi.html "$STAGE/ikumi.html"
-          put -o komatsu.html "$STAGE/komatsu.html"
-          put -o irago.html "$STAGE/irago.html"
-          put -o shizunami.html "$STAGE/shizunami.html"
-          put -o hamadutu.html "$STAGE/hamadutu.html"
-          put -o takahama.html "$STAGE/takahama.html"
-          put -o hakuto.html "$STAGE/hakuto.html"
+          lcd "$STAGE"
+          put isonoura.html
+          put kounohama.html
+          put ikumi.html
+          put komatsu.html
+          put irago.html
+          put shizunami.html
+          put hamadutu.html
+          put takahama.html
+          put hakuto.html
           bye
           LFTP_EOF
 
@@ -245,15 +246,16 @@ jobs:
           set net:max-retries 3
           open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
           cd /kansai
-          put -o isonoura.html "$BACKUP/isonoura.html"
-          put -o kounohama.html "$BACKUP/kounohama.html"
-          put -o ikumi.html "$BACKUP/ikumi.html"
-          put -o komatsu.html "$BACKUP/komatsu.html"
-          put -o irago.html "$BACKUP/irago.html"
-          put -o shizunami.html "$BACKUP/shizunami.html"
-          put -o hamadutu.html "$BACKUP/hamadutu.html"
-          put -o takahama.html "$BACKUP/takahama.html"
-          put -o hakuto.html "$BACKUP/hakuto.html"
+          lcd "$BACKUP"
+          put isonoura.html
+          put kounohama.html
+          put ikumi.html
+          put komatsu.html
+          put irago.html
+          put shizunami.html
+          put hamadutu.html
+          put takahama.html
+          put hakuto.html
           bye
           LFTP_EOF
           echo 'Automatic rollback uploaded original nine HTML pages.'
