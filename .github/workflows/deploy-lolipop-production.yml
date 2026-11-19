@@ -1,7 +1,17 @@
-name: Deploy Kansai Surfer KS to Lolipop production
+name: KS mobile menu scroll-to-top (9 HTML only)
 
 on:
   workflow_dispatch:
+    inputs:
+      deploy_mode:
+        description: "Dry run first; deploy performs FTPS upload of 9 approved HTML files only"
+        required: true
+        default: dry-run
+        type: choice
+        options:
+          - dry-run
+          - probe
+          - deploy
 
 permissions:
   contents: read
@@ -11,79 +21,116 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
-    if: github.ref == 'refs/heads/main'
+  menu-limited:
+    if: github.ref == 'refs/heads/deploy/ks-menu-scrolltop-20261119'
     runs-on: ubuntu-latest
-    env:
-      FTP_SERVER: ftp.lolipop.jp
-      FTP_SERVER_DIR: /kansai
-      SITE_URL: https://kansai.rss7.net/
-
+    timeout-minutes: 15
     steps:
-      - name: Checkout main
+      - name: Checkout approved 9 spot HTML from this branch
         uses: actions/checkout@v4
-
-      - name: Validate production source is present
+      - name: Validate exact one-attribute changes against current production
         shell: bash
         run: |
           set -euo pipefail
-          test -f index.html || { echo '::error::Production index.html is not present on main; refusing deployment.'; exit 1; }
-          test -f isonoura.html || { echo '::error::Production isonoura.html is not present on main; refusing deployment.'; exit 1; }
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, urllib.request
+          slugs = ['isonoura','kounohama','ikumi','komatsu','irago','shizunami','hamadutu','takahama','hakuto']
+          root = pathlib.Path(os.environ['RUNNER_TEMP'])
+          backup = root / 'ks-seo-original'
+          stage = root / 'ks-seo-rendered'
+          backup.mkdir(parents=True, exist_ok=True)
+          stage.mkdir(parents=True, exist_ok=True)
+          
+          def download(path):
+            url = 'https://kansai.rss7.net/' + path
+            req = urllib.request.Request(url, headers={'Cache-Control':'no-cache', 'Pragma':'no-cache', 'User-Agent':'KS-Menu-Fix/1.0'})
+            with urllib.request.urlopen(req, timeout=25) as r:
+              if r.status != 200: raise ValueError(str(r.status))
+              return r.read()
+          
+          home = download('index.html')
+          (backup / 'homepage_sha256.txt').write_text(hashlib.sha256(home).hexdigest() + '\n')
+          handler = 'onclick="event.preventDefault();this.blur();document.getElementById(\'mobileMenu\').classList.remove(\'open\');document.getElementById(\'hamburger\').classList.remove(\'active\');window.scrollTo({top:0,left:0,behavior:\'instant\'});"'
+          titles = {}
+          for slug in slugs:
+            raw = download(slug + '.html')
+            before = raw.decode('utf-8')
+            old = '<a href="' + slug + '.html" class="active"><span class="mm-left">'
+            if before.count(old) != 1: raise ValueError(slug + ' expected one mobile self-link; got ' + str(before.count(old)))
+            after = before.replace(old, '<a href="' + slug + '.html" class="active" ' + handler + '><span class="mm-left">').encode('utf-8')
+            proposed = pathlib.Path(slug + '.html').read_bytes()
+            if proposed != after: raise ValueError(slug + ' GitHub branch differs from exact approved one-attribute change; STOP')
+            (backup / (slug + '.html')).write_bytes(raw)
+            (stage / (slug + '.html')).write_bytes(proposed)
+            import re
+            m = re.search(r'<title>(.*?)</title>', proposed.decode('utf-8'), flags=re.I|re.S)
+            if not m: raise ValueError(slug + ' title missing')
+            titles[slug] = m.group(1)
+            print('VERIFIED ' + slug + ': one active-menu onclick insertion only. Preserve SEO, JS, CSS and camera.')
+          (stage / 'expected_titles.json').write_text(json.dumps(titles, ensure_ascii=False))
+          print('Exactly nine reviewed production-identity HTML files staged. Index excluded.')
+          PY
+      - name: Save exact original production HTML for rollback
+        uses: actions/upload-artifact@v4
+        with:
+          name: ks-nine-seo-pre-deploy-backup
+          path: ${{ runner.temp }}/ks-seo-original/
+          retention-days: 14
+          if-no-files-found: error
 
-      - name: Prepare safe deployment bundle
+      - name: Save approved render for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: ks-nine-seo-approved-html
+          path: ${{ runner.temp }}/ks-seo-rendered/
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Verify live pages unchanged immediately before upload
+        if: inputs.deploy_mode == 'deploy'
         shell: bash
         run: |
           set -euo pipefail
-          STAGE="$RUNNER_TEMP/kansai-production"
-          rm -rf "$STAGE"
-          mkdir -p "$STAGE"
+          python3 - <<'PY'
+          import hashlib, pathlib, os, urllib.request
+          root=pathlib.Path(os.environ['RUNNER_TEMP'])
+          a=root/'ks-seo-original'
+          for p in list(sorted(a.glob('*.html'))):
+            req=urllib.request.Request('https://kansai.rss7.net/'+p.name,headers={'Cache-Control':'no-cache','Pragma':'no-cache','User-Agent':'KS-SEO-Safe-Deployment/1.0'})
+            with urllib.request.urlopen(req,timeout=25) as r: live=r.read()
+            if hashlib.sha256(live).digest()!=hashlib.sha256(p.read_bytes()).digest():
+              raise ValueError(p.name+' CHANGED after snapshot. Refusing production deployment.')
+          print('All nine production files still match originals.')
+          PY
 
-          rsync -a ./ "$STAGE/" \
-            --exclude '.git/' \
-            --exclude '.github/' \
-            --exclude '.gitignore' \
-            --exclude 'docs/' \
-            --exclude 'prototype/' \
-            --exclude 'AGENTS.md' \
-            --exclude 'HANDOFF.md' \
-            --exclude 'PROJECT_SPEC.md' \
-            --exclude 'README.md' \
-            --exclude 'data/' \
-            --exclude 'realtime/' \
-            --exclude 'logs/'
-
-          test -f "$STAGE/index.html"
-          test -f "$STAGE/isonoura.html"
-          test ! -e "$STAGE/.github"
-          test ! -e "$STAGE/prototype"
-          echo 'KS production bundle prepared. Runtime data/log directories are preserved on the server.'
+      - name: Check secured FTP credentials
+        if: inputs.deploy_mode != 'dry-run'
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$FTP_USERNAME" || { echo 'FTP username absent'; exit 1; }
+          test -n "$FTP_PASSWORD" || { echo 'FTP password absent'; exit 1; }
+          echo "FTP credentials available (never printed)."
 
       - name: Install lftp
+        if: inputs.deploy_mode != 'dry-run'
         run: sudo apt-get update -qq && sudo apt-get install -y lftp
 
-      - name: Validate production FTPS settings
-        shell: bash
-        env:
-          FTP_USERNAME: ${{ secrets.KS_PROD_FTP_USER }}
-          FTP_PASSWORD: ${{ secrets.KS_PROD_FTP_PASSWORD }}
-        run: |
-          set -euo pipefail
-          set +x
-          test -n "$FTP_USERNAME" || { echo '::error::KS_PROD_FTP_USER is not configured.'; exit 1; }
-          test -n "$FTP_PASSWORD" || { echo '::error::KS_PROD_FTP_PASSWORD is not configured.'; exit 1; }
-          [ "$FTP_SERVER" = 'ftp.lolipop.jp' ] || { echo '::error::Unexpected FTP host.'; exit 1; }
-          [ "$FTP_SERVER_DIR" = '/kansai' ] || { echo '::error::Unexpected production directory.'; exit 1; }
-          [ "$SITE_URL" = 'https://kansai.rss7.net/' ] || { echo '::error::Unexpected production URL.'; exit 1; }
 
-      - name: Upload to Lolipop without remote deletion
+      - name: Probe FTPS target path and verify public/FTP identity (read only)
+        if: inputs.deploy_mode != 'dry-run'
         shell: bash
         env:
-          FTP_USERNAME: ${{ secrets.KS_PROD_FTP_USER }}
-          FTP_PASSWORD: ${{ secrets.KS_PROD_FTP_PASSWORD }}
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
         run: |
           set -euo pipefail
           set +x
-          STAGE="$RUNNER_TEMP/kansai-production"
+          PROBE="$RUNNER_TEMP/ks-seo-ftp-probe"
+          mkdir -p "$PROBE"
           lftp <<LFTP_EOF
           set cmd:fail-exit true
           set ftp:ssl-force true
@@ -91,17 +138,114 @@ jobs:
           set ftp:passive-mode true
           set net:timeout 20
           set net:max-retries 3
-          open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER"
-          mirror --reverse --verbose=1 --no-perms "$STAGE" "$FTP_SERVER_DIR"
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          cd /kansai
+          lcd "$PROBE"
+          get isonoura.html
+          get index.html
           bye
           LFTP_EOF
+          cmp -s "$RUNNER_TEMP/ks-seo-original/isonoura.html" "$PROBE/isonoura.html" || { echo '::error::Remote FTP Isonoura != public Isonoura. Refusing upload.'; exit 1; }
+          FTP_HOME_SHA="$(sha256sum "$PROBE/index.html" | cut -d' ' -f1)"
+          PUBLIC_HOME_SHA="$(cat "$RUNNER_TEMP/ks-seo-original/homepage_sha256.txt")"
+          [ "$FTP_HOME_SHA" = "$PUBLIC_HOME_SHA" ] || { echo '::error::Remote FTP homepage != public homepage. Refusing upload.'; exit 1; }
+          echo "Read-only FTPS probe OK: remote /kansai matches current public production."
 
-      - name: Verify production pages
+      - name: Upload exactly nine reviewed HTML files over FTPS
+        id: ftps_upload
+        if: inputs.deploy_mode == 'deploy'
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
         shell: bash
         run: |
           set -euo pipefail
-          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "$SITE_URL" >/tmp/ks-home.html
-          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "${SITE_URL}isonoura.html" >/tmp/ks-isonoura.html
-          grep -qi '<html' /tmp/ks-home.html
-          grep -qi '<html' /tmp/ks-isonoura.html
-          echo 'Kansai Surfer KS production verification succeeded.'
+          set +x
+          STAGE="$RUNNER_TEMP/ks-seo-rendered"
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 20
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          cd /kansai
+          lcd "$STAGE"
+          put isonoura.html
+          put kounohama.html
+          put ikumi.html
+          put komatsu.html
+          put irago.html
+          put shizunami.html
+          put hamadutu.html
+          put takahama.html
+          put hakuto.html
+          bye
+          LFTP_EOF
+
+      - name: Verify each deployed page and homepage
+        id: verify
+        if: inputs.deploy_mode == 'deploy'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, pathlib, time, urllib.request, os
+          root=pathlib.Path(os.environ['RUNNER_TEMP'])
+          stage=root/'ks-seo-rendered'
+          original=root/'ks-seo-original'
+          names=json.loads((stage/'expected_titles.json').read_text())
+          for slug,title in names.items():
+            expected=(stage/(slug+'.html')).read_bytes()
+            success=False
+            for attempt in range(5):
+              url='https://kansai.rss7.net/'+slug+'.html?ks_seo_verify='+str(int(time.time()))
+              req=urllib.request.Request(url,headers={'Cache-Control':'no-cache','Pragma':'no-cache','User-Agent':'KS-SEO-Deploy-Verification/1.0'})
+              with urllib.request.urlopen(req,timeout=25) as r: actual=r.read()
+              if actual==expected:
+                success=True
+                break
+              time.sleep(3)
+            if not success: raise ValueError('Verification failed '+slug+' after retries')
+            print('OK '+slug+' '+title)
+          req=urllib.request.Request('https://kansai.rss7.net/index.html',headers={'Cache-Control':'no-cache','Pragma':'no-cache'})
+          with urllib.request.urlopen(req,timeout=25) as r: home=r.read()
+          if hashlib.sha256(home).hexdigest() != (original/'homepage_sha256.txt').read_text().strip():
+            raise ValueError('Homepage changed unexpectedly. Check external updates before rollback.')
+          print('All nine uploads match exactly; homepage unchanged.')
+          PY
+
+      - name: Roll back nine files if upload or verification failed
+        if: failure() && inputs.deploy_mode == 'deploy' && (steps.ftps_upload.outcome == 'failure' || steps.verify.outcome == 'failure')
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          BACKUP="$RUNNER_TEMP/ks-seo-original"
+          test -f "$BACKUP/isonoura.html" || { echo 'Backup missing, restore manually from artifact'; exit 1; }
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 20
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          cd /kansai
+          lcd "$BACKUP"
+          put isonoura.html
+          put kounohama.html
+          put ikumi.html
+          put komatsu.html
+          put irago.html
+          put shizunami.html
+          put hamadutu.html
+          put takahama.html
+          put hakuto.html
+          bye
+          LFTP_EOF
+          echo 'Automatic rollback uploaded original nine HTML pages.'
