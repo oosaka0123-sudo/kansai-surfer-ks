@@ -457,10 +457,10 @@
     白兎 関連ブログ
   </h2>
   <p style="color:var(--cream-soft);font-size:0.95rem;line-height:1.9;margin-bottom:24px;">
-    白兎・鳥取エリアの波予想、ポイント情報、サーフニュース。
+    白兎・鳥取エリアの地域ニュース、ポイント情報、サーフ特集。
     <a href="blog/index.php" style="color:var(--coral-soft);text-decoration:underline;">ブログ一覧を見る →</a>
   </p>
-  <div id="hakutoSpotBlogGrid" class="all-spots-grid" style="grid-template-columns:repeat(3,1fr);">
+  <div id="hakutoSpotBlogGrid" class="all-spots-grid">
     <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--teal-pale);font-size:0.9rem;">
       記事を読み込み中...
     </div>
@@ -473,15 +473,23 @@
   fetch('blog/articles.json?_=' + Date.now())
     .then(function(res){ return res.json(); })
     .then(function(articles){
+      var seenTitles = Object.create(null);
       var list = articles
         .filter(function(a){
-          return (a.status || 'published') === 'published' &&
-            a.category !== '波予報' &&
-            (a.region === '白兎' || a.region === '鳥取' ||
-             (a.title || '').indexOf('白兎') !== -1 ||
-             (a.title || '').indexOf('鳥取') !== -1 ||
-             (a.excerpt || '').indexOf('白兎') !== -1 ||
-             (a.excerpt || '').indexOf('鳥取') !== -1);
+          var title = String(a.title || '').trim();
+          var category = String(a.category || '').trim();
+          var slug = String(a.slug || '');
+          // 毎朝・毎夕の自動波情報はカテゴリーとURLの双方で確実に除外。
+          if ((a.status || 'published') !== 'published' || !title ||
+              category === '波予報' || category === '波予想' || category === '波情報' ||
+              /(?:^|-)wave-(?:today|forecast)(?:-|$)/i.test(slug) ||
+              seenTitles[title]) return false;
+          var inHakuto = a.region === '白兎' || a.region === '鳥取' ||
+            title.indexOf('白兎') !== -1 || title.indexOf('鳥取') !== -1 ||
+            (a.excerpt || '').indexOf('白兎') !== -1 ||
+            (a.excerpt || '').indexOf('鳥取') !== -1;
+          if (inHakuto) seenTitles[title] = true;
+          return inHakuto;
         })
         .slice(0, 6);
       if (!list.length) {
