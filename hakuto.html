@@ -449,67 +449,183 @@
   </a>
 </section>
 
-<!-- 白兎 関連ブログ -->
-<section class="section" style="padding-top:50px;padding-bottom:60px;background:var(--ink-deep);">
+<!-- 白兎 関連ブログ：地域ニュース専用のコンパクト表示 -->
+<style id="hakuto-related-local-style">
+  #hakuto-related-blog {
+    padding: 32px 20px 36px !important;
+    background: var(--ink-deep);
+  }
+  #hakuto-related-blog .section-title {
+    font-size: clamp(1.45rem, 5.5vw, 2rem);
+    line-height: 1.4;
+    margin: 0 0 16px !important;
+  }
+  #hakuto-related-blog .hakuto-news-intro {
+    color: var(--cream-soft);
+    font-size: .9rem;
+    line-height: 1.7;
+    margin: 0 0 18px;
+  }
+  #hakuto-related-blog .hakuto-news-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  #hakuto-related-blog .hakuto-news-card {
+    display: grid;
+    grid-template-columns: 190px minmax(0, 1fr);
+    min-width: 0;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    overflow: hidden;
+    background: rgba(11, 29, 42, .85);
+    color: var(--cream);
+    text-decoration: none;
+    transition: border-color .2s, background .2s;
+  }
+  #hakuto-related-blog .hakuto-news-card:hover,
+  #hakuto-related-blog .hakuto-news-card:focus-visible {
+    border-color: var(--coral);
+    background: rgba(229, 82, 52, .06);
+  }
+  #hakuto-related-blog .hakuto-news-img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: 152px;
+    object-fit: cover;
+    background: var(--ink);
+  }
+  #hakuto-related-blog .hakuto-news-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+    padding: 16px 20px;
+  }
+  #hakuto-related-blog .hakuto-news-meta {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    color: var(--teal-pale);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .7rem;
+    margin-bottom: 7px;
+  }
+  #hakuto-related-blog .hakuto-news-kind {
+    color: var(--coral-soft);
+    letter-spacing: .06em;
+  }
+  #hakuto-related-blog .hakuto-news-title {
+    font-family: 'Shippori Mincho B1', serif;
+    font-size: 1.13rem;
+    line-height: 1.55;
+    font-weight: 700;
+    margin: 0;
+    color: var(--cream);
+    overflow-wrap: anywhere;
+  }
+  #hakuto-related-blog .hakuto-news-summary {
+    color: var(--cream-soft);
+    font-size: .82rem;
+    line-height: 1.7;
+    margin: 7px 0 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  #hakuto-related-blog .hakuto-news-more {
+    color: var(--coral-soft);
+    font-size: .77rem;
+    margin-top: 9px;
+  }
+  #hakuto-related-blog .hakuto-news-all {
+    display: inline-block;
+    color: var(--coral-soft);
+    font-size: .85rem;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    margin-top: 16px;
+  }
+  @media (max-width: 520px) {
+    #hakuto-related-blog { padding: 26px 18px 30px !important; }
+    #hakuto-related-blog .section-title { margin-bottom: 12px !important; }
+    #hakuto-related-blog .hakuto-news-intro { margin-bottom: 16px; }
+    #hakuto-related-blog .hakuto-news-card {
+      grid-template-columns: 112px minmax(0, 1fr);
+    }
+    #hakuto-related-blog .hakuto-news-img { min-height: 136px; }
+    #hakuto-related-blog .hakuto-news-content { padding: 12px 13px; }
+    #hakuto-related-blog .hakuto-news-meta { font-size: .65rem; gap: 7px; margin-bottom: 6px; }
+    #hakuto-related-blog .hakuto-news-title { font-size: .94rem; line-height: 1.5; }
+    #hakuto-related-blog .hakuto-news-summary { display: none; }
+    #hakuto-related-blog .hakuto-news-more { margin-top: 8px; font-size: .75rem; }
+  }
+</style>
+<section id="hakuto-related-blog" class="section">
   <h2 class="section-title">
     <span class="no">BLOG</span>
     <i class="fa-solid fa-newspaper ico"></i>
     白兎 関連ブログ
   </h2>
-  <p style="color:var(--cream-soft);font-size:0.95rem;line-height:1.9;margin-bottom:24px;">
-    白兎・鳥取エリアの地域ニュース、ポイント情報、サーフ特集。
-    <a href="blog/index.php" style="color:var(--coral-soft);text-decoration:underline;">ブログ一覧を見る →</a>
-  </p>
-  <div id="hakutoSpotBlogGrid" class="all-spots-grid">
-    <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--teal-pale);font-size:0.9rem;">
-      記事を読み込み中...
-    </div>
+  <p class="hakuto-news-intro">白兎・鳥取の地域ニュース、ポイント情報、サーフ特集。</p>
+  <div id="hakutoSpotBlogGrid" class="hakuto-news-grid" aria-live="polite">
+    <div style="text-align:center;padding:16px;color:var(--teal-pale);font-size:.85rem;">記事を読み込み中...</div>
   </div>
+  <a class="hakuto-news-all" href="blog/index.php">ブログ一覧を見る →</a>
 </section>
 <script>
 (function loadHakutoSpotBlogs(){
   var grid = document.getElementById('hakutoSpotBlogGrid');
   if (!grid) return;
+  function escapeHtml(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g, function(ch){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];
+    });
+  }
   fetch('blog/articles.json?_=' + Date.now())
-    .then(function(res){ return res.json(); })
+    .then(function(res){ if (!res.ok) throw new Error('Blog index unavailable'); return res.json(); })
     .then(function(articles){
       var seenTitles = Object.create(null);
-      var list = articles
-        .filter(function(a){
-          var title = String(a.title || '').trim();
-          var category = String(a.category || '').trim();
-          var slug = String(a.slug || '');
-          // 毎朝・毎夕の自動波情報はカテゴリーとURLの双方で確実に除外。
-          if ((a.status || 'published') !== 'published' || !title ||
-              category === '波予報' || category === '波予想' || category === '波情報' ||
-              /(?:^|-)wave-(?:today|forecast)(?:-|$)/i.test(slug) ||
-              seenTitles[title]) return false;
-          var inHakuto = a.region === '白兎' || a.region === '鳥取' ||
-            title.indexOf('白兎') !== -1 || title.indexOf('鳥取') !== -1 ||
-            (a.excerpt || '').indexOf('白兎') !== -1 ||
-            (a.excerpt || '').indexOf('鳥取') !== -1;
-          if (inHakuto) seenTitles[title] = true;
-          return inHakuto;
-        })
-        .slice(0, 6);
+      var list = articles.filter(function(a){
+        var title = String(a.title || '').trim();
+        var category = String(a.category || '').trim();
+        var slug = String(a.slug || '');
+        if ((a.status || 'published') !== 'published' || !title ||
+            category === '波予報' || category === '波予想' || category === '波情報' ||
+            /(?:^|-)wave-(?:today|forecast)(?:-|$)/i.test(slug) ||
+            seenTitles[title]) return false;
+        var inHakuto = a.region === '白兎' || a.region === '鳥取' ||
+          title.indexOf('白兎') !== -1 || title.indexOf('鳥取') !== -1 ||
+          (a.excerpt || '').indexOf('白兎') !== -1 ||
+          (a.excerpt || '').indexOf('鳥取') !== -1;
+        if (inHakuto) seenTitles[title] = true;
+        return inHakuto;
+      }).slice(0, 6);
       if (!list.length) {
-        grid.innerHTML = '<div style="grid-column:1/-1;color:var(--teal-pale);padding:30px;">白兎の記事はまだありません。</div>';
+        grid.innerHTML = '<div style="color:var(--teal-pale);padding:18px 0;font-size:.9rem;">現在、掲載中の地域ニュースはありません。</div>';
         return;
       }
       grid.innerHTML = list.map(function(a){
         var thumb = a.thumb ? 'blog/' + a.thumb : 'blog/img/noimage.jpg';
-        var url = 'blog/posts/' + a.slug + '.php';
-        return '<a href="' + url + '" class="spot-card" style="text-decoration:none;color:inherit;">'
-          + '<div style="height:150px;overflow:hidden;background:#111;">'
-          + '<img src="' + thumb + '" alt="' + (a.title || '') + '" style="width:100%;height:100%;object-fit:cover;">'
-          + '</div>'
-          + '<div style="padding:14px;">'
-          + '<h3 style="font-family:Shippori Mincho B1,serif;font-size:0.95rem;margin:0;color:var(--cream);line-height:1.6;">' + (a.title || '') + '</h3>'
+        var url = 'blog/posts/' + encodeURIComponent(a.slug) + '.php';
+        return '<a href="' + escapeHtml(url) + '" class="hakuto-news-card">'
+          + '<img class="hakuto-news-img" src="' + escapeHtml(thumb) + '" alt="" loading="lazy" onerror="this.onerror=null;this.src=\'blog/img/noimage.jpg\'">'
+          + '<div class="hakuto-news-content">'
+          + '<div class="hakuto-news-meta"><span class="hakuto-news-kind">' + escapeHtml(a.category || 'ニュース') + '</span><span>' + escapeHtml(a.date || '') + '</span></div>'
+          + '<h3 class="hakuto-news-title">' + escapeHtml(a.title) + '</h3>'
+          + '<p class="hakuto-news-summary">' + escapeHtml(a.excerpt || '') + '</p>'
+          + '<span class="hakuto-news-more">記事を読む →</span>'
           + '</div></a>';
       }).join('');
     })
     .catch(function(){
-      grid.innerHTML = '<div style="grid-column:1/-1;color:var(--teal-pale);padding:30px;">ブログ記事を読み込めませんでした。</div>';
+      grid.innerHTML = '<div style="color:var(--teal-pale);padding:18px 0;font-size:.9rem;">記事を読み込めませんでした。ブログ一覧からご覧ください。</div>';
     });
 })();
 </script>
