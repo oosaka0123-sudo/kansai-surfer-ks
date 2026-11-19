@@ -3,51 +3,41 @@ on:
   push:
     branches: [audit/ks-blog-individual-error-20261119]
     paths: [.github/workflows/ks-blog-diagnostic-20261119.yml]
-permissions:
-  contents: read
+permissions: {contents: read}
 jobs:
   diagnose:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
     steps:
-      - name: Check all 358 published article URLs (read only)
+      - name: Inspect mobile-related layout and navigation code on blog posts
         shell: bash
         run: |
           python3 - <<'PY'
+          import json,re
           from urllib.request import Request,urlopen
-          from urllib.error import HTTPError
           from urllib.parse import quote
-          from concurrent.futures import ThreadPoolExecutor,as_completed
-          from collections import Counter
-          import json,time
+          from html.parser import HTMLParser
           BASE='https://kansai.rss7.net'
-          req=Request(BASE+'/blog/articles.json',headers={'User-Agent':'KS-Site-Health-Audit/1.0'})
-          with urlopen(req,timeout=25) as r: articles=json.loads(r.read())
-          def check(a):
-            slug=str(a.get('slug',''))
-            url=BASE+'/blog/posts/'+quote(slug,safe='-_.~')+'.php'
-            for trial in range(2):
-              try:
-                with urlopen(Request(url,headers={'User-Agent':'KS-Site-Health-Audit/1.0'}),timeout=18) as r:
-                  sample=r.read(1024).decode('utf-8','replace')
-                  if '<!DOCTYPE' in sample or '<html' in sample: content='html'
-                  elif 'Fatal error' in sample or 'Parse error' in sample: content='php_error'
-                  else: content='other'
-                  return (slug,a.get('title',''),r.status,content)
-              except HTTPError as e: return (slug,a.get('title',''),e.code,'http_error')
-              except Exception as e:
-                if trial==1: return (slug,a.get('title',''),type(e).__name__,str(e)[:80])
-                time.sleep(0.8)
-          results=[]
-          with ThreadPoolExecutor(max_workers=7) as pool:
-            for future in as_completed([pool.submit(check,a) for a in articles]):
-              results.append(future.result())
-          status=Counter(str(row[2]) for row in results)
-          print('AUDIT_TOTAL',len(articles),'STATUS_COUNTS',dict(status))
-          failures=[r for r in results if r[2]!=200 or r[3]!='html']
-          print('FAILURE_COUNT',len(failures))
-          for slug,title,code,body in sorted(failures)[:110]:
-            print('FAIL',str(code),'SLUG',slug[:140],'TITLE',str(title)[:80],'INFO',body)
-          print('EXACT_BEACH_HOPPING', [r for r in results if 'ビーチホッピング' in str(r[1])][:10])
-          print('NOTE: READ ONLY; NO FILES MODIFIED')
+          def get(p):
+            with urlopen(Request(BASE+p,headers={'User-Agent':'KS-Blog-Mobile-Audit/1.0'}),timeout=25) as r:
+              return r.read().decode('utf-8','replace')
+          arts=json.loads(get('/blog/articles.json'))
+          targets=arts[:2]+[a for a in arts if a.get('region')=='生見' or a.get('category')=='ニュース'][:10]
+          seen=set()
+          for a in targets:
+            slug=str(a['slug'])
+            if slug in seen: continue
+            seen.add(slug)
+            p='/blog/posts/'+quote(slug,safe='-_.~')+'.php'
+            h=get(p)
+            print('PAGE',slug,'length',len(h),'TITLE',str(a.get('title',''))[:70])
+            matches=list(re.finditer('RELATED|関連ブログ|最新の記事|related-blog',h,re.I))
+            print('RELATED_MARKERS',len(matches))
+            for m in matches[:5]:
+              print('RELATED_CONTEXT',re.sub(r'\s+',' ',h[max(0,m.start()-500):m.start()+1000])[:1350])
+            links=re.findall(r'<link\b[^>]*rel=["\']stylesheet["\'][^>]*>',h,re.I)
+            print('STYLESHEETS',links[:10])
+            for m in re.finditer(r'grid-template-columns\s*:\s*[^;}]+',h,re.I):
+              print('GRID_CSS',re.sub(r'\s+',' ',h[max(0,m.start()-150):m.end()+70])[:450])
+            print('SCRIPT_SRCS',re.findall(r'<script\b[^>]*src=["\']([^"\']+)',h,re.I)[:12])
+            print('SCROLL_JS',bool(re.search(r'scrollRestoration|scrollTo|scrollIntoView|pageshow',h,re.I)))
           PY
