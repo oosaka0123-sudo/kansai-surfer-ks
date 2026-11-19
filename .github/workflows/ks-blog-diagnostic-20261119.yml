@@ -8,36 +8,27 @@ jobs:
   diagnose:
     runs-on: ubuntu-latest
     steps:
-      - name: Inspect mobile-related layout and navigation code on blog posts
+      - name: Inspect blog mobile CSS and related card fallbacks read-only
         shell: bash
         run: |
           python3 - <<'PY'
-          import json,re
           from urllib.request import Request,urlopen
-          from urllib.parse import quote
-          from html.parser import HTMLParser
+          from urllib.error import HTTPError
+          import re
           BASE='https://kansai.rss7.net'
-          def get(p):
-            with urlopen(Request(BASE+p,headers={'User-Agent':'KS-Blog-Mobile-Audit/1.0'}),timeout=25) as r:
-              return r.read().decode('utf-8','replace')
-          arts=json.loads(get('/blog/articles.json'))
-          targets=arts[:2]+[a for a in arts if a.get('region')=='生見' or a.get('category')=='ニュース'][:10]
-          seen=set()
-          for a in targets:
-            slug=str(a['slug'])
-            if slug in seen: continue
-            seen.add(slug)
-            p='/blog/posts/'+quote(slug,safe='-_.~')+'.php'
-            h=get(p)
-            print('PAGE',slug,'length',len(h),'TITLE',str(a.get('title',''))[:70])
-            matches=list(re.finditer('RELATED|関連ブログ|最新の記事|related-blog',h,re.I))
-            print('RELATED_MARKERS',len(matches))
-            for m in matches[:5]:
-              print('RELATED_CONTEXT',re.sub(r'\s+',' ',h[max(0,m.start()-500):m.start()+1000])[:1350])
-            links=re.findall(r'<link\b[^>]*rel=["\']stylesheet["\'][^>]*>',h,re.I)
-            print('STYLESHEETS',links[:10])
-            for m in re.finditer(r'grid-template-columns\s*:\s*[^;}]+',h,re.I):
-              print('GRID_CSS',re.sub(r'\s+',' ',h[max(0,m.start()-150):m.end()+70])[:450])
-            print('SCRIPT_SRCS',re.findall(r'<script\b[^>]*src=["\']([^"\']+)',h,re.I)[:12])
-            print('SCROLL_JS',bool(re.search(r'scrollRestoration|scrollTo|scrollIntoView|pageshow',h,re.I)))
+          for path in ['/blog/blog_cms.css?v=999','/nami_common.css?v=1018']:
+            try:
+              with urlopen(Request(BASE+path,headers={'User-Agent':'KS-blog-CSS-audit/1.0'}),timeout=25) as r:
+                css=r.read().decode('utf-8','replace')
+                print('CSS',path,'status',r.status,'size',len(css))
+              for needle in ['.blog-grid','.related-grid','.related-card','.blog-card','.blog-thumb','.blog-card-body','.blog-meta','.blog-badge','@media','h3']:
+                matches=[(m.start(),css[max(0,m.start()-80):m.start()+450]) for m in re.finditer(re.escape(needle),css,re.I)]
+                print('SELECTOR',needle,'count',len(matches))
+                for i,snip in matches[:7]:
+                  print('CSS_MATCH',needle,i,re.sub(r'\s+',' ',snip)[:500])
+            except Exception as e: print('CSS_ERR',path,type(e).__name__,str(e)[:120])
+          for path in ['/blog/img/noimage.jpg','/blog/img/noimage.png']:
+            try:
+              with urlopen(Request(BASE+path,headers={'User-Agent':'KS-blog-CSS-audit/1.0'}),timeout=15) as r: print('IMAGE',path,r.status,r.headers.get('content-type'),r.headers.get('content-length'))
+            except HTTPError as e: print('IMAGE',path,e.code)
           PY
