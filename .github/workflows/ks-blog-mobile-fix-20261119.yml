@@ -1,0 +1,216 @@
+name: KS blog related cards mobile repair (isolated)
+on:
+  push:
+    branches: [fix/ks-blog-related-mobile-20261119]
+    paths: [.github/workflows/ks-blog-mobile-fix-20261119.yml]
+permissions:
+  contents: read
+concurrency:
+  group: kansai-surfer-production-deploy
+  cancel-in-progress: false
+env:
+  KS_BLOG_DEPLOY_MODE: dry-run
+jobs:
+  blog-mobile-fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Prepare only blog CSS patch and new generic thumbnail
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ks-blog-old" "$RUNNER_TEMP/ks-blog-stage/img" "$RUNNER_TEMP/ks-blog-ftp"
+          python3 - <<'PY'
+          from urllib.request import Request,urlopen
+          from pathlib import Path
+          import os
+          root=Path(os.environ['RUNNER_TEMP'])
+          req=Request('https://kansai.rss7.net/blog/blog_cms.css?v=999', headers={'User-Agent':'KS-Blog-Fix/1.0','Cache-Control':'no-cache'})
+          with urlopen(req,timeout=30) as r:
+            old=r.read()
+            print('ORIGINAL_CSS_HTTP',r.status,'bytes',len(old),'cache_control',r.headers.get('cache-control','absent'))
+          text=old.decode('utf-8')
+          if 'KS_BLOG_RELATED_MOBILE_V1' in text: raise ValueError('Fix already deployed, refuse duplicate application')
+          if '.related-grid{grid-template-columns:repeat(2,1fr)!important}' not in text: raise ValueError('CSS has changed unexpectedly; refuse')
+          patch='''
+          /* KS_BLOG_RELATED_MOBILE_V1 - fix Android readability without changing article content */
+          @media (max-width: 640px) {
+            .related-posts .blog-grid.related-grid {
+              grid-template-columns: minmax(0, 1fr) !important;
+              gap: 16px;
+            }
+            .related-posts .blog-card.related-card {
+              min-width: 0;
+              overflow: hidden;
+            }
+            .related-posts .blog-card.related-card h3 {
+              font-size: 1rem !important;
+              line-height: 1.55 !important;
+              overflow-wrap: anywhere;
+            }
+            .related-posts .blog-card.related-card p {
+              font-size: .86rem !important;
+              line-height: 1.8 !important;
+              overflow-wrap: anywhere;
+            }
+            .related-posts .blog-card.related-card .blog-thumb {
+              display: block;
+              width: 100%;
+              height: auto;
+              aspect-ratio: 16 / 9;
+              object-fit: cover;
+            }
+          }
+          '''
+          (root/'ks-blog-old/blog_cms.css').write_bytes(old)
+          (root/'ks-blog-stage/blog_cms.css').write_bytes(old+patch.encode('utf-8'))
+          print('CSS_PATCH_PREPARED','new_bytes',len(old+patch.encode('utf-8')))
+          PY
+          python3 -c "import PIL" || python3 -m pip install --quiet pillow
+          python3 - <<'PY'
+          from PIL import Image,ImageDraw,ImageFont
+          import math,os
+          from pathlib import Path
+          W,H=960,540
+          image=Image.new('RGB',(W,H))
+          pixels=image.load()
+          for y in range(H):
+            for x in range(W):
+              t=y/H
+              pixels[x,y]=(int(8+6*t),int(22+19*t),int(37+27*t))
+          draw=ImageDraw.Draw(image)
+          for k in range(4):
+            pts=[]
+            for x in range(0,W+1,6):
+              y=int(345+k*32+13*math.sin((x/W)*math.pi*4+k*.6))
+              pts.append((x,y))
+            draw.line(pts,fill=(35+k*7,93+k*8,111+k*7),width=3)
+          draw.rounded_rectangle((70,64,172,164),radius=17,fill=(223,82,57))
+          font_path='/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'
+          try:
+            big=ImageFont.truetype(font_path,58); smaller=ImageFont.truetype(font_path,25)
+          except: big=smaller=ImageFont.load_default()
+          draw.text((82,80),'KS',font=big,fill=(255,255,255))
+          draw.text((70,212),'KANSAI SURFER',font=big,fill=(239,245,244))
+          draw.text((72,293),'SURF JOURNAL',font=smaller,fill=(156,194,200))
+          out=Path(os.environ['RUNNER_TEMP'])/'ks-blog-stage/img/noimage.jpg'
+          image.save(out,format='JPEG',quality=86,optimize=True)
+          print('GENERIC_PLACEHOLDER_PREPARED',out.stat().st_size,'bytes')
+          PY
+      - name: Install FTPS read-only client
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp >/dev/null
+      - name: Verify FTP CSS equals public CSS and placeholder is absent
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          test -n "$FTP_USERNAME" && test -n "$FTP_PASSWORD"
+          lftp <<LFTP_EOF >"$RUNNER_TEMP/ks-blog-ftp/entries.txt"
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 20
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          cd /kansai/blog
+          lcd "$RUNNER_TEMP/ks-blog-ftp"
+          get blog_cms.css
+          cd img
+          cls -1
+          bye
+          LFTP_EOF
+          cmp "$RUNNER_TEMP/ks-blog-old/blog_cms.css" "$RUNNER_TEMP/ks-blog-ftp/blog_cms.css" || { echo "::error::FTP CSS differs from public CSS. Aborting"; exit 1; }
+          if grep -qx 'noimage.jpg' "$RUNNER_TEMP/ks-blog-ftp/entries.txt"; then echo "::error::noimage.jpg exists remotely, refusing overwrite"; exit 1; fi
+          echo "FTPS preflight OK: public/remote CSS identical, new placeholder filename unused."
+      - name: Save original CSS for rollback
+        uses: actions/upload-artifact@v4
+        with:
+          name: ks-blog-original-css
+          path: ${{ runner.temp }}/ks-blog-old/blog_cms.css
+          retention-days: 14
+          if-no-files-found: error
+      - name: Save prepared assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: ks-blog-approved-mobile-patch
+          path: ${{ runner.temp }}/ks-blog-stage/
+          retention-days: 14
+          if-no-files-found: error
+      - name: Upload exactly blog CSS and missing JPEG placeholder
+        id: ftp_upload
+        if: env.KS_BLOG_DEPLOY_MODE == 'deploy'
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          STAGE="$RUNNER_TEMP/ks-blog-stage"
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 20
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          cd /kansai/blog
+          lcd "$STAGE"
+          put blog_cms.css
+          cd img
+          lcd "$STAGE/img"
+          put noimage.jpg
+          bye
+          LFTP_EOF
+      - name: Confirm assets publicly match uploaded bytes
+        id: verify
+        if: env.KS_BLOG_DEPLOY_MODE == 'deploy'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from urllib.request import Request,urlopen
+          from pathlib import Path
+          import os,time
+          root=Path(os.environ['RUNNER_TEMP'])
+          for file,uri in [('blog_cms.css','blog/blog_cms.css'),('img/noimage.jpg','blog/img/noimage.jpg')]:
+            expected=(root/'ks-blog-stage'/file).read_bytes()
+            matched=False
+            for i in range(5):
+              req=Request('https://kansai.rss7.net/'+uri+'?ks_blog_verify='+str(int(time.time())),headers={'Cache-Control':'no-cache','User-Agent':'KS-Deploy-Verify/1.0'})
+              with urlopen(req,timeout=25) as r:
+                actual=r.read()
+                print('VERIFY',uri,'HTTP',r.status,'Content-Type',r.headers.get('content-type',''),len(actual))
+              if actual==expected: matched=True; break
+              time.sleep(3)
+            if not matched: raise ValueError('Public HTTP bytes differ for '+uri)
+          print('PASS exactly two assets updated. Other pages not uploaded.')
+          PY
+      - name: Roll back CSS if upload/verify fails (new placeholder may remain)
+        if: failure() && env.KS_BLOG_DEPLOY_MODE == 'deploy' && (steps.ftp_upload.outcome == 'failure' || steps.verify.outcome == 'failure')
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 20
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          cd /kansai/blog
+          lcd "$RUNNER_TEMP/ks-blog-old"
+          put blog_cms.css
+          bye
+          LFTP_EOF
+          echo "Restored original blog CSS."
