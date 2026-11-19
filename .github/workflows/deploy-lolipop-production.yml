@@ -10,6 +10,7 @@ on:
         type: choice
         options:
           - dry-run
+          - probe
           - deploy
 
 permissions:
@@ -113,10 +114,10 @@ jobs:
           PY
 
       - name: Check secured FTP credentials
-        if: inputs.deploy_mode == 'deploy'
+        if: inputs.deploy_mode != 'dry-run'
         env:
-          FTP_USERNAME: ${{ secrets.KS_PROD_FTP_USER }}
-          FTP_PASSWORD: ${{ secrets.KS_PROD_FTP_PASSWORD }}
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
         shell: bash
         run: |
           set -euo pipefail
@@ -125,15 +126,46 @@ jobs:
           echo "FTP credentials available (never printed)."
 
       - name: Install lftp
-        if: inputs.deploy_mode == 'deploy'
+        if: inputs.deploy_mode != 'dry-run'
         run: sudo apt-get update -qq && sudo apt-get install -y lftp
+
+
+      - name: Probe FTPS target path and verify public/FTP identity (read only)
+        if: inputs.deploy_mode != 'dry-run'
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          PROBE="$RUNNER_TEMP/ks-seo-ftp-probe"
+          mkdir -p "$PROBE"
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 20
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          cd /kansai
+          get -o "$PROBE/isonoura.html" isonoura.html
+          get -o "$PROBE/index.html" index.html
+          bye
+          LFTP_EOF
+          cmp -s "$RUNNER_TEMP/ks-seo-original/isonoura.html" "$PROBE/isonoura.html" || { echo '::error::Remote FTP Isonoura != public Isonoura. Refusing upload.'; exit 1; }
+          FTP_HOME_SHA="$(sha256sum "$PROBE/index.html" | cut -d' ' -f1)"
+          PUBLIC_HOME_SHA="$(cat "$RUNNER_TEMP/ks-seo-original/homepage_sha256.txt")"
+          [ "$FTP_HOME_SHA" = "$PUBLIC_HOME_SHA" ] || { echo '::error::Remote FTP homepage != public homepage. Refusing upload.'; exit 1; }
+          echo "Read-only FTPS probe OK: remote /kansai matches current public production."
 
       - name: Upload exactly nine reviewed HTML files over FTPS
         id: ftps_upload
         if: inputs.deploy_mode == 'deploy'
         env:
-          FTP_USERNAME: ${{ secrets.KS_PROD_FTP_USER }}
-          FTP_PASSWORD: ${{ secrets.KS_PROD_FTP_PASSWORD }}
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
         shell: bash
         run: |
           set -euo pipefail
@@ -196,8 +228,8 @@ jobs:
         if: failure() && inputs.deploy_mode == 'deploy' && (steps.ftps_upload.outcome == 'failure' || steps.verify.outcome == 'failure')
         shell: bash
         env:
-          FTP_USERNAME: ${{ secrets.KS_PROD_FTP_USER }}
-          FTP_PASSWORD: ${{ secrets.KS_PROD_FTP_PASSWORD }}
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
         run: |
           set -euo pipefail
           set +x
