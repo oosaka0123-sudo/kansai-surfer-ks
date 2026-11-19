@@ -615,7 +615,7 @@
         var thumb = a.thumb ? 'blog/' + a.thumb : 'blog/img/noimage.jpg';
         var url = 'blog/posts/' + encodeURIComponent(a.slug) + '.php';
         return '<a href="' + escapeHtml(url) + '" class="hakuto-news-card">'
-          + '<img class="hakuto-news-img" src="' + escapeHtml(thumb) + '" alt="" loading="lazy" onerror="this.onerror=null;this.src=\'blog/img/noimage.jpg\'">'
+          + '<img class="hakuto-news-img" src="' + escapeHtml(thumb) + '" alt="" loading="eager" onerror="this.onerror=null;this.src=\'blog/img/noimage.jpg\'">'
           + '<div class="hakuto-news-content">'
           + '<div class="hakuto-news-meta"><span class="hakuto-news-kind">' + escapeHtml(a.category || 'ニュース') + '</span><span>' + escapeHtml(a.date || '') + '</span></div>'
           + '<h3 class="hakuto-news-title">' + escapeHtml(a.title) + '</h3>'
