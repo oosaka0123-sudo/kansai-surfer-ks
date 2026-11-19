@@ -150,8 +150,9 @@ jobs:
           set net:max-retries 3
           open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
           cd /kansai
-          get -o "$PROBE/isonoura.html" isonoura.html
-          get -o "$PROBE/index.html" index.html
+          lcd "$PROBE"
+          get isonoura.html
+          get index.html
           bye
           LFTP_EOF
           cmp -s "$RUNNER_TEMP/ks-seo-original/isonoura.html" "$PROBE/isonoura.html" || { echo '::error::Remote FTP Isonoura != public Isonoura. Refusing upload.'; exit 1; }
