@@ -446,13 +446,31 @@
   function observeHakutoFooter() {
     var line = document.querySelector('a.floating-line');
     var footer = document.querySelector('footer');
-    if (!line || !footer || typeof IntersectionObserver === 'undefined') return;
-    var observer = new IntersectionObserver(function(entries) {
-      var nearFooter = entries[0] && entries[0].isIntersecting;
-      line.classList.toggle('ks-hakuto-footer-near', !!nearFooter);
+    if (!line || !footer) return;
+
+    var scheduled = false;
+    function updateVisibility() {
+      scheduled = false;
+      var bounds = footer.getBoundingClientRect();
+      var nearFooter = bounds.top <= window.innerHeight + 60 && bounds.bottom >= 0;
+      line.classList.toggle('ks-hakuto-footer-near', nearFooter);
       if (nearFooter && line.contains(document.activeElement)) document.activeElement.blur();
-    }, { rootMargin: '0px 0px 60px 0px', threshold: 0 });
-    observer.observe(footer);
+    }
+    function scheduleUpdate() {
+      if (!scheduled) {
+        scheduled = true;
+        requestAnimationFrame(updateVisibility);
+      }
+    }
+    if ('IntersectionObserver' in window) {
+      var observer = new IntersectionObserver(scheduleUpdate, {
+        rootMargin: '0px 0px 60px 0px', threshold: 0
+      });
+      observer.observe(footer);
+    }
+    window.addEventListener('scroll', scheduleUpdate, { passive: true });
+    window.addEventListener('resize', scheduleUpdate, { passive: true });
+    scheduleUpdate();
   }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', observeHakutoFooter, { once: true });
