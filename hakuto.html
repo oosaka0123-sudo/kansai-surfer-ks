@@ -431,6 +431,55 @@
   <span class="fl-arrow">→</span>
 </a>
 
+<!-- Hakuto only: prevent the floating LINE CTA from covering the footer on mobile. -->
+<style id="hakuto-line-footer-guard">
+@media (max-width: 900px) {
+  .floating-line.ks-hakuto-footer-near {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+}
+</style>
+<script id="hakuto-line-footer-observer">
+(function() {
+  function observeHakutoFooter() {
+    var line = document.querySelector('a.floating-line');
+    var footer = document.querySelector('footer');
+    if (!line || !footer) return;
+
+    var scheduled = false;
+    function updateVisibility() {
+      scheduled = false;
+      var bounds = footer.getBoundingClientRect();
+      var nearFooter = bounds.top <= window.innerHeight + 60 && bounds.bottom >= 0;
+      line.classList.toggle('ks-hakuto-footer-near', nearFooter);
+      if (nearFooter && line.contains(document.activeElement)) document.activeElement.blur();
+    }
+    function scheduleUpdate() {
+      if (!scheduled) {
+        scheduled = true;
+        requestAnimationFrame(updateVisibility);
+      }
+    }
+    if ('IntersectionObserver' in window) {
+      var observer = new IntersectionObserver(scheduleUpdate, {
+        rootMargin: '0px 0px 60px 0px', threshold: 0
+      });
+      observer.observe(footer);
+    }
+    window.addEventListener('scroll', scheduleUpdate, { passive: true });
+    window.addEventListener('resize', scheduleUpdate, { passive: true });
+    scheduleUpdate();
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', observeHakutoFooter, { once: true });
+  } else {
+    observeHakutoFooter();
+  }
+})();
+</script>
+
 <section style="padding:40px 24px;border-bottom:1px solid var(--line);">
   <a href="hakuto_guide.html" style="
     display:flex;align-items:center;justify-content:space-between;gap:20px;
