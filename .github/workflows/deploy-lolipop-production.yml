@@ -1,89 +1,101 @@
-name: Deploy Kansai Surfer KS to Lolipop production
-
+name: Deploy Takahama location-model notice (one HTML)
 on:
   workflow_dispatch:
-
+    inputs:
+      deploy_mode:
+        description: "Dry-run first; deploy only takahama.html once explicitly approved"
+        required: true
+        default: dry-run
+        type: choice
+        options:
+          - dry-run
+          - deploy
 permissions:
   contents: read
-
 concurrency:
   group: kansai-surfer-production-deploy
   cancel-in-progress: false
-
 jobs:
-  deploy:
-    if: github.ref == 'refs/heads/main'
+  takahama-only:
+    if: github.ref == 'refs/heads/deploy/ks-takahama-location-notice-only-20261122'
     runs-on: ubuntu-latest
-    env:
-      FTP_SERVER: ftp.lolipop.jp
-      FTP_SERVER_DIR: /kansai
-      SITE_URL: https://kansai.rss7.net/
-
+    timeout-minutes: 12
     steps:
-      - name: Checkout main
+      - name: Checkout approved branch
         uses: actions/checkout@v4
 
-      - name: Validate production source is present
+      - name: Validate approved changes against live production, make backup
         shell: bash
         run: |
           set -euo pipefail
-          test -f index.html || { echo '::error::Production index.html is not present on main; refusing deployment.'; exit 1; }
-          test -f isonoura.html || { echo '::error::Production isonoura.html is not present on main; refusing deployment.'; exit 1; }
+          python3 - <<'PY'
+          import hashlib, pathlib, os, urllib.request
+          root=pathlib.Path(os.environ['RUNNER_TEMP'])
+          stage=root/'takahama-stage'; back=root/'takahama-backup'
+          stage.mkdir(exist_ok=True); back.mkdir(exist_ok=True)
+          def get(url):
+            req=urllib.request.Request(url,headers={'Cache-Control':'no-cache','Pragma':'no-cache','User-Agent':'KS-Takahama-10Day/1.0'})
+            with urllib.request.urlopen(req,timeout=25) as response:
+              if response.status != 200: raise ValueError('Unexpected public HTTP status')
+              return response.read()
+          live=get('https://kansai.rss7.net/takahama.html')
+          baseline=get('https://raw.githubusercontent.com/oosaka0123-sudo/kansai-surfer-ks/fix/ks-hakuto-footer-overlap-only-20261120/takahama.html')
+          approved=pathlib.Path('takahama.html').read_bytes()
+          if hashlib.sha256(live).hexdigest()!='073f6bbf6402bf942640e0fc7a53bd1b667bd3a2e41bcb159c73366b30b26bac': raise ValueError('Live original changed since approval; refuse')
+          if hashlib.sha256(approved).hexdigest()!='88fab7a37e31e67678f1772b3b11b273d9045f05f5dcc65e8e5f4b645ed7a6a9': raise ValueError('Approved file hash differs; refuse')
+          if live != baseline: raise ValueError('Production and locked baseline differ; refuse')
+          old=b'<section class="section">\n  <h2 class="section-title"><span class="no">05</span>'
+          next_section=b'<section class="section">\n  <h2 class="section-title"><span class="no">06</span>'
+          if live.count(old)!=1 or approved.count(old)!=1: raise ValueError('Nonunique section 05 marker')
+          a=live.index(old); b=approved.index(old)
+          c=live.index(next_section,a); d=approved.index(next_section,b)
+          if live[:a]!=approved[:b] or live[c:]!=approved[d:]: raise ValueError('Change outside section 05 forbidden')
+          before=live[a:c]; after=approved[b:d]
+          marker=b'  </table>\n</section>\n\n'
+          notice="  <p class=\"ks-forecast-location-note\" style=\"margin:12px 0 0;font-size:.78rem;line-height:1.8;color:var(--teal-pale);\">※ 波高・風・判定はOpen-Meteoの予報モデル値です。高浜の予報取得地点は現在精査中で、現地の実測波高や入水の安全を保証するものではありません。現地の海況もご確認ください。</p>\n".encode('utf-8')
+          if before.count(marker)!=1 or b'id="weeklyBody"' not in before: raise ValueError('Original weekly forecast table changed')
+          if before.replace(marker,b'  </table>\n'+notice+b'</section>\n\n')!=after: raise ValueError('Expected only one exact model disclaimer')
+          if b'id="ks10-forecast"' in approved: raise ValueError('Unauthorised 10-day template')
+          if '高浜'.encode('utf-8') not in approved: raise ValueError('Wrong spot title')
+          print('SAFE: disclaimer-only change inside section 05 verified')
+          (back/'takahama.html').write_bytes(live)
+          home=get('https://kansai.rss7.net/index.html')
+          (back/'homepage.sha256').write_text(hashlib.sha256(home).hexdigest())
+          (stage/'takahama.html').write_bytes(approved)
+          print('SAFE: exactly one section #05 changed; one HTML staged; backup captured',len(live),len(approved))
+          PY
 
-      - name: Prepare safe deployment bundle
-        shell: bash
-        run: |
-          set -euo pipefail
-          STAGE="$RUNNER_TEMP/kansai-production"
-          rm -rf "$STAGE"
-          mkdir -p "$STAGE"
+      - name: Upload original Takahama HTML as recovery artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ks-takahama-location-notice-original
+          path: ${{ runner.temp }}/takahama-backup/
+          retention-days: 14
+          if-no-files-found: error
 
-          rsync -a ./ "$STAGE/" \
-            --exclude '.git/' \
-            --exclude '.github/' \
-            --exclude '.gitignore' \
-            --exclude 'docs/' \
-            --exclude 'prototype/' \
-            --exclude 'AGENTS.md' \
-            --exclude 'HANDOFF.md' \
-            --exclude 'PROJECT_SPEC.md' \
-            --exclude 'README.md' \
-            --exclude 'data/' \
-            --exclude 'realtime/' \
-            --exclude 'logs/'
+      - name: Upload approved Takahama HTML for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: ks-takahama-location-notice-approved
+          path: ${{ runner.temp }}/takahama-stage/
+          retention-days: 14
+          if-no-files-found: error
 
-          test -f "$STAGE/index.html"
-          test -f "$STAGE/isonoura.html"
-          test ! -e "$STAGE/.github"
-          test ! -e "$STAGE/prototype"
-          echo 'KS production bundle prepared. Runtime data/log directories are preserved on the server.'
+      - name: Install secured FTPS client
+        if: inputs.deploy_mode == 'deploy'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp >/dev/null
 
-      - name: Install lftp
-        run: sudo apt-get update -qq && sudo apt-get install -y lftp
-
-      - name: Validate production FTPS settings
+      - name: Verify FTPS path is this exact public production, read only
+        if: inputs.deploy_mode == 'deploy'
         shell: bash
         env:
-          FTP_USERNAME: ${{ secrets.KS_PROD_FTP_USER }}
-          FTP_PASSWORD: ${{ secrets.KS_PROD_FTP_PASSWORD }}
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
         run: |
           set -euo pipefail
           set +x
-          test -n "$FTP_USERNAME" || { echo '::error::KS_PROD_FTP_USER is not configured.'; exit 1; }
-          test -n "$FTP_PASSWORD" || { echo '::error::KS_PROD_FTP_PASSWORD is not configured.'; exit 1; }
-          [ "$FTP_SERVER" = 'ftp.lolipop.jp' ] || { echo '::error::Unexpected FTP host.'; exit 1; }
-          [ "$FTP_SERVER_DIR" = '/kansai' ] || { echo '::error::Unexpected production directory.'; exit 1; }
-          [ "$SITE_URL" = 'https://kansai.rss7.net/' ] || { echo '::error::Unexpected production URL.'; exit 1; }
-
-      - name: Upload to Lolipop without remote deletion
-        shell: bash
-        env:
-          FTP_USERNAME: ${{ secrets.KS_PROD_FTP_USER }}
-          FTP_PASSWORD: ${{ secrets.KS_PROD_FTP_PASSWORD }}
-        run: |
-          set -euo pipefail
-          set +x
-          STAGE="$RUNNER_TEMP/kansai-production"
+          test -n "$FTP_USERNAME" && test -n "$FTP_PASSWORD"
+          mkdir -p "$RUNNER_TEMP/takahama-ftp"
           lftp <<LFTP_EOF
           set cmd:fail-exit true
           set ftp:ssl-force true
@@ -91,17 +103,92 @@ jobs:
           set ftp:passive-mode true
           set net:timeout 20
           set net:max-retries 3
-          open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER"
-          mirror --reverse --verbose=1 --no-perms "$STAGE" "$FTP_SERVER_DIR"
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          cd /kansai
+          lcd "$RUNNER_TEMP/takahama-ftp"
+          get takahama.html
+          get index.html
+          bye
+          LFTP_EOF
+          cmp "$RUNNER_TEMP/takahama-backup/takahama.html" "$RUNNER_TEMP/takahama-ftp/takahama.html" || { echo "::error::FTP Takahama differs; abort"; exit 1; }
+          HOME_SHA="$(sha256sum "$RUNNER_TEMP/takahama-ftp/index.html" | cut -d' ' -f1)"
+          PUBLIC_HOME_SHA="$(cat "$RUNNER_TEMP/takahama-backup/homepage.sha256")"
+          [ "$HOME_SHA" = "$PUBLIC_HOME_SHA" ] || { echo "::error::FTP homepage differs from public site; abort"; exit 1; }
+          python3 - <<'PY'
+          import urllib.request,pathlib,os
+          p=pathlib.Path(os.environ['RUNNER_TEMP'])/'takahama-backup/takahama.html'
+          with urllib.request.urlopen(urllib.request.Request('https://kansai.rss7.net/takahama.html',headers={'Cache-Control':'no-cache'}),timeout=25) as r: current=r.read()
+          if current != p.read_bytes(): raise ValueError('Live Takahama updated during preflight; abort')
+          print('FTPS and public contents match baseline immediately before deployment.')
+          PY
+
+      - name: FTPS upload of takahama.html only
+        if: inputs.deploy_mode == 'deploy'
+        id: ftp_upload
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 20
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          cd /kansai
+          lcd "$RUNNER_TEMP/takahama-stage"
+          put takahama.html
           bye
           LFTP_EOF
 
-      - name: Verify production pages
+      - name: Verify only Takahama changed and home stayed intact
+        if: inputs.deploy_mode == 'deploy'
+        id: verify
         shell: bash
         run: |
           set -euo pipefail
-          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "$SITE_URL" >/tmp/ks-home.html
-          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "${SITE_URL}isonoura.html" >/tmp/ks-isonoura.html
-          grep -qi '<html' /tmp/ks-home.html
-          grep -qi '<html' /tmp/ks-isonoura.html
-          echo 'Kansai Surfer KS production verification succeeded.'
+          python3 - <<'PY'
+          from pathlib import Path
+          import urllib.request,hashlib,os,time
+          root=Path(os.environ['RUNNER_TEMP'])
+          expected=(root/'takahama-stage/takahama.html').read_bytes()
+          ok=False
+          for attempt in range(5):
+            request=urllib.request.Request('https://kansai.rss7.net/takahama.html?verify='+str(int(time.time())),headers={'Cache-Control':'no-cache','Pragma':'no-cache'})
+            with urllib.request.urlopen(request,timeout=25) as r: actual=r.read()
+            if actual==expected: ok=True;break
+            time.sleep(3)
+          if not ok: raise ValueError('Published Takahama does not match uploaded approved HTML')
+          with urllib.request.urlopen(urllib.request.Request('https://kansai.rss7.net/index.html',headers={'Cache-Control':'no-cache'}),timeout=25) as r: home=r.read()
+          if hashlib.sha256(home).hexdigest()!=(root/'takahama-backup/homepage.sha256').read_text().strip(): raise ValueError('Homepage unexpectedly changed')
+          print('SUCCESS: exactly one HTML uploaded, verified public content and homepage unchanged')
+          PY
+
+      - name: Restore original Takahama if upload or verification fails
+        if: failure() && inputs.deploy_mode == 'deploy' && (steps.ftp_upload.outcome == 'failure' || steps.verify.outcome == 'failure')
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 20
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          cd /kansai
+          lcd "$RUNNER_TEMP/takahama-backup"
+          put takahama.html
+          bye
+          LFTP_EOF
+          echo 'Rolled back original Takahama HTML.'
