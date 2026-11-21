@@ -209,3 +209,27 @@ jobs:
                       print('MATCH',p.name,i,re.sub(r'[\\x00-\\x1f]',' ',line.strip())[:220])
           print('SOURCE_INSPECTION_READ_ONLY_NO_ARTIFACT_NO_CREDENTIALS')
           PY
+
+      - name: Character-safe coordinates and write-path audit of forecast generator
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/hakuto-src-inspect"
+          FILE="$RUNNER_TEMP/hakuto-src-inspect/fetch_wave_data.php"
+          test -s "$FILE"
+          SRC="$FILE" python3 - <<'PY'
+          import os,pathlib,json,re
+          s=pathlib.Path(os.environ['SRC']).read_text(encoding='utf-8',errors='replace')
+          lines=s.splitlines()
+          print('HAKUTO_REDACTED_CONFIG_CONTEXT')
+          for i,line in enumerate(lines):
+              if "'hakuto'" in line:
+                  for k in range(max(0,i-2),min(len(lines),i+4)):
+                      if not re.search(r'(?i)password|secret|token|api.?key|authorization',lines[k]):
+                          print('LINE',k+1,json.dumps(lines[k],ensure_ascii=True)[:500])
+          print('FORECAST_GENERATOR_WRITE_REFERENCES')
+          for i,line in enumerate(lines):
+              if re.search(r'(?i)wave_api\\.json|spot_.*?\\.json|file_put_contents|json_encode|setlocale',line) and not re.search(r'(?i)password|secret|token|api.?key|authorization',line):
+                  print('WRITE_REF',i+1,json.dumps(line.strip(),ensure_ascii=True)[:350])
+          print('AUDITED_READ_ONLY_SOURCE_END')
+          PY
