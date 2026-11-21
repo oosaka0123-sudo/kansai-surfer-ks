@@ -209,3 +209,26 @@ jobs:
                       print('MATCH',p.name,i,re.sub(r'[\\x00-\\x1f]',' ',line.strip())[:220])
           print('SOURCE_INSPECTION_READ_ONLY_NO_ARTIFACT_NO_CREDENTIALS')
           PY
+
+      - name: Analyze generator branching and selective regeneration feasibility
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC="$RUNNER_TEMP/hakuto-src-inspect/fetch_wave_data.php"
+          test -s "$SRC"
+          SRC="$SRC" python3 - <<'PY'
+          import os,re,pathlib,json
+          s=pathlib.Path(os.environ["SRC"]).read_text("utf-8",errors="replace")
+          lines=s.splitlines()
+          print("FORECAST_GENERATOR_CONTROL_FLOW")
+          keywords=re.compile(r'(?i)foreach\s*\(|for\s*\(|while\s*\(|file_put_contents\(|rename\(|spot_\w+\.json|wave_api\.json|\$_GET|\$_SERVER|PHP_SAPI|argv|function\s+|if\s*\(.*(isset|is_file|file_exists|mkdir)|\$spots\s*=|\$spots\s*\[|\$spotKey|\$spot_key|\$dataDir|\$outputDir|\$baseDir|\$targetPath|\$tmpPath|\$waveApi|\$allSpots')
+          def redact(line):
+              line=re.sub(r'(?i)(pass(word)?|api.?key|secret|auth(orization)?|token)',"[SENSITIVE_KEYWORD]",line)
+              line=re.sub(r"(?:(?<=')[^']{36,}(?=')|(?<=\")[^\"]{36,}(?=\") )", "[LONG_STRING]",line)
+              line=re.sub(r'[A-Za-z0-9_+=\-/]{45,}',"<redacted>",line)
+              return line
+          for i,line in enumerate(lines,1):
+              if keywords.search(line):
+                  print("FLOW",i,json.dumps(redact(line.strip()),ensure_ascii=True)[:400])
+          print("SCRIPT_STRUCTURE_END")
+          PY
