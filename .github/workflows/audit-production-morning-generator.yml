@@ -111,10 +111,15 @@ jobs:
               return result.encode('utf-8')
           p0=php.read_bytes()
           h0=html.read_bytes()
-          if sha(p0)!='412947b2a621bd858c079a2a8a0a4f36805e89b0c05f7c34994fb3fb0b19ebfa':
-              raise SystemExit('FAIL: PHP source changed since last verified Hakuto patch')
-          p1=patch_php(p0)
-          h1=patch_html(h0)
+          if sha(p0)=='a88f119579f9ca5ed038cb0173c7d57e0acb351b6df7c763d3a2c97ccadbbd10' and sha(h0)=='3f38cf194595af5542df66d6555c024ed3451d757f65d995dd9d5b3c724df5a7':
+              assert "35.665200" in p0.decode('utf-8') and "134.966082" in p0.decode('utf-8')
+              assert "LAT: 35.665200, LNG: 134.966082" in h0.decode('utf-8')
+              p1=p0;h1=h0
+              print('HAMADUTU_NEW_COORDINATES_ALREADY_DEPLOYED')
+          elif sha(p0)=='412947b2a621bd858c079a2a8a0a4f36805e89b0c05f7c34994fb3fb0b19ebfa' and sha(h0)=='6acc9fbe14c931c83e889a7721abd3b81f6fe67dd0750b2ba5eb96d4f6595207':
+              p1=patch_php(p0)
+              h1=patch_html(h0)
+          else: raise SystemExit('FAIL: production PHP or HTML changed unexpectedly')
           out=root/'patched_hamadutu_generator.php'
           out.write_bytes(p1)
           subprocess.run(['php','-l',str(out)],check=True,stdout=subprocess.DEVNULL)
