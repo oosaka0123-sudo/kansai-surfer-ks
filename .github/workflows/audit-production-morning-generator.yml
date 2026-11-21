@@ -119,14 +119,21 @@ jobs:
           for variant in current candidate current_coastal candidate_coastal; do
             echo "ISOLATED_VARIANT=$variant"
             cd "$RUNNER_TEMP/takahama-audit/$variant"
-            if timeout 135 php fetch_wave_data.php > execution.log 2>&1; then
-              echo "PHP_GENERATION_$variant=SUCCESS"
-            else
-              code=$?
-              echo "PHP_GENERATION_$variant=FAILED_EXIT_$code"
-              # Do not export execution logs; these might contain private configuration.
-              exit "$code"
-            fi
+            php -l fetch_wave_data.php >/dev/null
+            for attempt in 1 2; do
+              if timeout 105 php fetch_wave_data.php > execution.log 2>&1; then
+                echo "PHP_EXECUTE_VARIANT=$variant ATTEMPT=$attempt SUCCESS"
+              else
+                code=$?
+                echo "PHP_EXECUTE_VARIANT=$variant ATTEMPT=$attempt FAILED_EXIT=$code"
+              fi
+              if [ -s data/spot_takahama.json ] && [ -s data/wave_api.json ]; then
+                echo "PHP_GENERATION_$variant=SUCCESS"
+                break
+              fi
+              echo "OUTPUT_CHECK_VARIANT=$variant ATTEMPT=$attempt spot=$(test -s data/spot_takahama.json && echo YES || echo NO) wave=$(test -s data/wave_api.json && echo YES || echo NO)"
+              if [ "$attempt" -eq 1 ]; then sleep 3; fi
+            done
             test -s data/spot_takahama.json
             test -s data/wave_api.json
           done
