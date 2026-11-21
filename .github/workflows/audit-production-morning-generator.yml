@@ -232,3 +232,41 @@ jobs:
                   print("FLOW",i,json.dumps(redact(line.strip()),ensure_ascii=True)[:400])
           print("SCRIPT_STRUCTURE_END")
           PY
+
+      - name: Run isolated full generator snapshot without touching production
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get install -y php-cli php-curl >/dev/null
+          SRC="$RUNNER_TEMP/hakuto-src-inspect/fetch_wave_data.php"
+          test -s "$SRC"
+          SANDBOX="$RUNNER_TEMP/hakuto-dry-run"
+          mkdir -p "$SANDBOX/data"
+          cp "$SRC" "$SANDBOX/fetch_wave_data.php"
+          php -l "$SANDBOX/fetch_wave_data.php"
+          (cd "$SANDBOX"; timeout 100 php fetch_wave_data.php >run.log 2>&1) || {
+            echo "SANDBOX_RUN_FAILED_OR_TIMEOUT"
+            tail -n 10 "$SANDBOX/run.log" | sed -E 's/(api.?key|password|token).*/[redacted]/Ig'
+            exit 1
+          }
+          ROOT="$SANDBOX" python3 - <<'PY'
+          import os,json,pathlib
+          p=pathlib.Path(os.environ['ROOT'])
+          s=json.loads((p/'data/spot_hakuto.json').read_text(encoding='utf-8'))
+          a=json.loads((p/'data/wave_api.json').read_text(encoding='utf-8'))
+          marine=s['marine']
+          weather=s['weather']
+          n=len(a.get('spots',{}))
+          print('SANDBOX_HAKUTO_UPDATED_AT',s.get('updated_at'))
+          print('SANDBOX_HAKUTO_MARINE_GRID',marine.get('latitude'),marine.get('longitude'))
+          print('SANDBOX_HAKUTO_WEATHER_GRID',weather.get('latitude'),weather.get('longitude'))
+          print('SANDBOX_HAKUTO_MARINE_HOURLY_COUNT',len(marine['hourly']['wave_height']))
+          print('SANDBOX_HAKUTO_WEATHER_HOURLY_COUNT',len(weather['hourly']['wind_speed_10m']))
+          print('SANDBOX_ALL_SPOTS_COUNT',n)
+          print('SANDBOX_WAVE_API_HAKUTO',json.dumps(a['spots']['hakuto'].get('now'),ensure_ascii=True)[:600])
+          assert n==9,'missing spots from regenerated summary'
+          assert abs(marine['longitude']-134.12502)<0.09,'marine longitude not new grid'
+          assert abs(weather['longitude']-134.125)<0.09,'weather longitude not new grid'
+          assert len(marine['hourly']['wave_height'])>=120
+          print('ALL_SANDBOX_ASSERTIONS_PASS_NO_PRODUCTION_WRITE')
+          PY
