@@ -1,7 +1,16 @@
-name: Deploy Kansai Surfer KS to Lolipop production
+name: Deploy Hamadutu approved 10-day forecast (one HTML)
 
 on:
   workflow_dispatch:
+    inputs:
+      deploy_mode:
+        description: "dry-run or deploy 05 section only"
+        required: true
+        default: dry-run
+        type: choice
+        options:
+          - dry-run
+          - deploy
 
 permissions:
   contents: read
@@ -11,97 +20,167 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
-    if: github.ref == 'refs/heads/main'
+  hamadutu-only:
+    if: github.ref == 'refs/heads/deploy/ks-hamadutu-10day-only-20261122' && github.actor == 'oosaka0123-sudo'
     runs-on: ubuntu-latest
-    env:
-      FTP_SERVER: ftp.lolipop.jp
-      FTP_SERVER_DIR: /kansai
-      SITE_URL: https://kansai.rss7.net/
-
+    timeout-minutes: 12
     steps:
-      - name: Checkout main
+      - name: Checkout approved 05-only candidate
         uses: actions/checkout@v4
 
-      - name: Validate production source is present
+      - name: Verify byte-exact production baseline and section-only change
         shell: bash
         run: |
           set -euo pipefail
-          test -f index.html || { echo '::error::Production index.html is not present on main; refusing deployment.'; exit 1; }
-          test -f isonoura.html || { echo '::error::Production isonoura.html is not present on main; refusing deployment.'; exit 1; }
+          mkdir -p "$RUNNER_TEMP/hamadutu-original" "$RUNNER_TEMP/hamadutu-approved"
+          curl -fsSL --retry 3 --retry-delay 2 "https://kansai.rss7.net/hamadutu.html?before=$GITHUB_RUN_ID" -o "$RUNNER_TEMP/hamadutu-original/hamadutu.html"
+          curl -fsSL --retry 3 --retry-delay 2 "https://kansai.rss7.net/index.html?before=$GITHUB_RUN_ID" -o "$RUNNER_TEMP/hamadutu-original/home.html"
+          cp hamadutu.html "$RUNNER_TEMP/hamadutu-approved/hamadutu.html"
+          STAGE="$RUNNER_TEMP" python3 - <<'PY'
+          import hashlib,os,pathlib,re
+          root=pathlib.Path(os.environ['STAGE'])
+          live=(root/'hamadutu-original/hamadutu.html').read_bytes()
+          approved=(root/'hamadutu-approved/hamadutu.html').read_bytes()
+          def h(data):return hashlib.sha256(data).hexdigest()
+          assert h(live)=='3f38cf194595af5542df66d6555c024ed3451d757f65d995dd9d5b3c724df5a7','production baseline changed'
+          assert h(approved)=='11bc1a37825b4446f94ff5d1c91dfda496d72d4d933ad398a68cabe7b15f447c','candidate changed'
+          start_old=b'<section class="section">\n  <h2 class="section-title"><span class="no">05</span>'
+          start_new=b'<section class="section ks10-section" id="ks10-forecast"'
+          end=b'\n<section class="section">\n  <h2 class="section-title"><span class="no">06</span>'
+          assert live.count(start_old)==1, 'old marker count wrong'
+          assert approved.count(start_new)==1, 'new marker count wrong'
+          x=live.index(start_old);y=approved.index(start_new)
+          xend=live.index(end,x);yend=approved.index(end,y)
+          assert live[:x]==approved[:y], 'changed outside 05 prefix'
+          assert live[xend:]==approved[yend:], 'changed outside 05 suffix'
+          sec=approved[y:yend]
+          assert b'id="ks10-body"' in sec
+          assert b'forecast_days=10' in sec
+          assert b'LAT: 35.665200, LNG: 134.966082' in approved[yend:]
+          assert b'id="weeklyBody"' not in sec
+          assert '浜詰'.encode('utf-8') in sec
+          assert '磯ノ浦'.encode('utf-8') not in sec
+          m=re.search(rb'<script>(.*?)</script>',sec,re.S)
+          assert m,'inline script absent'
+          (root/'hamadutu-approved/ks10.js').write_bytes(m.group(1))
+          print('HAMADUTU_05_ONLY_DIFF_PASSED')
+          print('BASELINE_SHA256='+h(live))
+          print('CANDIDATE_SHA256='+h(approved))
+          print('OTHER_SECTIONS_BYTE_IDENTICAL')
+          PY
+          node --check "$RUNNER_TEMP/hamadutu-approved/ks10.js"
 
-      - name: Prepare safe deployment bundle
+      - name: Save original HTML for recovery
+        uses: actions/upload-artifact@v4
+        with:
+          name: hamadutu-05-original
+          path: ${{ runner.temp }}/hamadutu-original/hamadutu.html
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Check that scheduled generator has switched both JSONs to Hamadutu coast
+        if: inputs.deploy_mode == 'deploy'
         shell: bash
         run: |
           set -euo pipefail
-          STAGE="$RUNNER_TEMP/kansai-production"
-          rm -rf "$STAGE"
-          mkdir -p "$STAGE"
+          python3 - <<'PY'
+          import json,urllib.request,datetime
+          def get(path):
+              req=urllib.request.Request('https://kansai.rss7.net/data/'+path+'?check=hamadutu-20261122',headers={'Cache-Control':'no-cache'})
+              with urllib.request.urlopen(req,timeout=30) as r:return json.load(r)
+          s=get('spot_hamadutu.json')
+          w=get('wave_api.json')
+          assert s.get('_status')=='fresh','spot status not fresh'
+          assert abs(s['marine']['longitude']-134.95836)<0.002, 'Marine grid still old'
+          assert abs(s['weather']['longitude']-134.9375)<0.002, 'Weather grid still old'
+          assert s.get('updated_at','')>='2026-11-22 09:00:00','spot file not regenerated after change'
+          assert w.get('updated_at','')>='2026-11-22 09:00:00','ranking file not regenerated after change'
+          assert 'hamadutu' in w.get('spots',{}),'ranking spot missing'
+          print('HAMADUTU_JSON_AND_RANKING_REFRESHED_WITH_NEW_COORDINATE_GRID')
+          PY
 
-          rsync -a ./ "$STAGE/" \
-            --exclude '.git/' \
-            --exclude '.github/' \
-            --exclude '.gitignore' \
-            --exclude 'docs/' \
-            --exclude 'prototype/' \
-            --exclude 'AGENTS.md' \
-            --exclude 'HANDOFF.md' \
-            --exclude 'PROJECT_SPEC.md' \
-            --exclude 'README.md' \
-            --exclude 'data/' \
-            --exclude 'realtime/' \
-            --exclude 'logs/'
+      - name: Install secured FTPS client
+        if: inputs.deploy_mode == 'deploy'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp >/dev/null
 
-          test -f "$STAGE/index.html"
-          test -f "$STAGE/isonoura.html"
-          test ! -e "$STAGE/.github"
-          test ! -e "$STAGE/prototype"
-          echo 'KS production bundle prepared. Runtime data/log directories are preserved on the server.'
-
-      - name: Install lftp
-        run: sudo apt-get update -qq && sudo apt-get install -y lftp
-
-      - name: Validate production FTPS settings
+      - name: Validate exact FTPS target and upload one HTML with recovery
+        if: inputs.deploy_mode == 'deploy'
         shell: bash
         env:
-          FTP_USERNAME: ${{ secrets.KS_PROD_FTP_USER }}
-          FTP_PASSWORD: ${{ secrets.KS_PROD_FTP_PASSWORD }}
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
         run: |
           set -euo pipefail
           set +x
-          test -n "$FTP_USERNAME" || { echo '::error::KS_PROD_FTP_USER is not configured.'; exit 1; }
-          test -n "$FTP_PASSWORD" || { echo '::error::KS_PROD_FTP_PASSWORD is not configured.'; exit 1; }
-          [ "$FTP_SERVER" = 'ftp.lolipop.jp' ] || { echo '::error::Unexpected FTP host.'; exit 1; }
-          [ "$FTP_SERVER_DIR" = '/kansai' ] || { echo '::error::Unexpected production directory.'; exit 1; }
-          [ "$SITE_URL" = 'https://kansai.rss7.net/' ] || { echo '::error::Unexpected production URL.'; exit 1; }
-
-      - name: Upload to Lolipop without remote deletion
-        shell: bash
-        env:
-          FTP_USERNAME: ${{ secrets.KS_PROD_FTP_USER }}
-          FTP_PASSWORD: ${{ secrets.KS_PROD_FTP_PASSWORD }}
-        run: |
-          set -euo pipefail
-          set +x
-          STAGE="$RUNNER_TEMP/kansai-production"
-          lftp <<LFTP_EOF
+          test -n "$FTP_USERNAME" && test -n "$FTP_PASSWORD"
+          TMP="$RUNNER_TEMP/hamadutu-only-ftps"
+          mkdir -p "$TMP"
+          MODIFIED=0
+          rollback() {
+            STATUS=$?
+            if [ "$STATUS" -ne 0 ] && [ "$MODIFIED" -eq 1 ]; then
+              echo 'VERIFY_FAILED_RESTORING_ORIGINAL_HAMADUTU_HTML'
+              lftp <<LFTP_ROLLBACK || true
           set cmd:fail-exit true
           set ftp:ssl-force true
           set ftp:ssl-protect-data true
           set ftp:passive-mode true
-          set net:timeout 20
+          set net:timeout 25
           set net:max-retries 3
-          open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER"
-          mirror --reverse --verbose=1 --no-perms "$STAGE" "$FTP_SERVER_DIR"
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          put "$RUNNER_TEMP/hamadutu-original/hamadutu.html" -o /kansai/hamadutu.html
           bye
-          LFTP_EOF
-
-      - name: Verify production pages
-        shell: bash
-        run: |
-          set -euo pipefail
-          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "$SITE_URL" >/tmp/ks-home.html
-          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "${SITE_URL}isonoura.html" >/tmp/ks-isonoura.html
-          grep -qi '<html' /tmp/ks-home.html
-          grep -qi '<html' /tmp/ks-isonoura.html
-          echo 'Kansai Surfer KS production verification succeeded.'
+          LFTP_ROLLBACK
+              echo 'ROLLBACK_ATTEMPT_FINISHED'
+            fi
+            exit "$STATUS"
+          }
+          trap rollback EXIT
+          lftp <<LFTP_PRE
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 25
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          get /kansai/hamadutu.html -o "$TMP/ftp-original.html"
+          get /kansai/index.html -o "$TMP/ftp-original-home.html"
+          bye
+          LFTP_PRE
+          cmp "$TMP/ftp-original.html" "$RUNNER_TEMP/hamadutu-original/hamadutu.html"
+          cmp "$TMP/ftp-original-home.html" "$RUNNER_TEMP/hamadutu-original/home.html"
+          curl -fsSL --retry 3 "https://kansai.rss7.net/hamadutu.html?preflight=$GITHUB_RUN_ID" -o "$TMP/preflight.html"
+          cmp "$TMP/preflight.html" "$TMP/ftp-original.html"
+          MODIFIED=1
+          lftp <<LFTP_PUT
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 25
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          put "$RUNNER_TEMP/hamadutu-approved/hamadutu.html" -o /kansai/hamadutu.html
+          bye
+          LFTP_PUT
+          lftp <<LFTP_VERIFY
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 25
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          get /kansai/hamadutu.html -o "$TMP/ftp-verified.html"
+          get /kansai/index.html -o "$TMP/ftp-verified-home.html"
+          bye
+          LFTP_VERIFY
+          cmp "$TMP/ftp-verified.html" "$RUNNER_TEMP/hamadutu-approved/hamadutu.html"
+          cmp "$TMP/ftp-verified-home.html" "$RUNNER_TEMP/hamadutu-original/home.html"
+          curl -fsSL --retry 5 --retry-delay 2 "https://kansai.rss7.net/hamadutu.html?after=$GITHUB_RUN_ID" -o "$TMP/http-after.html"
+          cmp "$TMP/http-after.html" "$RUNNER_TEMP/hamadutu-approved/hamadutu.html"
+          curl -fsSL --retry 5 --retry-delay 2 "https://kansai.rss7.net/index.html?after=$GITHUB_RUN_ID" -o "$TMP/http-home-after.html"
+          cmp "$TMP/http-home-after.html" "$RUNNER_TEMP/hamadutu-original/home.html"
+          MODIFIED=0
+          echo 'HAMADUTU_10DAY_05_ONLY_DEPLOY_SUCCESS_PRODUCTION_VERIFIED'
