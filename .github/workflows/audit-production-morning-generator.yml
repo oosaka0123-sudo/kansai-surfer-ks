@@ -249,3 +249,53 @@ jobs:
           MODIFIED=0
           echo "HAMADUTU_PHP_AND_HTML_BEACH_COORDINATES_DEPLOY_SUCCESS"
           echo "NEXT_SCHEDULED_GENERATOR_UPDATE_MUST_BE_CHECKED"
+      - name: Generate Hamadutu forecast in isolated runner only
+        if: inputs.deploy_mode == 'dry-run'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get install -y -qq php-cli php-curl >/dev/null
+          SRC="$RUNNER_TEMP/ks-hamadutu-audit/fetch_wave_data.php"
+          test -s "$SRC"
+          SANDBOX="$RUNNER_TEMP/ks-hamadutu-isolated"
+          mkdir -p "$SANDBOX/data"
+          cp "$SRC" "$SANDBOX/fetch_wave_data.php"
+          SCRIPT="$SANDBOX/fetch_wave_data.php" python3 - <<'PY'
+          from pathlib import Path
+          import os,re
+          p=Path(os.environ['SCRIPT'])
+          s=p.read_text(encoding='utf-8')
+          m=re.search(r'(?s)(\$SPOTS\s*=\s*\[.*?\n\];)',s)
+          assert m, 'unexpected SPOTS configuration'
+          addition="\n$SPOTS = ['hamadutu' => $SPOTS['hamadutu']];\n"
+          s2=s[:m.end()]+addition+s[m.end():]
+          assert s2.replace(addition,'',1)==s
+          p.write_text(s2,encoding='utf-8')
+          print('TEMP_GENERATOR_FILTERED_TO_HAMADUTU')
+          PY
+          php -l "$SANDBOX/fetch_wave_data.php"
+          (cd "$SANDBOX"; timeout 95 php fetch_wave_data.php > "$SANDBOX/output.log" 2>&1) || {
+            echo "SANDBOX_HAMADUTU_GENERATOR_FAILED"
+            grep -Ei 'error|failed|warning|fatal' "$SANDBOX/output.log" | sed -E 's/(api.?key|password|token).*/[redacted]/Ig' | head -6 || true
+            exit 1
+          }
+          ROOT="$SANDBOX" python3 - <<'PY'
+          from pathlib import Path
+          import os,json
+          root=Path(os.environ['ROOT'])
+          s=json.loads((root/'data/spot_hamadutu.json').read_text(encoding='utf-8'))
+          a=json.loads((root/'data/wave_api.json').read_text(encoding='utf-8'))
+          m=s['marine'];w=s['weather']
+          assert set(a.get('spots',{}))=={'hamadutu'}, 'other spots generated'
+          assert abs(m['longitude']-134.95836)<0.002, 'marine grid mismatch'
+          assert abs(w['longitude']-134.9375)<0.002, 'weather grid mismatch'
+          assert len(m['hourly']['wave_height'])>=120
+          assert len(w['hourly']['wind_speed_10m'])>=120
+          assert len(m['daily']['wave_height_max'])>=7
+          assert len(w['daily']['wind_speed_10m_max'])>=7
+          print('ISOLATED_HAMADUTU_MARINE_GRID',m['latitude'],m['longitude'])
+          print('ISOLATED_HAMADUTU_WEATHER_GRID',w['latitude'],w['longitude'])
+          print('ISOLATED_HAMADUTU_DAILY_DAYS',len(m['daily']['wave_height_max']))
+          print('ISOLATED_HAMADUTU_SPOTS',list(a['spots']))
+          print('SANDBOX_HAMADUTU_ALL_CHECKS_PASSED_PRODUCTION_UNCHANGED')
+          PY
