@@ -146,3 +146,27 @@ jobs:
 
           print("AUDIT_COMPLETE_NO_SOURCE_EXPORTED")
           PY
+
+      - name: Locate production wave-data generator paths read-only
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          test -n "$FTP_USERNAME" && test -n "$FTP_PASSWORD"
+          OUT="$RUNNER_TEMP/ks-hakuto-generator-list.txt"
+          lftp > "$OUT" <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          cls -1 /kansai
+          cls -1 /kansai/admin
+          bye
+          LFTP_EOF
+          echo "KNOWN_GENERATOR_FILE_CANDIDATES_ONLY"
+          grep -Ei '(wave|spot|cron|api|fetch|update|forecast|weather|marine|config)' "$OUT" | sort -u | head -80 || true
+          echo "READ_ONLY_FTPS_SCAN_COMPLETE"
