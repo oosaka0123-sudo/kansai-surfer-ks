@@ -61,3 +61,60 @@ jobs:
           print('EXTERNAL_SOURCE_NOT_EXPORTED')
           print('AUDIT_FINISHED_NO_SERVER_WRITE')
           PY
+      - name: Validate Hamadutu-only coordinate change in memory (dry run)
+        shell: bash
+        run: |
+          set -euo pipefail
+          TMP="$RUNNER_TEMP/ks-hamadutu-audit"
+          curl --fail --silent --show-error --location --retry 3 "https://kansai.rss7.net/hamadutu.html" -o "$TMP/live_hamadutu.html"
+          DRYRUN_ROOT="$TMP" python3 - <<'PY'
+          import pathlib,os,re,hashlib,subprocess
+          root=pathlib.Path(os.environ['DRYRUN_ROOT'])
+          php=root/'fetch_wave_data.php'
+          html=root/'live_hamadutu.html'
+          def sha(b): return hashlib.sha256(b).hexdigest()
+          def patch_php(original):
+              s=original.decode('utf-8')
+              m=re.search(r"""(['"]hamadutu['"]\s*=>\s*\[)(.*?)(\])""",s,re.I|re.S)
+              if not m: raise SystemExit('FAIL: missing hamadutu PHP config')
+              mid=m.group(2)
+              replacement=[('lat','35.644','35.665200'),('lng','135.086','134.966082')]
+              for key,old,new in replacement:
+                  pat=r"""(['"]"""+key+r"""['"]\s*=>\s*)"""+re.escape(old)+r"\b"
+                  mid,c=re.subn(pat,lambda x:x.group(1)+new,mid,count=1)
+                  if c!=1: raise SystemExit('FAIL: PHP '+key+' match not exactly one')
+              result=s[:m.start(2)]+mid+s[m.end(2):]
+              if result==s:raise SystemExit('FAIL: PHP unchanged')
+              inv=result.replace('35.665200','35.644',1).replace('134.966082','135.086',1)
+              if inv!=s:raise SystemExit('FAIL: PHP unexpected changes')
+              return result.encode('utf-8')
+          def patch_html(original):
+              s=original.decode('utf-8')
+              m=re.search(r"const\s+SPOT_CONFIG\s*=\s*\{.*?\};",s,re.S)
+              if not m:raise SystemExit('FAIL: missing inline spot config')
+              segment=m.group(0)
+              pat=r"\bLAT:\s*35\.644\s*,\s*LNG:\s*135\.086\b"
+              fixed,n=re.subn(pat,"LAT: 35.665200, LNG: 134.966082",segment)
+              if n!=1:raise SystemExit('FAIL: HTML expected config not unique')
+              result=s[:m.start()]+fixed+s[m.end():]
+              inv=result.replace('LAT: 35.665200, LNG: 134.966082','LAT: 35.644, LNG: 135.086',1)
+              if inv!=s:raise SystemExit('FAIL: HTML unexpected changes')
+              return result.encode('utf-8')
+          p0=php.read_bytes()
+          h0=html.read_bytes()
+          if sha(p0)!='412947b2a621bd858c079a2a8a0a4f36805e89b0c05f7c34994fb3fb0b19ebfa':
+              raise SystemExit('FAIL: PHP source changed since last verified Hakuto patch')
+          p1=patch_php(p0)
+          h1=patch_html(h0)
+          out=root/'patched_hamadutu_generator.php'
+          out.write_bytes(p1)
+          subprocess.run(['php','-l',str(out)],check=True,stdout=subprocess.DEVNULL)
+          print('HAMADUTU_DRYRUN_PASSED')
+          print('PHP_OLD_SHA256='+sha(p0))
+          print('PHP_PATCH_SHA256='+sha(p1))
+          print('HTML_OLD_SHA256='+sha(h0))
+          print('HTML_PATCH_SHA256='+sha(h1))
+          print('PHP_SYNTAX=PASS')
+          print('REVERSIBILITY=PASS')
+          print('FILES_DEPLOYED=0')
+          PY
