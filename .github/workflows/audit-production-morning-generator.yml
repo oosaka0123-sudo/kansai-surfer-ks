@@ -233,3 +233,119 @@ jobs:
                   print('WRITE_REF',i+1,json.dumps(line.strip(),ensure_ascii=True)[:350])
           print('AUDITED_READ_ONLY_SOURCE_END')
           PY
+
+      - name: Apply approved Hakuto ONLY coordinates with rollback
+        if: github.ref == 'refs/heads/audit/hakuto-generator-readonly-20261122' && github.actor == 'oosaka0123-sudo'
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          sudo apt-get install -y php-cli >/dev/null
+          test -n "$FTP_USERNAME" && test -n "$FTP_PASSWORD"
+          TMP="$RUNNER_TEMP/ks-hakuto-approved-coordinates"
+          mkdir -p "$TMP"
+          MODIFIED=0
+          rollback_if_error() {
+            STATUS=$?
+            if [ "$STATUS" -ne 0 ] && [ "$MODIFIED" -eq 1 ]; then
+              echo "HAKUTO_VERIFY_FAILED_RESTORING_BOTH_FILES"
+              lftp <<LFTP_ROLLBACK || true
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 25
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          put "$TMP/original.php" -o /kansai/fetch_wave_data.php
+          put "$TMP/original.html" -o /kansai/hakuto.html
+          bye
+          LFTP_ROLLBACK
+              echo "ROLLBACK_ATTEMPT_FINISHED"
+            fi
+            exit "$STATUS"
+          }
+          trap rollback_if_error EXIT
+          lftp <<LFTP_FETCH
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 25
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          get /kansai/fetch_wave_data.php -o "$TMP/original.php"
+          get /kansai/hakuto.html -o "$TMP/original.html"
+          bye
+          LFTP_FETCH
+          curl -fsSL "https://kansai.rss7.net/hakuto.html?before=$GITHUB_RUN_ID" -o "$TMP/http-original.html"
+          curl -fsSL "https://kansai.rss7.net/index.html?before=$GITHUB_RUN_ID" -o "$TMP/home-original.html"
+          cmp "$TMP/http-original.html" "$TMP/original.html"
+          PATCH_ROOT="$TMP" python3 - <<'PY'
+          from pathlib import Path
+          import hashlib,os
+          p=Path(os.environ['PATCH_ROOT'])
+          php=(p/'original.php').read_bytes()
+          html=(p/'original.html').read_bytes()
+          assert hashlib.sha256(php).hexdigest()=='10e47172310d61593224cd42348cd3e103b6237cc6af362ee35ea3bff62a118d', 'production PHP changed'
+          assert hashlib.sha256(html).hexdigest()=='a7e7bcbaedbcd3fb088784aa901f7de592e01db8e94bc0c01faedf739186e67a', 'production HTML changed'
+          a=b"'lat' => 35.512, 'lng' => 134.168,"
+          b=b"'lat' => 35.527370, 'lng' => 134.116740,"
+          assert php.count(a)==1,'unexpected PHP coordinate occurrences'
+          pos=php.index(a)
+          j=php.rfind(b"'hakuto' => [",0,pos)
+          assert j>=0 and 0<pos-j<260,'not Hakuto PHP configuration'
+          phpn=php.replace(a,b)
+          assert phpn.replace(b,a)==php,'unrelated PHP change'
+          c=b"  LAT: 35.512, LNG: 134.168,"
+          d=b"  LAT: 35.527370, LNG: 134.116740,"
+          assert html.count(c)==1,'unexpected HTML coordinate occurrences'
+          htmln=html.replace(c,d)
+          assert htmln.replace(d,c)==html,'unrelated HTML change'
+          (p/'patched.php').write_bytes(phpn)
+          (p/'patched.html').write_bytes(htmln)
+          print('SCOPE_VERIFIED_HAKUTO_COORDINATE_ONLY')
+          print('NEW_PHP_SHA256',hashlib.sha256(phpn).hexdigest())
+          print('NEW_HTML_SHA256',hashlib.sha256(htmln).hexdigest())
+          PY
+          php -l "$TMP/patched.php"
+          curl -fsSL 'https://raw.githubusercontent.com/oosaka0123-sudo/kansai-surfer-ks/e49dd7b3200dc4afbf43eeed25440672b68edc11/hakuto.html' -o "$TMP/reviewed.html"
+          cmp "$TMP/reviewed.html" "$TMP/patched.html"
+          MODIFIED=1
+          lftp <<LFTP_UPLOAD
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 25
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          put "$TMP/patched.php" -o /kansai/fetch_wave_data.php
+          put "$TMP/patched.html" -o /kansai/hakuto.html
+          bye
+          LFTP_UPLOAD
+          lftp <<LFTP_VERIFY
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 25
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          get /kansai/fetch_wave_data.php -o "$TMP/verify.php"
+          get /kansai/hakuto.html -o "$TMP/verify.html"
+          bye
+          LFTP_VERIFY
+          cmp "$TMP/verify.php" "$TMP/patched.php"
+          cmp "$TMP/verify.html" "$TMP/patched.html"
+          php -l "$TMP/verify.php"
+          curl -fsSL --retry 5 --retry-delay 2 "https://kansai.rss7.net/hakuto.html?after=$GITHUB_RUN_ID" -o "$TMP/http-after.html"
+          cmp "$TMP/http-after.html" "$TMP/patched.html"
+          curl -fsSL --retry 5 --retry-delay 2 "https://kansai.rss7.net/index.html?after=$GITHUB_RUN_ID" -o "$TMP/home-after.html"
+          cmp "$TMP/home-after.html" "$TMP/home-original.html"
+          MODIFIED=0
+          echo "HAKUTO_SINGLE_BEACH_COORDINATE_PHP_AND_HTML_DEPLOYED"
+          echo "NOTE_NEXT_CRON_MUST_REFRESH_SPOT_JSON_AND_WAVE_API_JSON"
