@@ -71,9 +71,9 @@ jobs:
           m=re.search(r'(?s)(\$SPOTS\s*=\s*\[.*?\n\];)',original)
           assert m, 'SPOTS array declaration missing, abort'
           injection="\n$SPOTS = ['takahama' => $SPOTS['takahama']];\n"
-          for variant in ('current','candidate'):
+          for variant in ('current','candidate','current_coastal','candidate_coastal'):
               s=original
-              if variant=='candidate':
+              if variant.startswith('candidate'):
                   region=s[config.start(2):config.end(2)]
                   for key,new in [('lat','35.65'),('lng','135.45')]:
                       pat=r"""(['"]"""+key+r"""['"]\s*=>\s*)(-?[0-9]+(?:\.[0-9]+)?)"""
@@ -84,6 +84,22 @@ jobs:
                   # Prevent any changes outside Takahama coordinate segment
                   rebuilt=s[:config.start(2)]+original[config.start(2):config.end(2)]+s[config.start(2)+len(region):]
                   assert rebuilt==original, 'unexpected PHP changes'
+              if variant.endswith('_coastal'):
+                  fetch_stmt='$weatherJson = fetchUrl($weatherUrl);'
+                  assert s.count(fetch_stmt)==1, 'weather fetch anchor must be unique'
+                  # Weather API only: match fully assembled latitude/longitude in URL,
+                  # before the original generator fetches weather data.
+                  override=r"""
+                  if ($key === 'takahama') {
+                      $weatherUrl = preg_replace('/([?&]latitude=)-?[0-9]+(?:\.[0-9]+)?/', '135.49133', $weatherUrl, 1, $weatherLatCount);
+                      $weatherUrl = preg_replace('/([?&]longitude=)-?[0-9]+(?:\.[0-9]+)?/', '1135.55782', $weatherUrl, 1, $weatherLngCount);
+                      if ($weatherLatCount !== 1 || $weatherLngCount !== 1) {
+                          throw new RuntimeException('isolated coastal weather URL override failed');
+                      }
+                  }
+                  """
+                  s=s.replace(fetch_stmt,override+'\n'+fetch_stmt,1)
+                  print('ISOLATED_WEATHER_ONLY_OVERRIDE_'+variant.upper()+'=35.49133,135.55782')
               declared=re.search(r'(?s)(\$SPOTS\s*=\s*\[.*?\n\];)',s)
               assert declared, 'SPOTS declaration lost'
               s=s[:declared.end()]+injection+s[declared.end():]
@@ -100,7 +116,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for variant in current candidate; do
+          for variant in current candidate current_coastal candidate_coastal; do
             echo "ISOLATED_VARIANT=$variant"
             cd "$RUNNER_TEMP/takahama-audit/$variant"
             if timeout 135 php fetch_wave_data.php > execution.log 2>&1; then
@@ -128,7 +144,7 @@ jobs:
           print('PUBLIC_SNAPSHOT_UPDATED_AT='+str(live.get('updated_at')))
           print('PUBLIC_SPOTS_COUNT='+str(len(live.get('spots',{}))))
           data={}
-          for variant in ('current','candidate'):
+          for variant in ('current','candidate','current_coastal','candidate_coastal'):
               d=root/variant/'data'
               spot=json.loads((d/'spot_takahama.json').read_text(encoding='utf-8'))
               rank=json.loads((d/'wave_api.json').read_text(encoding='utf-8'))
