@@ -2,6 +2,15 @@ name: Audit Hamadutu production wave generator safely
 
 on:
   workflow_dispatch:
+    inputs:
+      deploy_mode:
+        description: 'dry-run or deploy the locked Hamadutu PHP + HTML patch'
+        type: choice
+        required: true
+        default: dry-run
+        options:
+          - dry-run
+          - deploy
 
 permissions:
   contents: read
@@ -118,3 +127,125 @@ jobs:
           print('REVERSIBILITY=PASS')
           print('FILES_DEPLOYED=0')
           PY
+      - name: Deploy approved Hamadutu beach coordinates with FTP backups and rollback
+        if: github.ref == 'refs/heads/audit/hamadutu-generator-readonly-20261122' && github.actor == 'oosaka0123-sudo' && inputs.deploy_mode == 'deploy'
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          test -n "$FTP_USERNAME" && test -n "$FTP_PASSWORD"
+          TMP="$RUNNER_TEMP/ks-hamadutu-deploy"
+          mkdir -p "$TMP"
+          MODIFIED=0
+          rollback() {
+            CODE=$?
+            if [ "$CODE" -ne 0 ] && [ "$MODIFIED" -eq 1 ]; then
+              echo "DEPLOY_VERIFY_FAILED_ATTEMPTING_TWO_FILE_ROLLBACK"
+              lftp <<LFTP_ROLLBACK || true
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 25
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          put "$TMP/original.php" -o /kansai/fetch_wave_data.php
+          put "$TMP/original.html" -o /kansai/hamadutu.html
+          bye
+          LFTP_ROLLBACK
+              echo "ROLLBACK_ATTEMPT_FINISHED"
+            fi
+            exit "$CODE"
+          }
+          trap rollback EXIT
+          lftp <<LFTP_GET
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 25
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          get /kansai/fetch_wave_data.php -o "$TMP/original.php"
+          get /kansai/hamadutu.html -o "$TMP/original.html"
+          get /kansai/index.html -o "$TMP/home-original.html"
+          bye
+          LFTP_GET
+          curl -fsSL --retry 3 "https://kansai.rss7.net/hamadutu.html?before=$GITHUB_RUN_ID" -o "$TMP/http-original.html"
+          curl -fsSL --retry 3 "https://kansai.rss7.net/index.html?before=$GITHUB_RUN_ID" -o "$TMP/http-home-original.html"
+          cmp "$TMP/original.html" "$TMP/http-original.html"
+          cmp "$TMP/home-original.html" "$TMP/http-home-original.html"
+          STAGE="$TMP" python3 - <<'PY'
+          import os,pathlib,re,hashlib
+          root=pathlib.Path(os.environ["STAGE"])
+          php=(root/"original.php").read_bytes()
+          html=(root/"original.html").read_bytes()
+          def h(b):return hashlib.sha256(b).hexdigest()
+          assert h(php)=="412947b2a621bd858c079a2a8a0a4f36805e89b0c05f7c34994fb3fb0b19ebfa", "PHP changed from locked baseline"
+          assert h(html)=="6acc9fbe14c931c83e889a7721abd3b81f6fe67dd0750b2ba5eb96d4f6595207", "HTML changed from locked baseline"
+          ps=php.decode("utf-8")
+          m=re.search(r"""(['"]hamadutu['"]\s*=>\s*\[)(.*?)(\])""",ps,re.S|re.I)
+          assert m, "missing Hamadutu block"
+          segment=m.group(2)
+          for key,old,new in [('lat','35.644','35.665200'),('lng','135.086','134.966082')]:
+              pat=r"""(['"]"""+key+r"""['"]\s*=>\s*)"""+re.escape(old)+r"\b"
+              segment,n=re.subn(pat,lambda match:match.group(1)+new,segment,count=1)
+              assert n==1, "PHP coordinate not unique: "+key
+          phpn=(ps[:m.start(2)]+segment+ps[m.end(2):]).encode("utf-8")
+          assert phpn.replace(b"35.665200",b"35.644",1).replace(b"134.966082",b"135.086",1)==php
+          hs=html.decode("utf-8")
+          m=re.search(r"const\s+SPOT_CONFIG\s*=\s*\{.*?\};",hs,re.S)
+          assert m, "missing HTML spot config"
+          part,n=re.subn(r"\bLAT:\s*35\.644\s*,\s*LNG:\s*135\.086\b","LAT: 35.665200, LNG: 134.966082",m.group(0))
+          assert n==1, "HTML coordinate not unique"
+          htmln=(hs[:m.start()]+part+hs[m.end():]).encode("utf-8")
+          assert htmln.replace(b"LAT: 35.665200, LNG: 134.966082",b"LAT: 35.644, LNG: 135.086",1)==html
+          assert h(phpn)=="a88f119579f9ca5ed038cb0173c7d57e0acb351b6df7c763d3a2c97ccadbbd10", "PHP patch mismatch with approved dry run"
+          assert h(htmln)=="3f38cf194595af5542df66d6555c024ed3451d757f65d995dd9d5b3c724df5a7", "HTML patch mismatch with approved dry run"
+          (root/"patched.php").write_bytes(phpn)
+          (root/"patched.html").write_bytes(htmln)
+          print("LOCKED_TWO_FILE_HAMADUTU_PATCH_VALIDATED")
+          PY
+          php -l "$TMP/patched.php"
+          curl -fsSL --retry 3 "https://kansai.rss7.net/hamadutu.html?preflight=$GITHUB_RUN_ID" -o "$TMP/preflight.html"
+          cmp "$TMP/preflight.html" "$TMP/original.html"
+          MODIFIED=1
+          lftp <<LFTP_PUT
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 25
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          put "$TMP/patched.php" -o /kansai/fetch_wave_data.php
+          put "$TMP/patched.html" -o /kansai/hamadutu.html
+          bye
+          LFTP_PUT
+          lftp <<LFTP_VERIFY
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 25
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          get /kansai/fetch_wave_data.php -o "$TMP/verify.php"
+          get /kansai/hamadutu.html -o "$TMP/verify.html"
+          get /kansai/index.html -o "$TMP/home-verify.html"
+          bye
+          LFTP_VERIFY
+          cmp "$TMP/verify.php" "$TMP/patched.php"
+          cmp "$TMP/verify.html" "$TMP/patched.html"
+          cmp "$TMP/home-verify.html" "$TMP/home-original.html"
+          php -l "$TMP/verify.php"
+          curl -fsSL --retry 5 --retry-delay 2 "https://kansai.rss7.net/hamadutu.html?after=$GITHUB_RUN_ID" -o "$TMP/http-after.html"
+          cmp "$TMP/http-after.html" "$TMP/patched.html"
+          curl -fsSL --retry 5 --retry-delay 2 "https://kansai.rss7.net/index.html?after=$GITHUB_RUN_ID" -o "$TMP/http-home-after.html"
+          cmp "$TMP/http-home-after.html" "$TMP/home-original.html"
+          MODIFIED=0
+          echo "HAMADUTU_PHP_AND_HTML_BEACH_COORDINATES_DEPLOY_SUCCESS"
+          echo "NEXT_SCHEDULED_GENERATOR_UPDATE_MUST_BE_CHECKED"
