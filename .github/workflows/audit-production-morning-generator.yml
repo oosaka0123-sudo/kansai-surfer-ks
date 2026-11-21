@@ -170,3 +170,42 @@ jobs:
           echo "KNOWN_GENERATOR_FILE_CANDIDATES_ONLY"
           grep -Ei '(wave|spot|cron|api|fetch|update|forecast|weather|marine|config)' "$OUT" | sort -u | head -80 || true
           echo "READ_ONLY_FTPS_SCAN_COMPLETE"
+
+      - name: Inspect public forecast PHP sources without exposing private configuration
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          TMP="$RUNNER_TEMP/hakuto-src-inspect"
+          mkdir -p "$TMP"
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          get /kansai/fetch_wave_data.php -o "$TMP/fetch_wave_data.php"
+          get /kansai/api.php -o "$TMP/api.php"
+          get /kansai/wave_proxy.php -o "$TMP/wave_proxy.php"
+          get /kansai/admin/auto_wave_today.php -o "$TMP/auto_wave_today.php"
+          get /kansai/admin/auto_wave_post.php -o "$TMP/auto_wave_post.php"
+          bye
+          LFTP_EOF
+          SRC_DIR="$TMP" python3 - <<'PY'
+          import os, pathlib, re, hashlib
+          root=pathlib.Path(os.environ['SRC_DIR'])
+          safe=re.compile(r'(?i)hakuto|35\\.512|134\\.168|spot_hakuto|wave_api\\.json|spot_.*?\\.json')
+          block=re.compile(r'(?i)password|secret|apikey|api_key|token|authorization|private')
+          for p in sorted(root.glob('*.php')):
+              s=p.read_text(encoding='utf-8',errors='replace')
+              print('PHPFILE',p.name,'sha256',hashlib.sha256(p.read_bytes()).hexdigest(),'lines',len(s.splitlines()))
+              for keyword in ('hakuto','35.512','134.168','wave_api.json','spot_hakuto.json'):
+                  print('COUNT',p.name,keyword,s.lower().count(keyword.lower()))
+              for i,line in enumerate(s.splitlines(),start=1):
+                  if safe.search(line) and not block.search(line):
+                      print('MATCH',p.name,i,re.sub(r'[\\x00-\\x1f]',' ',line.strip())[:220])
+          print('SOURCE_INSPECTION_READ_ONLY_NO_ARTIFACT_NO_CREDENTIALS')
+          PY
