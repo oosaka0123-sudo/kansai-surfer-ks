@@ -232,3 +232,120 @@ jobs:
                   print("FLOW",i,json.dumps(redact(line.strip()),ensure_ascii=True)[:400])
           print("SCRIPT_STRUCTURE_END")
           PY
+
+      - name: Guarded two-file Irago Long Beach deploy with rollback
+        if: github.ref == 'refs/heads/deploy/irago-longbeach-only-20261122' && github.actor == 'oosaka0123-sudo'
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          test -n "$FTP_USERNAME" && test -n "$FTP_PASSWORD"
+          DIR="$RUNNER_TEMP/ks-irago-longbeach-20261122"
+          mkdir -p "$DIR"
+          MODIFIED=0
+          rollback(){
+            status=$?
+            if [ "$status" -ne 0 ] && [ "$MODIFIED" -eq 1 ]; then
+              echo "DEPLOY_FAILED_ROLLBACK_BOTH_FILES"
+              lftp <<LFTP_RESTORE || true
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 25
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          put "$DIR/old.html" -o /kansai/irago.html
+          put "$DIR/old.php" -o /kansai/fetch_wave_data.php
+          bye
+          LFTP_RESTORE
+            fi
+            exit "$status"
+          }
+          trap rollback EXIT
+          lftp <<LFTP_GET
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 25
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          get /kansai/irago.html -o "$DIR/old.html"
+          get /kansai/fetch_wave_data.php -o "$DIR/old.php"
+          bye
+          LFTP_GET
+          curl -fsSL --retry 5 --retry-all-errors --retry-delay 2 "https://kansai.rss7.net/irago.html?pre=$GITHUB_RUN_ID" -o "$DIR/http-old.html"
+          cmp "$DIR/http-old.html" "$DIR/old.html"
+          curl -fsSL --retry 5 --retry-all-errors --retry-delay 2 "https://kansai.rss7.net/index.html?pre=$GITHUB_RUN_ID" -o "$DIR/home-old.html"
+          curl -fsSL --retry 5 --retry-all-errors --retry-delay 2 "https://raw.githubusercontent.com/oosaka0123-sudo/kansai-surfer-ks/1f019229134074651c930783a9fbbecdac826aa9/irago.html" -o "$DIR/new.html"
+          ROOT="$DIR" python3 - <<'PY'
+          from pathlib import Path
+          import os,re,hashlib
+          p=Path(os.environ['ROOT'])
+          old=p.joinpath('old.html').read_bytes()
+          new=p.joinpath('new.html').read_bytes()
+          blob=lambda x:hashlib.sha1(b'blob '+str(len(x)).encode()+b'\0'+x).hexdigest()
+          print('ORIGINAL_HTML_BLOB',blob(old))
+          print('NEW_HTML_BLOB',blob(new))
+          assert blob(old)=='e480ca59bd147d51ea3ecce176be6c08932ae6da','Production HTML changed since review'
+          assert blob(new)=='a392447e8bdc446493f5d17a7b4c48a9f6b550e7','Approved HTML drifted'
+          s=old.decode('utf-8');n=new.decode('utf-8')
+          rx=r'<section class="section">\s*<h2 class="section-title"><span class="no">05</span>[\s\S]*?</section>'
+          nr=r'<section class="section ks10-section" id="ks10-forecast"[\s\S]*?</section>'
+          old_section=re.search(rx,s);new_section=re.search(nr,n)
+          assert old_section and new_section,'05 section mismatch'
+          expected=s.replace(old_section.group(0),new_section.group(0)).replace('LAT: 34.573, LNG: 137.022','LAT: 34.613290, LNG: 137.213273')
+          assert expected==n,'HTML change outside section 05 and coordinate'
+          assert 'forecast_days=10' in n and "DOMContentLoaded',load" in n
+          assert n.count('class="floating-line"')==s.count('class="floating-line"')
+          php=p.joinpath('old.php').read_text('utf-8')
+          match=list(re.finditer(r"('irago'\s*=>\s*\[)([\s\S]*?)(\n\s*\],)",php))
+          assert len(match)==1,'Irago PHP config not uniquely found'
+          block=match[0].group(2)
+          coord=re.search(r"('lat'\s*=>\s*)(34\.573)(\s*,\s*'lng'\s*=>\s*)(137\.022)",block)
+          assert coord,'Existing PHP Irago coordinate unexpected'
+          updated=block[:coord.start()]+coord.group(1)+'34.613290'+coord.group(3)+'137.213273'+block[coord.end():]
+          newphp=php[:match[0].start(2)]+updated+php[match[0].end(2):]
+          assert newphp.replace(updated,block,1)==php
+          assert newphp.count("'irago'")==php.count("'irago'")
+          p.joinpath('new.php').write_text(newphp,encoding='utf-8')
+          print('ONLY_IRAGO_COORDINATES_AND_HTML_SECTION_05_CHANGED')
+          PY
+          php -l "$DIR/new.php"
+          MODIFIED=1
+          lftp <<LFTP_PUT
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 25
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          put "$DIR/new.html" -o /kansai/irago.html
+          put "$DIR/new.php" -o /kansai/fetch_wave_data.php
+          bye
+          LFTP_PUT
+          lftp <<LFTP_VERIFY
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 25
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          get /kansai/irago.html -o "$DIR/verify.html"
+          get /kansai/fetch_wave_data.php -o "$DIR/verify.php"
+          bye
+          LFTP_VERIFY
+          cmp "$DIR/new.html" "$DIR/verify.html"
+          cmp "$DIR/new.php" "$DIR/verify.php"
+          curl -fsSL --retry 5 --retry-all-errors --retry-delay 2 "https://kansai.rss7.net/irago.html?post=$GITHUB_RUN_ID" -o "$DIR/http-new.html"
+          cmp "$DIR/new.html" "$DIR/http-new.html"
+          curl -fsSL --retry 5 --retry-all-errors --retry-delay 2 "https://kansai.rss7.net/index.html?post=$GITHUB_RUN_ID" -o "$DIR/home-new.html"
+          cmp "$DIR/home-old.html" "$DIR/home-new.html"
+          MODIFIED=0
+          echo "IRAGO_HTML_AND_PHP_DEPLOY_VERIFIED"
