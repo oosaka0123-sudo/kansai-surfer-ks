@@ -91,11 +91,15 @@ jobs:
                   # before the original generator fetches weather data.
                   override=r"""
                   if ($key === 'takahama') {
-                      $weatherUrl = preg_replace('/([?&]latitude=)-?[0-9]+(?:\.[0-9]+)?/', '135.49133', $weatherUrl, 1, $weatherLatCount);
-                      $weatherUrl = preg_replace('/([?&]longitude=)-?[0-9]+(?:\.[0-9]+)?/', '1135.55782', $weatherUrl, 1, $weatherLngCount);
-                      if ($weatherLatCount !== 1 || $weatherLngCount !== 1) {
-                          throw new RuntimeException('isolated coastal weather URL override failed');
+                      $weatherParts = parse_url($weatherUrl);
+                      $weatherParams = [];
+                      parse_str($weatherParts['query'] ?? '', $weatherParams);
+                      if (!isset($weatherParams['latitude'], $weatherParams['longitude'])) {
+                          throw new RuntimeException('isolated coastal weather URL query lacks coordinate keys');
                       }
+                      $weatherParams['latitude'] = '35.49133';
+                      $weatherParams['longitude'] = '135.55782';
+                      $weatherUrl = $weatherParts['scheme'].'://'.$weatherParts['host'].($weatherParts['path'] ?? '').'?'.http_build_query($weatherParams);
                   }
                   """
                   s=s.replace(fetch_stmt,override+'\n'+fetch_stmt,1)
