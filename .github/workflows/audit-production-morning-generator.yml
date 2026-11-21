@@ -232,3 +232,23 @@ jobs:
                   print("FLOW",i,json.dumps(redact(line.strip()),ensure_ascii=True)[:400])
           print("SCRIPT_STRUCTURE_END")
           PY
+
+      - name: Report Irago spot coordinate from production PHP read-only
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC="$RUNNER_TEMP/hakuto-src-inspect/fetch_wave_data.php"
+          test -s "$SRC"
+          SRC="$SRC" python3 - <<'PY'
+          import os,re,pathlib
+          s=pathlib.Path(os.environ['SRC']).read_text(encoding='utf-8')
+          a=list(re.finditer(r"'irago'\s*=>\s*\[",s))
+          assert len(a)==1, f'Expected exactly one Irago config block: {len(a)}'
+          x=s[a[0].end():a[0].end()+800]
+          coords=re.search(r"'lat'\s*=>\s*(-?[0-9.]+)\s*,\s*'lng'\s*=>\s*(-?[0-9.]+)",x)
+          assert coords, 'Coordinate pair not found within Irago config'
+          print('IRAGO_PRODUCTION_PHP_LAT', coords.group(1))
+          print('IRAGO_PRODUCTION_PHP_LNG', coords.group(2))
+          print('IRAGO_EXPECTED_CURRENT_SITE_COORDINATE_MATCH', coords.group(1)=='34.573' and coords.group(2)=='137.022')
+          print('READ_ONLY_NO_PHP_OR_PRODUCTION_DATA_CHANGES')
+          PY
