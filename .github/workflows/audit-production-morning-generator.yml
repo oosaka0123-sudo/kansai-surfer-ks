@@ -233,7 +233,7 @@ jobs:
           print("SCRIPT_STRUCTURE_END")
           PY
 
-      - name: Run isolated Hakuto-only generator copy without touching production
+      - name: Run isolated Hakuto-only generator snapshot without touching production
         shell: bash
         run: |
           set -euo pipefail
@@ -247,92 +247,37 @@ jobs:
           from pathlib import Path
           import os,re
           p=Path(os.environ['SCRIPT'])
-          data=p.read_text(encoding='utf-8')
-          match=re.search(r'(?s)(\$SPOTS\s*=\s*\[.*?\n\];)',data)
-          assert match and data.count(match.group(0))==1, 'spots array not recognized'
-          filtered=data[:match.end()]+"\n\$SPOTS = ['hakuto' => \$SPOTS['hakuto']];\n".replace('\\
-          (cd "$SANDBOX"; timeout 100 php fetch_wave_data.php >run.log 2>&1) || {
-            echo "SANDBOX_RUN_FAILED_OR_TIMEOUT"
-            tail -n 10 "$SANDBOX/run.log" | sed -E 's/(api.?key|password|token).*/[redacted]/Ig'
-            exit 1
-          }
-          ROOT="$SANDBOX" python3 - <<'PY'
-          import os,json,pathlib
-          p=pathlib.Path(os.environ['ROOT'])
-          s=json.loads((p/'data/spot_hakuto.json').read_text(encoding='utf-8'))
-          a=json.loads((p/'data/wave_api.json').read_text(encoding='utf-8'))
-          marine=s['marine']
-          weather=s['weather']
-          n=len(a.get('spots',{}))
-          print('SANDBOX_HAKUTO_UPDATED_AT',s.get('updated_at'))
-          print('SANDBOX_HAKUTO_MARINE_GRID',marine.get('latitude'),marine.get('longitude'))
-          print('SANDBOX_HAKUTO_WEATHER_GRID',weather.get('latitude'),weather.get('longitude'))
-          print('SANDBOX_HAKUTO_MARINE_HOURLY_COUNT',len(marine['hourly']['wave_height']))
-          print('SANDBOX_HAKUTO_WEATHER_HOURLY_COUNT',len(weather['hourly']['wind_speed_10m']))
-          print('SANDBOX_ISOLATED_SPOT_COUNT',n)
-          print('SANDBOX_WAVE_API_HAKUTO',json.dumps(a['spots']['hakuto'].get('now'),ensure_ascii=True)[:600])
-          assert n==1 and list(a.get('spots',{}))==['hakuto'],'not isolated Hakuto output'
-          assert abs(marine['longitude']-134.12502)<0.09,'marine longitude not new grid'
-          assert abs(weather['longitude']-134.125)<0.09,'weather longitude not new grid'
-          assert len(marine['hourly']['wave_height'])>=120
-          print('ALL_SANDBOX_ASSERTIONS_PASS_NO_PRODUCTION_WRITE')
-          PY
-,'
-          (cd "$SANDBOX"; timeout 100 php fetch_wave_data.php >run.log 2>&1) || {
-            echo "SANDBOX_RUN_FAILED_OR_TIMEOUT"
-            tail -n 10 "$SANDBOX/run.log" | sed -E 's/(api.?key|password|token).*/[redacted]/Ig'
-            exit 1
-          }
-          ROOT="$SANDBOX" python3 - <<'PY'
-          import os,json,pathlib
-          p=pathlib.Path(os.environ['ROOT'])
-          s=json.loads((p/'data/spot_hakuto.json').read_text(encoding='utf-8'))
-          a=json.loads((p/'data/wave_api.json').read_text(encoding='utf-8'))
-          marine=s['marine']
-          weather=s['weather']
-          n=len(a.get('spots',{}))
-          print('SANDBOX_HAKUTO_UPDATED_AT',s.get('updated_at'))
-          print('SANDBOX_HAKUTO_MARINE_GRID',marine.get('latitude'),marine.get('longitude'))
-          print('SANDBOX_HAKUTO_WEATHER_GRID',weather.get('latitude'),weather.get('longitude'))
-          print('SANDBOX_HAKUTO_MARINE_HOURLY_COUNT',len(marine['hourly']['wave_height']))
-          print('SANDBOX_HAKUTO_WEATHER_HOURLY_COUNT',len(weather['hourly']['wind_speed_10m']))
-          print('SANDBOX_ALL_SPOTS_COUNT',n)
-          print('SANDBOX_WAVE_API_HAKUTO',json.dumps(a['spots']['hakuto'].get('now'),ensure_ascii=True)[:600])
-          assert n==9,'missing spots from regenerated summary'
-          assert abs(marine['longitude']-134.12502)<0.09,'marine longitude not new grid'
-          assert abs(weather['longitude']-134.125)<0.09,'weather longitude not new grid'
-          assert len(marine['hourly']['wave_height'])>=120
-          print('ALL_SANDBOX_ASSERTIONS_PASS_NO_PRODUCTION_WRITE')
-          PY
-)+data[match.end():]
-          assert filtered.replace("\n$SPOTS = ['hakuto' => $SPOTS['hakuto']];\n",'',1)==data
-          p.write_text(filtered,encoding='utf-8')
-          print('SANDBOX_SPOTS_FILTER_ONLY_HAKUTO_NO_PRODUCTION_MODIFICATION')
+          s=p.read_text(encoding='utf-8')
+          match=re.search(r'(?s)(\$SPOTS\s*=\s*\[.*?\n\];)',s)
+          assert match, 'SPOTS config not recognized'
+          addition="\n$SPOTS = ['hakuto' => $SPOTS['hakuto']];\n"
+          patched=s[:match.end()]+addition+s[match.end():]
+          assert patched.replace(addition,'',1)==s
+          p.write_text(patched,encoding='utf-8')
+          print('FILTERED_TEMPORARY_COPY_TO_HAKUTO_ONLY')
           PY
           php -l "$SANDBOX/fetch_wave_data.php"
-          (cd "$SANDBOX"; timeout 100 php fetch_wave_data.php >run.log 2>&1) || {
+          (cd "$SANDBOX"; timeout 85 php fetch_wave_data.php >run.log 2>&1) || {
             echo "SANDBOX_RUN_FAILED_OR_TIMEOUT"
             tail -n 10 "$SANDBOX/run.log" | sed -E 's/(api.?key|password|token).*/[redacted]/Ig'
             exit 1
           }
           ROOT="$SANDBOX" python3 - <<'PY'
           import os,json,pathlib
-          p=pathlib.Path(os.environ['ROOT'])
-          s=json.loads((p/'data/spot_hakuto.json').read_text(encoding='utf-8'))
-          a=json.loads((p/'data/wave_api.json').read_text(encoding='utf-8'))
-          marine=s['marine']
-          weather=s['weather']
-          n=len(a.get('spots',{}))
-          print('SANDBOX_HAKUTO_UPDATED_AT',s.get('updated_at'))
+          root=pathlib.Path(os.environ['ROOT'])
+          spot=json.loads((root/'data/spot_hakuto.json').read_text('utf-8'))
+          overall=json.loads((root/'data/wave_api.json').read_text('utf-8'))
+          marine=spot['marine']; weather=spot['weather']
+          print('SANDBOX_HAKUTO_UPDATED_AT',spot.get('updated_at'))
           print('SANDBOX_HAKUTO_MARINE_GRID',marine.get('latitude'),marine.get('longitude'))
           print('SANDBOX_HAKUTO_WEATHER_GRID',weather.get('latitude'),weather.get('longitude'))
           print('SANDBOX_HAKUTO_MARINE_HOURLY_COUNT',len(marine['hourly']['wave_height']))
           print('SANDBOX_HAKUTO_WEATHER_HOURLY_COUNT',len(weather['hourly']['wind_speed_10m']))
-          print('SANDBOX_ALL_SPOTS_COUNT',n)
-          print('SANDBOX_WAVE_API_HAKUTO',json.dumps(a['spots']['hakuto'].get('now'),ensure_ascii=True)[:600])
-          assert n==9,'missing spots from regenerated summary'
-          assert abs(marine['longitude']-134.12502)<0.09,'marine longitude not new grid'
-          assert abs(weather['longitude']-134.125)<0.09,'weather longitude not new grid'
+          print('SANDBOX_ISOLATED_SPOTS',list(overall.get('spots',{})))
+          print('SANDBOX_HAKUTO_NOW',json.dumps(overall['spots']['hakuto'].get('now'),ensure_ascii=True)[:500])
+          assert list(overall['spots'])==['hakuto']
+          assert abs(marine['longitude']-134.12502)<0.002
+          assert abs(weather['longitude']-134.125)<0.002
           assert len(marine['hourly']['wave_height'])>=120
-          print('ALL_SANDBOX_ASSERTIONS_PASS_NO_PRODUCTION_WRITE')
+          print('SANDBOX_HAKUTO_ALL_CHECKS_PASSED_PRODUCTION_UNCHANGED')
           PY
