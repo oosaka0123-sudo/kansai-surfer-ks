@@ -1,0 +1,162 @@
+name: KS Takahama source + candidate score audit (READ ONLY)
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ks-takahama-score-audit-readonly
+  cancel-in-progress: false
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Install readonly audit runtime
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq lftp php-cli php-curl >/dev/null
+
+      - name: Download production PHP through FTPS (GET only, never PUT)
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          test -n "$FTP_USERNAME" && test -n "$FTP_PASSWORD"
+          mkdir -p "$RUNNER_TEMP/takahama-audit"
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 25
+          set net:max-retries 2
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          get /kansai/fetch_wave_data.php -o "$RUNNER_TEMP/takahama-audit/production.php"
+          bye
+          LFTP_EOF
+          test -s "$RUNNER_TEMP/takahama-audit/production.php"
+          echo "FTPS_GET_ONLY=SUCCESS"
+          echo "SERVER_WRITES=0"
+
+      - name: Check PHP source and prepare two isolated one-spot sandboxes
+        shell: bash
+        run: |
+          set -euo pipefail
+          AUDIT_DIR="$RUNNER_TEMP/takahama-audit" python3 - <<'PY'
+          import pathlib,re,os,hashlib
+          p=pathlib.Path(os.environ['AUDIT_DIR'])
+          original=(p/'production.php').read_text(encoding='utf-8')
+          print('SOURCE_SHA256='+hashlib.sha256(original.encode()).hexdigest())
+          config=re.search(r"""(['"]takahama['"]\s*=>\s*\[)(.*?)(\])""",original,re.I|re.S)
+          assert config, 'Takahama config not found'
+          segment=config.group(2)
+          old={}
+          for key in ('lat','lng'):
+              m=re.search(r"""['"]"""+key+r"""['"]\s*=>\s*(-?[0-9]+(?:\.[0-9]+)?)""",segment,re.I)
+              assert m, 'missing config '+key
+              old[key]=float(m.group(1))
+          assert abs(old['lat']-35.708)<0.00001 and abs(old['lng']-135.208)<0.00001, 'production coordinates changed, abort'
+          print('PHP_TAKAHAMA_INPUT='+str(old))
+          print('SOURCE_CONFIG_KEYS='+','.join(re.findall(r"""['"]([a-zA-Z_][a-zA-Z0-9_]*)['"]\s*=>""",segment)[:30]))
+          names=re.findall(r'\bfunction\s+([a-zA-Z0-9_]+)\s*\(',original)
+          print('SOURCE_FUNCTION_NAMES='+','.join(names))
+          print('SOURCE_WAVE_FACTOR_OCCURRENCES='+str(original.lower().count('wave_factor')))
+          print('SOURCE_SPOT_TAKAHAMA_OCCURRENCES='+str(original.lower().count('takahama')))
+          m=re.search(r'(?s)(\$SPOTS\s*=\s*\[.*?\n\];)',original)
+          assert m, 'SPOTS array declaration missing, abort'
+          injection="\n$SPOTS = ['takahama' => $SPOTS['takahama']];\n"
+          for variant in ('current','candidate'):
+              s=original
+              if variant=='candidate':
+                  region=s[config.start(2):config.end(2)]
+                  for key,new in [('lat','35.65'),('lng','135.45')]:
+                      pat=r"""(['"]"""+key+r"""['"]\s*=>\s*)(-?[0-9]+(?:\.[0-9]+)?)"""
+                      region,n=re.subn(pat,lambda m:m.group(1)+new,region,count=1)
+                      assert n==1, 'coordinate patch not unique '+key
+                  s=s[:config.start(2)]+region+s[config.end(2):]
+                  assert s!=original, 'candidate unchanged'
+                  # Prevent any changes outside Takahama coordinate segment
+                  rebuilt=s[:config.start(2)]+original[config.start(2):config.end(2)]+s[config.start(2)+len(region):]
+                  assert rebuilt==original, 'unexpected PHP changes'
+              declared=re.search(r'(?s)(\$SPOTS\s*=\s*\[.*?\n\];)',s)
+              assert declared, 'SPOTS declaration lost'
+              s=s[:declared.end()]+injection+s[declared.end():]
+              root=p/variant
+              (root/'data').mkdir(parents=True,exist_ok=True)
+              (root/'fetch_wave_data.php').write_text(s,encoding='utf-8')
+              print('SANDBOX_'+variant.upper()+'_READY=1')
+          print('SOURCE_TEXT_NOT_EXPORTED')
+          PY
+          php -l "$RUNNER_TEMP/takahama-audit/current/fetch_wave_data.php"
+          php -l "$RUNNER_TEMP/takahama-audit/candidate/fetch_wave_data.php"
+
+      - name: Execute isolated PHP generator for each input (never on production)
+        shell: bash
+        run: |
+          set -euo pipefail
+          for variant in current candidate; do
+            echo "ISOLATED_VARIANT=$variant"
+            cd "$RUNNER_TEMP/takahama-audit/$variant"
+            if timeout 135 php fetch_wave_data.php > execution.log 2>&1; then
+              echo "PHP_GENERATION_$variant=SUCCESS"
+            else
+              code=$?
+              echo "PHP_GENERATION_$variant=FAILED_EXIT_$code"
+              # Do not export execution logs; these might contain private configuration.
+              exit "$code"
+            fi
+            test -s data/spot_takahama.json
+            test -s data/wave_api.json
+          done
+          echo "ISOLATED_RUNS_FINISHED_NO_SERVER_WRITE"
+
+      - name: Compare output and rough cross-spot ranks from public snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 3 "https://kansai.rss7.net/data/wave_api.json" -o "$RUNNER_TEMP/takahama-audit/live_wave_api.json"
+          AUDIT_DIR="$RUNNER_TEMP/takahama-audit" python3 - <<'PY'
+          import json,pathlib,os
+          root=pathlib.Path(os.environ['AUDIT_DIR'])
+          live=json.loads((root/'live_wave_api.json').read_text(encoding='utf-8'))
+          print('PUBLIC_SNAPSHOT_UPDATED_AT='+str(live.get('updated_at')))
+          print('PUBLIC_SPOTS_COUNT='+str(len(live.get('spots',{}))))
+          data={}
+          for variant in ('current','candidate'):
+              d=root/variant/'data'
+              spot=json.loads((d/'spot_takahama.json').read_text(encoding='utf-8'))
+              rank=json.loads((d/'wave_api.json').read_text(encoding='utf-8'))
+              print('VARIANT='+variant)
+              print('MARINE_GRID='+str((spot.get('marine') or {}).get('latitude'))+','+str((spot.get('marine') or {}).get('longitude')))
+              print('WEATHER_GRID='+str((spot.get('weather') or {}).get('latitude'))+','+str((spot.get('weather') or {}).get('longitude')))
+              print('ISOLATED_UPDATED_AT='+str(spot.get('updated_at')))
+              entry=(rank.get('spots') or {}).get('takahama') or {}
+              data[variant]=entry
+              for period in ('now','tomorrow_7am'):
+                  v=entry.get(period) or {}
+                  allowed=('wave_height_m','wave_period_sec','wave_direction_deg','wind_speed_ms','wind_direction_deg','is_offshore','score')
+                  print(variant+'_'+period+'='+json.dumps({k:v.get(k) for k in allowed},ensure_ascii=False,sort_keys=True))
+          other=live.get('spots') or {}
+          for period in ('now','tomorrow_7am'):
+              others=[(key,(v.get(period) or {}).get('score')) for key,v in other.items() if key!='takahama' and isinstance(v,dict)]
+              others=[(k,s) for k,s in others if isinstance(s,(int,float))]
+              for variant in ('current','candidate'):
+                  score=(data[variant].get(period) or {}).get('score')
+                  if not isinstance(score,(int,float)):
+                      print('APPROX_RANK_'+variant+'_'+period+'=UNAVAILABLE')
+                      continue
+                  better=sum(1 for _,s in others if s>score)
+                  equal=sum(1 for _,s in others if s==score)
+                  print('APPROX_RANK_'+variant+'_'+period+'='+str(better+1)+'..'+str(better+equal+1))
+                  print('OTHER_SPOTS_USED='+str(len(others)))
+          print('SCORING_TEST_ISOLATED=TRUE')
+          print('RANK_TEST_OTHER_SPOTS_FROM_PUBLIC_SNAPSHOT=TRUE')
+          print('SOURCE_TEXT_NOT_EXPORTED=TRUE')
+          print('PRODUCTION_FILES_CHANGED=0')
+          PY
