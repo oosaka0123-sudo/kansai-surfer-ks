@@ -160,3 +160,21 @@ jobs:
           print('SOURCE_TEXT_NOT_EXPORTED=TRUE')
           print('PRODUCTION_FILES_CHANGED=0')
           PY
+
+      - name: Inspect generator's marine and weather request structure (redacted)
+        shell: bash
+        run: |
+          set -euo pipefail
+          AUDIT_DIR="$RUNNER_TEMP/takahama-audit" python3 - <<'PY'
+          from pathlib import Path
+          import os,re
+          p=Path(os.environ['AUDIT_DIR'])/'production.php'
+          lines=p.read_text(encoding='utf-8').splitlines()
+          print('PHP_REQUEST_STRUCTURE_START')
+          for no,line in enumerate(lines,1):
+              if re.search(r'\b(fetchUrl|marine|weather|api\.open-meteo|latitude|longitude|hourly|daily|wind_|wave_|foreach|calcScore|buildRanking)\b',line,re.I):
+                  clean=re.sub(r"""(["'])(?:\\.|.)*?\1""",'"[literal redacted]"',line.strip())
+                  clean=re.sub(r'(?i)\b(pass(word)?|secret|token|api_key|credential)\s*[:=].*','[REDACTED]',clean)
+                  print(str(no)+': '+clean[:220])
+          print('PHP_REQUEST_STRUCTURE_END')
+          PY
