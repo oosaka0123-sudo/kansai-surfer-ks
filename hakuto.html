@@ -599,7 +599,7 @@
       finally{running=false;}
     }
     render(null,null);
-    setTimeout(load,0); // 下部のSPOT_CONFIG宣言後に初回取得する
+    if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',load,{once:true});}else{load();} // SPOT_CONFIGが利用可能になった後に取得
     var refresh=document.getElementById('refreshBtn');if(refresh)refresh.addEventListener('click',load);
     setInterval(load,10*60*1000);
   })();
