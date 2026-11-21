@@ -1,89 +1,109 @@
-name: Deploy Kansai Surfer KS to Lolipop production
-
+name: Deploy Isonoura faint table borders (one HTML)
 on:
   workflow_dispatch:
-
+    inputs:
+      deploy_mode:
+        description: "Dry-run first; deploy only isonoura.html once explicitly approved"
+        required: true
+        default: dry-run
+        type: choice
+        options:
+          - dry-run
+          - deploy
 permissions:
   contents: read
-
 concurrency:
   group: kansai-surfer-production-deploy
   cancel-in-progress: false
-
 jobs:
-  deploy:
-    if: github.ref == 'refs/heads/main'
+  isonoura-only:
+    if: github.ref == 'refs/heads/deploy/ks-isonoura-thin-borders-only-20261121'
     runs-on: ubuntu-latest
-    env:
-      FTP_SERVER: ftp.lolipop.jp
-      FTP_SERVER_DIR: /kansai
-      SITE_URL: https://kansai.rss7.net/
-
+    timeout-minutes: 12
     steps:
-      - name: Checkout main
+      - name: Checkout approved branch
         uses: actions/checkout@v4
 
-      - name: Validate production source is present
+      - name: Validate approved changes against live production, make backup
         shell: bash
         run: |
           set -euo pipefail
-          test -f index.html || { echo '::error::Production index.html is not present on main; refusing deployment.'; exit 1; }
-          test -f isonoura.html || { echo '::error::Production isonoura.html is not present on main; refusing deployment.'; exit 1; }
+          python3 - <<'PY'
+          import hashlib, pathlib, os, urllib.request
+          root=pathlib.Path(os.environ['RUNNER_TEMP'])
+          stage=root/'isonoura-stage'; back=root/'isonoura-backup'
+          stage.mkdir(exist_ok=True); back.mkdir(exist_ok=True)
+          def get(url):
+            req=urllib.request.Request(url,headers={'Cache-Control':'no-cache','Pragma':'no-cache','User-Agent':'KS-Isonoura-10Day/1.0'})
+            with urllib.request.urlopen(req,timeout=25) as response:
+              if response.status != 200: raise ValueError('Unexpected public HTTP status')
+              return response.read()
+          live=get('https://kansai.rss7.net/isonoura.html')
+          baseline=get('https://raw.githubusercontent.com/oosaka0123-sudo/kansai-surfer-ks/fix/isonoura-10day-compact-verdict-20261121/isonoura.html')
+          approved=pathlib.Path('isonoura.html').read_bytes()
+          if hashlib.sha256(live).hexdigest()!='361b0b79f7e3535539d4728b38443bfd62bb534561827cfc878a5286fd08d075': raise ValueError('Live original changed since approval; refuse')
+          if hashlib.sha256(approved).hexdigest()!='09b87feb2126201f21e0ed8c5b3f9478f27075cec21c1485e8abd9939bd07658': raise ValueError('Approved file hash differs; refuse')
+          if live != baseline: raise ValueError('Production and locked baseline differ; refuse')
+          marker=b'<section class="section ks10-section" id="ks10-forecast"'
+          next_section=b'<section class="section">\n  <h2 class="section-title">\n    <span class="no">06</span>'
+          if live.count(marker)!=1 or approved.count(marker)!=1: raise ValueError('Non-unique forecast section marker')
+          a=live.index(marker); b=approved.index(marker)
+          c=live.index(next_section,a); d=approved.index(next_section,b)
+          if live[:a]!=approved[:b] or live[c:]!=approved[d:]: raise ValueError('Changes detected outside #05 section; refuse')
+          old_outer=b'#ks10-forecast .ks10-table-wrap{border:1px solid #2884ab;'
+          new_outer=b'#ks10-forecast .ks10-table-wrap{border:0.5px solid rgba(64,181,224,.55);'
+          old_inner=b'border-right:1px solid rgba(90,170,207,.38);border-bottom:1px solid rgba(90,170,207,.38);'
+          new_inner=b'border-right:0.5px solid rgba(90,170,207,.20);border-bottom:0.5px solid rgba(90,170,207,.20);'
+          if live.count(old_outer)!=1 or live.count(old_inner)!=1: raise ValueError('Expected CSS originals missing or duplicate')
+          reconstructed=live.replace(old_outer,new_outer).replace(old_inner,new_inner)
+          if reconstructed!=approved: raise ValueError('Changes beyond two scoped CSS declarations detected; REFUSE')
+          patch=approved[b:d]
+          required=[b'10\xe6\x97\xa5\xe9\x96\x93\xe3\x81\xae\xe6\xb3\xa2\xe3\x83\xbb\xe9\xa2\xa8\xe4\xba\x88\xe5\xa0\xb1',b'id="ks10-body"',b'forecast_days=10',b'wind_speed_unit=ms',b'marine-api.open-meteo.com',b'ks10-wave',b'ks10-wind']
+          if not all(k in patch for k in required): raise ValueError('Required 10-day display/data guard missing')
+          if b'id="weeklyBody"' in approved: raise ValueError('Old common JS table id still active')
+          if '判定</th>'.encode('utf-8') not in patch: raise ValueError('Verdict table header missing')
+          if b'ks10-judgment-main' not in patch or b'ks10-judgment-stars' not in patch: raise ValueError('Verdict or stars missing')
+          if b'calcScore(h,p,windMax*0.6,windDir,waveDir)' not in patch: raise ValueError('Existing score calculation missing')
+          if b'&daily=wave_height_max,wave_period_max,wave_direction_dominant' not in patch: raise ValueError('Marine daily data missing')
+          if b'&daily=wind_speed_10m_max,wind_direction_10m_dominant' not in patch: raise ValueError('Weather daily data missing')
+          (back/'isonoura.html').write_bytes(live)
+          home=get('https://kansai.rss7.net/index.html')
+          (back/'homepage.sha256').write_text(hashlib.sha256(home).hexdigest())
+          (stage/'isonoura.html').write_bytes(approved)
+          print('SAFE: exactly one section #05 changed; one HTML staged; backup captured',len(live),len(approved))
+          PY
 
-      - name: Prepare safe deployment bundle
-        shell: bash
-        run: |
-          set -euo pipefail
-          STAGE="$RUNNER_TEMP/kansai-production"
-          rm -rf "$STAGE"
-          mkdir -p "$STAGE"
+      - name: Upload original Isonoura HTML as recovery artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ks-isonoura-10day-original
+          path: ${{ runner.temp }}/isonoura-backup/
+          retention-days: 14
+          if-no-files-found: error
 
-          rsync -a ./ "$STAGE/" \
-            --exclude '.git/' \
-            --exclude '.github/' \
-            --exclude '.gitignore' \
-            --exclude 'docs/' \
-            --exclude 'prototype/' \
-            --exclude 'AGENTS.md' \
-            --exclude 'HANDOFF.md' \
-            --exclude 'PROJECT_SPEC.md' \
-            --exclude 'README.md' \
-            --exclude 'data/' \
-            --exclude 'realtime/' \
-            --exclude 'logs/'
+      - name: Upload approved Isonoura HTML for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: ks-isonoura-10day-approved
+          path: ${{ runner.temp }}/isonoura-stage/
+          retention-days: 14
+          if-no-files-found: error
 
-          test -f "$STAGE/index.html"
-          test -f "$STAGE/isonoura.html"
-          test ! -e "$STAGE/.github"
-          test ! -e "$STAGE/prototype"
-          echo 'KS production bundle prepared. Runtime data/log directories are preserved on the server.'
+      - name: Install secured FTPS client
+        if: inputs.deploy_mode == 'deploy'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp >/dev/null
 
-      - name: Install lftp
-        run: sudo apt-get update -qq && sudo apt-get install -y lftp
-
-      - name: Validate production FTPS settings
+      - name: Verify FTPS path is this exact public production, read only
+        if: inputs.deploy_mode == 'deploy'
         shell: bash
         env:
-          FTP_USERNAME: ${{ secrets.KS_PROD_FTP_USER }}
-          FTP_PASSWORD: ${{ secrets.KS_PROD_FTP_PASSWORD }}
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
         run: |
           set -euo pipefail
           set +x
-          test -n "$FTP_USERNAME" || { echo '::error::KS_PROD_FTP_USER is not configured.'; exit 1; }
-          test -n "$FTP_PASSWORD" || { echo '::error::KS_PROD_FTP_PASSWORD is not configured.'; exit 1; }
-          [ "$FTP_SERVER" = 'ftp.lolipop.jp' ] || { echo '::error::Unexpected FTP host.'; exit 1; }
-          [ "$FTP_SERVER_DIR" = '/kansai' ] || { echo '::error::Unexpected production directory.'; exit 1; }
-          [ "$SITE_URL" = 'https://kansai.rss7.net/' ] || { echo '::error::Unexpected production URL.'; exit 1; }
-
-      - name: Upload to Lolipop without remote deletion
-        shell: bash
-        env:
-          FTP_USERNAME: ${{ secrets.KS_PROD_FTP_USER }}
-          FTP_PASSWORD: ${{ secrets.KS_PROD_FTP_PASSWORD }}
-        run: |
-          set -euo pipefail
-          set +x
-          STAGE="$RUNNER_TEMP/kansai-production"
+          test -n "$FTP_USERNAME" && test -n "$FTP_PASSWORD"
+          mkdir -p "$RUNNER_TEMP/isonoura-ftp"
           lftp <<LFTP_EOF
           set cmd:fail-exit true
           set ftp:ssl-force true
@@ -91,17 +111,92 @@ jobs:
           set ftp:passive-mode true
           set net:timeout 20
           set net:max-retries 3
-          open -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER"
-          mirror --reverse --verbose=1 --no-perms "$STAGE" "$FTP_SERVER_DIR"
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          cd /kansai
+          lcd "$RUNNER_TEMP/isonoura-ftp"
+          get isonoura.html
+          get index.html
+          bye
+          LFTP_EOF
+          cmp "$RUNNER_TEMP/isonoura-backup/isonoura.html" "$RUNNER_TEMP/isonoura-ftp/isonoura.html" || { echo "::error::FTP Isonoura differs; abort"; exit 1; }
+          HOME_SHA="$(sha256sum "$RUNNER_TEMP/isonoura-ftp/index.html" | cut -d' ' -f1)"
+          PUBLIC_HOME_SHA="$(cat "$RUNNER_TEMP/isonoura-backup/homepage.sha256")"
+          [ "$HOME_SHA" = "$PUBLIC_HOME_SHA" ] || { echo "::error::FTP homepage differs from public site; abort"; exit 1; }
+          python3 - <<'PY'
+          import urllib.request,pathlib,os
+          p=pathlib.Path(os.environ['RUNNER_TEMP'])/'isonoura-backup/isonoura.html'
+          with urllib.request.urlopen(urllib.request.Request('https://kansai.rss7.net/isonoura.html',headers={'Cache-Control':'no-cache'}),timeout=25) as r: current=r.read()
+          if current != p.read_bytes(): raise ValueError('Live Isonoura updated during preflight; abort')
+          print('FTPS and public contents match baseline immediately before deployment.')
+          PY
+
+      - name: FTPS upload of isonoura.html only
+        if: inputs.deploy_mode == 'deploy'
+        id: ftp_upload
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 20
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          cd /kansai
+          lcd "$RUNNER_TEMP/isonoura-stage"
+          put isonoura.html
           bye
           LFTP_EOF
 
-      - name: Verify production pages
+      - name: Verify only Isonoura changed and home stayed intact
+        if: inputs.deploy_mode == 'deploy'
+        id: verify
         shell: bash
         run: |
           set -euo pipefail
-          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "$SITE_URL" >/tmp/ks-home.html
-          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "${SITE_URL}isonoura.html" >/tmp/ks-isonoura.html
-          grep -qi '<html' /tmp/ks-home.html
-          grep -qi '<html' /tmp/ks-isonoura.html
-          echo 'Kansai Surfer KS production verification succeeded.'
+          python3 - <<'PY'
+          from pathlib import Path
+          import urllib.request,hashlib,os,time
+          root=Path(os.environ['RUNNER_TEMP'])
+          expected=(root/'isonoura-stage/isonoura.html').read_bytes()
+          ok=False
+          for attempt in range(5):
+            request=urllib.request.Request('https://kansai.rss7.net/isonoura.html?verify='+str(int(time.time())),headers={'Cache-Control':'no-cache','Pragma':'no-cache'})
+            with urllib.request.urlopen(request,timeout=25) as r: actual=r.read()
+            if actual==expected: ok=True;break
+            time.sleep(3)
+          if not ok: raise ValueError('Published Isonoura does not match uploaded approved HTML')
+          with urllib.request.urlopen(urllib.request.Request('https://kansai.rss7.net/index.html',headers={'Cache-Control':'no-cache'}),timeout=25) as r: home=r.read()
+          if hashlib.sha256(home).hexdigest()!=(root/'isonoura-backup/homepage.sha256').read_text().strip(): raise ValueError('Homepage unexpectedly changed')
+          print('SUCCESS: exactly one HTML uploaded, verified public content and homepage unchanged')
+          PY
+
+      - name: Restore original Isonoura if upload or verification fails
+        if: failure() && inputs.deploy_mode == 'deploy' && (steps.ftp_upload.outcome == 'failure' || steps.verify.outcome == 'failure')
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 20
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          cd /kansai
+          lcd "$RUNNER_TEMP/isonoura-backup"
+          put isonoura.html
+          bye
+          LFTP_EOF
+          echo 'Rolled back original Isonoura HTML.'
