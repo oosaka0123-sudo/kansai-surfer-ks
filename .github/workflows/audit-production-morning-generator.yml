@@ -232,3 +232,105 @@ jobs:
                   print("FLOW",i,json.dumps(redact(line.strip()),ensure_ascii=True)[:400])
           print("SCRIPT_STRUCTURE_END")
           PY
+
+      - name: Deploy Hakuto 10-day UI ONLY, with reversible scope and FTP rollback
+        if: github.ref == 'refs/heads/audit/hakuto-10day-ui-once-20261122' && github.actor == 'oosaka0123-sudo'
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          test -n "$FTP_USERNAME" && test -n "$FTP_PASSWORD"
+          DIR="$RUNNER_TEMP/ks-hakuto-10day-ui-20261122"
+          mkdir -p "$DIR"
+          MODIFIED=0
+          rollback_on_error(){
+            STATUS=$?
+            if [ "$STATUS" -ne 0 ] && [ "$MODIFIED" -eq 1 ]; then
+              echo "HAKUTO_HTML_VERIFY_FAILED_ROLLBACK_ATTEMPT"
+              lftp <<LFTP_ROLLBACK || true
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 25
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          put "$DIR/original.html" -o /kansai/hakuto.html
+          bye
+          LFTP_ROLLBACK
+              echo "ROLLBACK_ATTEMPT_FINISHED"
+            fi
+            exit "$STATUS"
+          }
+          trap rollback_on_error EXIT
+          lftp <<LFTP_GET
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 25
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          get /kansai/hakuto.html -o "$DIR/original.html"
+          bye
+          LFTP_GET
+          curl -fsSL --retry 6 --retry-all-errors --retry-delay 2 "https://kansai.rss7.net/hakuto.html?before=$GITHUB_RUN_ID" -o "$DIR/http-original.html"
+          cmp "$DIR/http-original.html" "$DIR/original.html"
+          curl -fsSL --retry 6 --retry-all-errors --retry-delay 2 "https://kansai.rss7.net/index.html?before=$GITHUB_RUN_ID" -o "$DIR/home-original.html"
+          curl -fsSL --retry 6 --retry-all-errors --retry-delay 2 "https://raw.githubusercontent.com/oosaka0123-sudo/kansai-surfer-ks/31d477a42209c469fcbab4a9645709491244d191/hakuto.html" -o "$DIR/approved.html"
+          OLD="$DIR/original.html" NEW="$DIR/approved.html" python3 - <<'PY'
+          import os,re,hashlib,pathlib
+          old=pathlib.Path(os.environ['OLD']).read_bytes()
+          new=pathlib.Path(os.environ['NEW']).read_bytes()
+          blob=lambda s:hashlib.sha1(b'blob '+str(len(s)).encode()+b'\0'+s).hexdigest()
+          print('PRODUCTION_HTML_GIT_BLOB_BEFORE',blob(old))
+          print('APPROVED_HTML_GIT_BLOB_NEW',blob(new))
+          assert blob(old)=='26af3ebbbf4ad9f79a70e264b0f115b38744330e', 'production baseline moved'
+          assert blob(new)=='d7a3d1f543ae2b9769cb34e74c72d1baa08be3fc','reviewed source drifted'
+          old=old.decode('utf-8')
+          new=new.decode('utf-8')
+          orig=re.search(r'<section class="section">\s*<h2 class="section-title"><span class="no">05</span>[\s\S]*?</section>',old)
+          replacement=re.search(r'<section class="section ks10-section" id="ks10-forecast"[\s\S]*?</section>',new)
+          assert orig and replacement,'05 section boundaries not identified'
+          assert new==old[:orig.start()]+replacement.group(0)+old[orig.end():],'changes beyond 05 section'
+          assert '35.527370' in new and '134.116740' in new,'official Hakuto coordinate absent'
+          assert 'forecast_days=10' in replacement.group(0),'10day data missing'
+          assert "DOMContentLoaded',load" in replacement.group(0),'safe initialization missing'
+          assert new.count('id="ks10-forecast"')==1
+          assert 'id="weeklyBody"' not in new
+          assert new.count('class="floating-line"')==old.count('class="floating-line"'),'LINE changed'
+          print('HAKUTO_05_SECTION_ONLY_VERIFIED')
+          PY
+          MODIFIED=1
+          lftp <<LFTP_PUT
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 25
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          put "$DIR/approved.html" -o /kansai/hakuto.html
+          bye
+          LFTP_PUT
+          lftp <<LFTP_VERIFY
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 25
+          set net:max-retries 3
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          get /kansai/hakuto.html -o "$DIR/verified.html"
+          bye
+          LFTP_VERIFY
+          cmp "$DIR/verified.html" "$DIR/approved.html"
+          curl -fsSL --retry 6 --retry-all-errors --retry-delay 2 "https://kansai.rss7.net/hakuto.html?after=$GITHUB_RUN_ID" -o "$DIR/http-after.html"
+          cmp "$DIR/http-after.html" "$DIR/approved.html"
+          curl -fsSL --retry 6 --retry-all-errors --retry-delay 2 "https://kansai.rss7.net/index.html?after=$GITHUB_RUN_ID" -o "$DIR/home-after.html"
+          cmp "$DIR/home-after.html" "$DIR/home-original.html"
+          MODIFIED=0
+          echo "HAKUTO_10DAY_UI_ONLY_SUCCESS_PRODUCTION"
