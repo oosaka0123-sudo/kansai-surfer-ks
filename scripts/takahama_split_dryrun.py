@@ -27,6 +27,7 @@ WEATHER_FETCH = "$weatherJson = fetchUrl($weatherUrl);"
 
 # Deliberately limited to Takahama; other spots and ranking logic are not edited.
 WEATHER_OVERRIDE = """if ($key === 'takahama') {
+        try {
         $ksParts = parse_url($weatherUrl);
         if (!$ksParts || !isset($ksParts['scheme'], $ksParts['host'])) {
             throw new \\RuntimeException('Invalid Takahama weather URL');
@@ -46,6 +47,11 @@ WEATHER_OVERRIDE = """if ($key === 'takahama') {
         $ksQuery['longitude'] = '__KS_WEATHER_LNG__';
         $weatherUrl = $ksParts['scheme'] . '://' . $ksParts['host']
             . ($ksParts['path'] ?? '') . '?' . http_build_query($ksQuery, '', '&', PHP_QUERY_RFC3986);
+        } catch (\\Throwable $ksTakahamaWeatherError) {
+            // Do not stop cron for all nine spots on an unexpected URL shape.
+            // Keep the existing URL for this run and leave a secret-free log.
+            error_log('KS Takahama: coastal Weather URL override skipped');
+        }
     }
     """.replace('__KS_WEATHER_LAT__', WEATHER_LAT).replace('__KS_WEATHER_LNG__', WEATHER_LNG)
 
