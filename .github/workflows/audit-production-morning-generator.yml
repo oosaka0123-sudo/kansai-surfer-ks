@@ -17,8 +17,8 @@ jobs:
     timeout-minutes: 14
     env:
       FTP_HOST: ftp.lolipop.jp
-      FTP_USERNAME: \${{ secrets.KS_NAMI_FTP_USER }}
-      FTP_PASSWORD: \${{ secrets.KS_NAMI_FTP_PASSWORD }}
+      FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+      FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
       ROOT: /kansai
     steps:
       - uses: actions/checkout@v4
@@ -85,10 +85,10 @@ jobs:
       - name: Archive prior versions for rollback
         uses: actions/upload-artifact@v4
         with:
-          name: ks-takahama-two-html-before-\${{ github.run_id }}
+          name: ks-takahama-two-html-before-${{ github.run_id }}
           path: |
-            \${{ runner.temp }}/ks-takahama-beach-only/old-home.html
-            \${{ runner.temp }}/ks-takahama-beach-only/old-spot.html
+            ${{ runner.temp }}/ks-takahama-beach-only/old-home.html
+            ${{ runner.temp }}/ks-takahama-beach-only/old-spot.html
           retention-days: 30
           if-no-files-found: error
 
