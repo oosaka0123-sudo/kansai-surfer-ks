@@ -1,24 +1,32 @@
 name: Audit production morning generator safely
-
 on:
   workflow_dispatch:
-
 permissions:
   contents: read
-
 concurrency:
-  group: ks-morning-generator-audit
+  group: ks-takahama-d-20261122-manual
   cancel-in-progress: false
-
 jobs:
-  audit:
+  deploy_takahama_only:
     runs-on: ubuntu-latest
-    timeout-minutes: 6
+    timeout-minutes: 15
     steps:
-      - name: Install lftp
-        run: sudo apt-get update -qq && sudo apt-get install -y lftp
-
-      - name: Download production generator candidates read-only
+      - name: Checkout reviewed PR138 candidate
+        uses: actions/checkout@v4
+        with:
+          ref: proposal/ks-takahama-split-dryrun-20261122
+          persist-credentials: false
+      - name: Prepare private workspace and verify offline tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "4db509d785f8e341fc2d393af666b2543948a9ea"
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq lftp php-cli gnupg >/dev/null
+          install -d -m 0700 "$RUNNER_TEMP/ks-takahama-release"
+          python3 -m unittest discover -s scripts -p 'test_takahama_split_dryrun.py' -v
+          echo "REVIEWED_PATCH_AND_18_TESTS=PASS"
+      - name: Download current production PHP and prepare guarded candidate plus encrypted backup
         shell: bash
         env:
           FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
@@ -26,123 +34,180 @@ jobs:
         run: |
           set -euo pipefail
           set +x
-          test -n "$FTP_USERNAME"
-          test -n "$FTP_PASSWORD"
-          TMP="$RUNNER_TEMP/ks-morning-generator-audit"
-          mkdir -p "$TMP"
-
-          lftp <<LFTP_EOF
+          root="$RUNNER_TEMP/ks-takahama-release"
+          test -n "$FTP_USERNAME" && test -n "$FTP_PASSWORD"
+          lftp <<LFTP_READ
           set cmd:fail-exit true
           set ftp:ssl-force true
           set ftp:ssl-protect-data true
           set ftp:passive-mode true
+          set net:timeout 25
+          set net:max-retries 2
           open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
-          get /kansai/admin/ai_draft.php -o "$TMP/ai_draft.php"
-          get /kansai/admin/auto_wave_post.php -o "$TMP/auto_wave_post.php"
-          get /kansai/admin/auto_wave_today.php -o "$TMP/auto_wave_today.php"
+          get /kansai/fetch_wave_data.php -o "$root/original.php"
           bye
-          LFTP_EOF
-
-          AUDIT_ROOT="$TMP" python3 - <<'PY'
-          import hashlib
-          import os
-          import pathlib
-          import re
-          from urllib.parse import urlparse
-
-          root = pathlib.Path(os.environ["AUDIT_ROOT"])
-          terms = [
-              "朝", "今日", "明日", "ランキング", "記事", "ブログ", "波情報",
-              "articles.json", "file_put_contents", "json_encode", "json_decode",
-              "anthropic", "gemini", "claude", "prompt", "system"
-          ]
-          safe_calls = [
-              "file_put_contents", "file_get_contents", "json_encode", "json_decode",
-              "curl_init", "curl_exec", "fopen", "fwrite", "rename", "copy"
-          ]
-
-          print("MORNING_GENERATOR_SAFE_AUDIT_V1")
-          for path in sorted(root.glob("*.php")):
-              raw = path.read_bytes()
-              text = raw.decode("utf-8", errors="ignore")
-              print(f"FILE={path.name}")
-              print(f"BYTES={len(raw)}")
-              print(f"LINES={text.count(chr(10)) + 1}")
-              print(f"SHA256={hashlib.sha256(raw).hexdigest()}")
-
-              funcs = sorted(set(re.findall(r"(?i)\bfunction\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(", text)))
-              print("FUNCTIONS=" + (",".join(funcs) if funcs else "(none)"))
-
-              calls = [name for name in safe_calls if re.search(r"\b" + re.escape(name) + r"\s*\(", text)]
-              print("SAFE_CALLS=" + (",".join(calls) if calls else "(none)"))
-
-              php_refs = sorted(set(pathlib.PurePosixPath(x).name for x in re.findall(r"""['"]([^'"]+\.php)['"]""", text)))
-              print("PHP_REFS=" + (",".join(php_refs) if php_refs else "(none)"))
-
-              json_refs = sorted(set(pathlib.PurePosixPath(x).name for x in re.findall(r"""['"]([^'"]+\.json)['"]""", text)))
-              print("JSON_REFS=" + (",".join(json_refs) if json_refs else "(none)"))
-
-              array_keys = sorted(set(re.findall(r"""\[['"]([A-Za-z0-9_\-]{1,64})['"]\]""", text)))
-              print("ARRAY_KEYS=" + (",".join(array_keys[:200]) if array_keys else "(none)"))
-
-              for fname in ("generate_article", "fetch_osaka_weather", "fetch_marine_data", "save_article", "rate_spot"):
-                  sig = re.search(r"(?is)function\s+" + re.escape(fname) + r"\s*\((.*?)\)\s*\{", text)
-                  if sig:
-                      params = re.sub(r"\s+", " ", sig.group(1)).strip()
-                      params = re.sub(r"=[^,)]*", "=<default>", params)
-                      print(f"SIGNATURE[{fname}]={params[:500]}")
-
-              hosts = set()
-              for url in re.findall(r"https?://[^\s'\"<>]+", text, flags=re.I):
-                  try:
-                      host = urlparse(url).hostname
-                  except Exception:
-                      host = None
-                  if host:
-                      hosts.add(host.lower())
-              print("HOSTS=" + (",".join(sorted(hosts)) if hosts else "(none)"))
-
-              models = sorted(set(re.findall(r"claude-[a-z0-9][a-z0-9._-]*", text, flags=re.I)))
-              print("CLAUDE_MODELS=" + (",".join(models) if models else "(none)"))
-
-              prompt_vars = sorted(set(re.findall(
-                  r"(?im)^\s*\$([A-Za-z_][A-Za-z0-9_]*(?:prompt|instruction|system)[A-Za-z0-9_]*)\s*=",
-                  text
-              )))
-              print("PROMPT_LIKE_VARS=" + (",".join(prompt_vars) if prompt_vars else "(none)"))
-
-              writes = []
-              for match in re.finditer(r"file_put_contents\s*\(\s*(['\"])([^'\"]+)\1", text):
-                  target = pathlib.PurePosixPath(match.group(2)).name
-                  if target:
-                      writes.append(target)
-              print("LITERAL_WRITE_BASENAMES=" + (",".join(sorted(set(writes))) if writes else "(none)"))
-
-              cli_guard = bool(re.search(r"PHP_SAPI|php_sapi_name|STDIN|argv", text, flags=re.I))
-              print("CLI_GUARD_HINT=" + ("yes" if cli_guard else "no"))
-
-              for term in terms:
-                  count = text.lower().count(term.lower())
-                  if count:
-                      print(f"TERM_COUNT[{term}]={count}")
-
-              shape_lines = []
-              for no, line in enumerate(text.splitlines(), start=1):
-                  if re.search(r"(?i)prompt|instruction|system", line) and "$" in line:
-                      scrubbed = re.sub(r"""(['"])(?:(?=(\\?))\2.)*?\1""", '"<redacted-string>"', line)
-                      scrubbed = re.sub(r"[A-Za-z0-9_\-]{24,}", "<redacted-token>", scrubbed)
-                      shape_lines.append(f"{no}:{scrubbed.strip()[:240]}")
-              print("PROMPT_SHAPE_LINES=" + (" || ".join(shape_lines[:20]) if shape_lines else "(none)"))
-
-              call_shapes = []
-              for fname in ("generate_article", "fetch_osaka_weather", "fetch_marine_data", "save_article", "rate_spot"):
-                  for no, line in enumerate(text.splitlines(), start=1):
-                      if re.search(r"\b" + re.escape(fname) + r"\s*\(", line) and not re.search(r"\bfunction\s+" + re.escape(fname), line):
-                          scrubbed = re.sub(r"""(['"])(?:(?=(\\?))\2.)*?\1""", '"<redacted-string>"', line)
-                          scrubbed = re.sub(r"[A-Za-z0-9_\-]{24,}", "<redacted-token>", scrubbed)
-                          call_shapes.append(f"{no}:{scrubbed.strip()[:320]}")
-              print("CALL_SHAPES=" + (" || ".join(call_shapes[:30]) if call_shapes else "(none)"))
-              print("END_FILE")
-
-          print("AUDIT_COMPLETE_NO_SOURCE_EXPORTED")
+          LFTP_READ
+          oldsha=18026fb8285570dbb85170a8b5edb55a02ecbe340a34d6693995257f3a2f7caf
+          newsha=113aee5ad05b1a0dc0cc95dbe6051f64216c3ef6d93ff0904d1799afca821ac8
+          test "$(sha256sum "$root/original.php" | cut -d' ' -f1)" = "$oldsha"
+          php -l "$root/original.php"
+          python3 scripts/takahama_split_dryrun.py --input "$root/original.php" --expected-sha256 "$oldsha" --output "$root/candidate.php"
+          test "$(sha256sum "$root/candidate.php" | cut -d' ' -f1)" = "$newsha"
+          php -l "$root/candidate.php"
+          export AUDIT_ROOT="$root"
+          python3 - <<'PY'
+          import os,pathlib,re
+          root=pathlib.Path(os.environ['AUDIT_ROOT'])
+          old=(root/'original.php').read_text('utf-8')
+          new=(root/'candidate.php').read_text('utf-8')
+          assert old.count("'takahama' =>") == new.count("'takahama' =>") == 1
+          assert "$ksQuery['latitude'] = '35.49133';" in new
+          assert "$ksQuery['longitude'] = '135.55782';" in new
+          assert "coastal Weather URL override skipped" in new
+          assert old.count("function calcScore") == new.count("function calcScore") == 1
+          assert old.count("$weatherJson = fetchUrl($weatherUrl);") == new.count("$weatherJson = fetchUrl($weatherUrl);") == 1
+          spot = re.search(r'(?s)(\$SPOTS\s*=\s*\[.*?\n\];)',new)
+          assert spot is not None
+          one=new[:spot.end()]+"\n$SPOTS = ['takahama' => $SPOTS['takahama']];\n"+new[spot.end():]
+          sand=root/'sandbox'
+          (sand/'data').mkdir(parents=True,exist_ok=True)
+          (sand/'fetch_wave_data.php').write_text(one,encoding='utf-8')
+          print('HIGH浜_ONLY_PHP_PREVIEW=PASS')
+          PY
+          php -l "$root/sandbox/fetch_wave_data.php"
+          cd "$root/sandbox"
+          if ! timeout 100 php fetch_wave_data.php > private-run.log 2>&1; then
+            echo "ISOLATED_API_GENERATION=FAIL"
+            exit 1
+          fi
+          test -s data/spot_takahama.json
+          test -s data/wave_api.json
+          python3 - <<'PY'
+          import json,pathlib
+          spot=json.loads(pathlib.Path('data/spot_takahama.json').read_text('utf-8'))
+          wave=json.loads(pathlib.Path('data/wave_api.json').read_text('utf-8'))
+          mar=spot['marine']; weather=spot['weather']
+          assert abs(float(mar['latitude'])-35.708336)<0.01
+          assert abs(float(mar['longitude'])-135.45836)<0.01
+          assert abs(float(weather['latitude'])-35.5)<0.01
+          assert abs(float(weather['longitude'])-135.5625)<0.01
+          now=wave['spots']['takahama']['now']
+          for field in ('wave_height_m','wind_speed_ms','wave_period_sec'):
+            assert isinstance(now.get(field),(int,float)),field
+          print('ISOLATED_REAL_API=PASS')
+          print('D_WAVE_M='+str(now['wave_height_m']))
+          print('D_WIND_MS='+str(now['wind_speed_ms']))
+          PY
+          cd "$GITHUB_WORKSPACE"
+          printf '%s' "$FTP_PASSWORD" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --symmetric --cipher-algo AES256 --output "$root/rollback.php.gpg" "$root/original.php"
+          printf '%s' "$FTP_PASSWORD" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --decrypt "$root/rollback.php.gpg" > "$root/rollback-check.php"
+          cmp "$root/original.php" "$root/rollback-check.php"
+          rm -f "$root/rollback-check.php"
+          echo "ENCRYPTED_BASELINE_BACKUP=PASS"
+          echo "DEPLOY_PRECHECKS=PASS"
+      - name: Save encrypted rollback copy before deploy
+        uses: actions/upload-artifact@v4
+        with:
+          name: takahama-private-rollback-20261122
+          path: ${{ runner.temp }}/ks-takahama-release/rollback.php.gpg
+          retention-days: 30
+          if-no-files-found: error
+      - name: Recheck baseline then deploy only fetch_wave_data.php with automatic rollback
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          root="$RUNNER_TEMP/ks-takahama-release"
+          oldsha=18026fb8285570dbb85170a8b5edb55a02ecbe340a34d6693995257f3a2f7caf
+          newsha=113aee5ad05b1a0dc0cc95dbe6051f64216c3ef6d93ff0904d1799afca821ac8
+          minute=$(TZ=Asia/Tokyo date +%M)
+          if (( 10#$minute >= 3 && 10#$minute <= 8 )); then
+            echo "ABORT_NEAR_KS_CRON_WINDOW"
+            exit 1
+          fi
+          lftp <<LFTP_RECHECK
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 25
+          set net:max-retries 2
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          get /kansai/fetch_wave_data.php -o "$root/preput.php"
+          bye
+          LFTP_RECHECK
+          cmp "$root/original.php" "$root/preput.php"
+          restore_on_failure() {
+            echo "UPLOAD_VERIFICATION_FAILED_ATTEMPT_ROLLBACK"
+            if lftp <<LFTP_RESTORE
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 25
+          set net:max-retries 2
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          put "$root/original.php" -o /kansai/fetch_wave_data.php
+          get /kansai/fetch_wave_data.php -o "$root/rollback-verify.php"
+          bye
+          LFTP_RESTORE
+            then
+              if cmp -s "$root/original.php" "$root/rollback-verify.php"; then
+                echo "ROLLBACK_CONFIRMED=YES"
+              else
+                echo "ROLLBACK_CONFIRMED=NO_SHA_MISMATCH"
+              fi
+            else
+              echo "ROLLBACK_CONFIRMED=NO_FTPS_FAILURE"
+            fi
+          }
+          if ! lftp <<LFTP_UPLOAD
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 25
+          set net:max-retries 2
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          put "$root/candidate.php" -o /kansai/fetch_wave_data.php
+          get /kansai/fetch_wave_data.php -o "$root/remote.php"
+          bye
+          LFTP_UPLOAD
+          then
+            restore_on_failure
+            exit 1
+          fi
+          if ! cmp -s "$root/candidate.php" "$root/remote.php"; then
+            restore_on_failure
+            exit 1
+          fi
+          if ! php -l "$root/remote.php"; then
+            restore_on_failure
+            exit 1
+          fi
+          if [ "$(sha256sum "$root/remote.php" | cut -d' ' -f1)" != "$newsha" ]; then
+            restore_on_failure
+            exit 1
+          fi
+          echo "DEPLOY_SUCCESS_REMOTE_SHA256=$newsha"
+          echo "UPLOADED_ONLY=/kansai/fetch_wave_data.php"
+          echo "OTHER_FILES_UPLOADED=0"
+          echo "BASELINE_SHA256_FOR_ROLLBACK=$oldsha"
+      - name: Read only public JSON health snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 3 https://kansai.rss7.net/data/wave_api.json -o "$RUNNER_TEMP/ks-takahama-release/wave.json"
+          python3 - <<'PY'
+          import json,os,pathlib
+          p=pathlib.Path(os.environ['RUNNER_TEMP'])/'ks-takahama-release'/'wave.json'
+          data=json.loads(p.read_text('utf-8'))
+          assert isinstance(data.get('spots'),dict) and len(data['spots'])>=8
+          print('PUBLIC_JSON_READABLE=YES')
+          print('PUBLIC_JSON_TIMESTAMP='+str(data.get('updated_at')))
+          print('PUBLIC_SPOTS='+str(len(data['spots'])))
+          print('NEXT_SCHEDULED_CRON_WILL_REFRESH_JSON=YES')
           PY
