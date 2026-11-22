@@ -24,7 +24,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "60958d5b0df0d18ae55f72c43ee067bc6cbe8169"
+          test "$(git rev-parse HEAD)" = "4db509d785f8e341fc2d393af666b2543948a9ea"
           test -f scripts/takahama_split_dryrun.py
           test -f scripts/test_takahama_split_dryrun.py
           echo "REVIEWED_SHA_GUARD=PASS"
@@ -118,7 +118,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "60958d5b0df0d18ae55f72c43ee067bc6cbe8169"
+          test "$(git rev-parse HEAD)" = "4db509d785f8e341fc2d393af666b2543948a9ea"
           sudo apt-get install -y -qq php-cli >/dev/null
           echo "CANDIDATE_SHA=VERIFIED"
       - name: Apply protected private preview to current production source (no API call)
