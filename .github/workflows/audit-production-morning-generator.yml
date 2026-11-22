@@ -24,13 +24,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "ee91eb8649a50f1ee25ae96254ec21f95ab7cb60"
+          test "$(git rev-parse HEAD)" = "60958d5b0df0d18ae55f72c43ee067bc6cbe8169"
           test -f scripts/takahama_split_dryrun.py
           test -f scripts/test_takahama_split_dryrun.py
           echo "REVIEWED_SHA_GUARD=PASS"
       - name: Install PHP CLI
         run: sudo apt-get update -qq && sudo apt-get install -y -qq php-cli >/dev/null
-      - name: Execute 14 offline unit and PHP URL tests (no external API)
+      - name: Execute 18 offline unit and PHP URL tests (no external API)
         shell: bash
         run: |
           set -euo pipefail
@@ -118,7 +118,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "ee91eb8649a50f1ee25ae96254ec21f95ab7cb60"
+          test "$(git rev-parse HEAD)" = "60958d5b0df0d18ae55f72c43ee067bc6cbe8169"
           sudo apt-get install -y -qq php-cli >/dev/null
           echo "CANDIDATE_SHA=VERIFIED"
       - name: Apply protected private preview to current production source (no API call)
@@ -126,6 +126,7 @@ jobs:
         run: |
           set -euo pipefail
           root="$RUNNER_TEMP/takahama-pr138-coord-audit"
+          chmod 0700 "$root"
           python3 scripts/takahama_split_dryrun.py \
             --input "$root/production.php" \
             --expected-sha256 "18026fb8285570dbb85170a8b5edb55a02ecbe340a34d6693995257f3a2f7caf" \
