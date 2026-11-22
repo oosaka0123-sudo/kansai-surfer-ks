@@ -20,7 +20,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "cd0c996079ef40ac2252b480a328cae62575d7af"
+          git ls-files --error-unmatch takahama.html >/dev/null
           sudo apt-get update -qq
           sudo apt-get install -y -qq lftp gnupg >/dev/null
           install -d -m 0700 "$RUNNER_TEMP/ks-takahama-10day-release"
