@@ -37,3 +37,64 @@ jobs:
           python3 -m unittest discover -s scripts -p 'test_takahama_split_dryrun.py' -v
           echo "OFFLINE_TESTS_COMPLETE"
           echo "PRODUCTION_CHANGED=0"
+
+  verify_production_coordinate_dependents:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Install FTPS read-only utility
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp >/dev/null
+      - name: Download production generator (FTPS GET only)
+        shell: bash
+        env:
+          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          test -n "$FTP_USERNAME" && test -n "$FTP_PASSWORD"
+          mkdir -p "$RUNNER_TEMP/takahama-pr138-coord-audit"
+          lftp <<LFTP_EOF
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 25
+          set net:max-retries 2
+          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
+          get /kansai/fetch_wave_data.php -o "$RUNNER_TEMP/takahama-pr138-coord-audit/production.php"
+          bye
+          LFTP_EOF
+          test -s "$RUNNER_TEMP/takahama-pr138-coord-audit/production.php"
+          echo "FTPS_GET_ONLY=YES"
+      - name: Report redacted coordinate usages and source hash
+        shell: bash
+        run: |
+          set -euo pipefail
+          PHP="$RUNNER_TEMP/takahama-pr138-coord-audit/production.php" python3 - <<'PY'
+          import hashlib,os,pathlib,re
+          path=pathlib.Path(os.environ['PHP'])
+          b=path.read_bytes()
+          src=b.decode('utf-8')
+          lines=src.splitlines()
+          print('SOURCE_SHA256='+hashlib.sha256(b).hexdigest())
+          print('SOURCE_BYTE_COUNT='+str(len(b)))
+          latlon=re.compile(r'''\$spot\s*\[\s*['"](?:lat|lng)['"]\s*\]''',re.I)
+          found=[]
+          for i,line in enumerate(lines):
+              matches=latlon.findall(line)
+              if not matches:continue
+              context=' '.join(lines[max(0,i-4):min(len(lines),i+2)])
+              kinds=[]
+              if re.search(r'\bmarineUrl\b',context):kinds.append('marine_url')
+              if re.search(r'\bweatherUrl\b',context):kinds.append('weather_url')
+              if re.search(r'\bscore|ranking|map|sunrise|cache|temperature\b',context,re.I):kinds.append('other_related')
+              if not kinds:kinds.append('unclassified')
+              found.append((i+1,len(matches),','.join(kinds)))
+          print('SPOT_COORD_REF_SITES='+str(len(found)))
+          print('SPOT_COORD_REF_TOTAL='+str(sum(n for _,n,_ in found)))
+          for line,n,kind in found:
+              print('REF_LINE='+str(line)+' COUNT='+str(n)+' CONTEXT='+kind)
+          print('PRODUCTION_WRITES=0')
+          print('ORIGINAL_SOURCE_NOT_EXPORTED=YES')
+          PY
