@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import os
+import stat
 import tempfile
 from pathlib import Path
 import re
@@ -28,19 +29,25 @@ WEATHER_FETCH = "$weatherJson = fetchUrl($weatherUrl);"
 WEATHER_OVERRIDE = """if ($key === 'takahama') {
         $ksParts = parse_url($weatherUrl);
         if (!$ksParts || !isset($ksParts['scheme'], $ksParts['host'])) {
-            throw new RuntimeException('Invalid Takahama weather URL');
+            throw new \\RuntimeException('Invalid Takahama weather URL');
+        }
+        if ($ksParts['scheme'] !== 'https' ||
+            $ksParts['host'] !== 'api.open-meteo.com' ||
+            isset($ksParts['port']) || isset($ksParts['user']) ||
+            isset($ksParts['pass']) || isset($ksParts['fragment'])) {
+            throw new \RuntimeException('Unsupported Takahama weather URL components');
         }
         $ksQuery = [];
         parse_str($ksParts['query'] ?? '', $ksQuery);
         if (!isset($ksQuery['latitude'], $ksQuery['longitude'])) {
-            throw new RuntimeException('Takahama weather URL has no coordinate keys');
+            throw new \\RuntimeException('Takahama weather URL has no coordinate keys');
         }
-        $ksQuery['latitude'] = '35.49133';
-        $ksQuery['longitude'] = '135.55782';
+        $ksQuery['latitude'] = '__KS_WEATHER_LAT__';
+        $ksQuery['longitude'] = '__KS_WEATHER_LNG__';
         $weatherUrl = $ksParts['scheme'] . '://' . $ksParts['host']
             . ($ksParts['path'] ?? '') . '?' . http_build_query($ksQuery, '', '&', PHP_QUERY_RFC3986);
     }
-    """
+    """.replace('__KS_WEATHER_LAT__', WEATHER_LAT).replace('__KS_WEATHER_LNG__', WEATHER_LNG)
 
 
 class UnsafePatch(ValueError):
@@ -120,14 +127,27 @@ def main(argv: list[str] | None = None) -> int:
             private_roots.append(Path(os.environ['RUNNER_TEMP']).resolve())
         if not any(out.is_relative_to(root) for root in private_roots):
             raise UnsafePatch('Output must be within a private temporary directory')
-        out.parent.mkdir(parents=True, exist_ok=True)
-        # Atomic, exclusive create. 0600 prevents unintended disclosure on Unix.
+        if not out.parent.is_dir():
+            raise UnsafePatch('Private output parent directory must exist')
+        if os.name == 'posix':
+            parent = out.parent.stat()
+            if parent.st_uid != os.getuid() or (stat.S_IMODE(parent.st_mode) & 0o077):
+                raise UnsafePatch('Private output directory must be owner-only (0700)')
+        # Atomic exclusive create, user-only on POSIX. Never overwrite a file.
         flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
         if hasattr(os, 'O_BINARY'):
             flags |= os.O_BINARY
         fd = os.open(out, flags, 0o600)
-        with os.fdopen(fd, 'wb') as stream:
-            stream.write(preview)
+        try:
+            with os.fdopen(fd, 'wb') as stream:
+                stream.write(preview)
+        except OSError:
+            # Remove only the file created by this invocation, never input.
+            try:
+                out.unlink(missing_ok=True)
+            except OSError:
+                pass
+            raise
         print('PRIVATE_ISOLATED_PREVIEW_WRITTEN=YES')
     else:
         print('PRIVATE_ISOLATED_PREVIEW_WRITTEN=NO')
@@ -142,6 +162,9 @@ def main(argv: list[str] | None = None) -> int:
 if __name__ == '__main__':
     try:
         raise SystemExit(main())
-    except (OSError, UnsafePatch) as exc:
+    except UnsafePatch as exc:
         print('ABORTED: ' + str(exc), file=sys.stderr)
         raise SystemExit(2) from exc
+    except OSError:
+        print('ABORTED: file operation failed (private paths suppressed)', file=sys.stderr)
+        raise SystemExit(2)
