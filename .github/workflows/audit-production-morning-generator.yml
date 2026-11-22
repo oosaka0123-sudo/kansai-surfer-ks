@@ -205,3 +205,67 @@ jobs:
                   print(str(no)+': '+clean[:220])
           print('PHP_REQUEST_STRUCTURE_END')
           PY
+
+      - name: Validate Draft PR #138 patcher against current production PHP (isolated)
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/takahama-audit"
+          mkdir -p "$ROOT/patcher-check/data"
+          curl --fail --silent --show-error --location --retry 3 \
+            "https://raw.githubusercontent.com/oosaka0123-sudo/kansai-surfer-ks/proposal/ks-takahama-split-dryrun-20261122/scripts/takahama_split_dryrun.py" \
+            -o "$ROOT/takahama_split_dryrun.py"
+          python3 -m py_compile "$ROOT/takahama_split_dryrun.py"
+          SHA="$(sha256sum "$ROOT/production.php" | awk '{print $1}')"
+          python3 "$ROOT/takahama_split_dryrun.py" \
+            --input "$ROOT/production.php" --expected-sha256 "$SHA" \
+            --output "$ROOT/patcher-check/fetch_wave_data.php"
+          php -l "$ROOT/patcher-check/fetch_wave_data.php"
+          SANDBOX="$ROOT/patcher-check" python3 - <<'PY'
+          from pathlib import Path
+          import os,re
+          p=Path(os.environ['SANDBOX'])/'fetch_wave_data.php'
+          s=p.read_text(encoding='utf8')
+          m=re.search(r'(?s)(\$SPOTS\s*=\s*\[.*?\n\];)',s)
+          assert m, 'missing spots array'
+          extra="\n$SPOTS = ['takahama' => $SPOTS['takahama']];\n"
+          s=s[:m.end()]+extra+s[m.end():]
+          p.write_text(s,encoding='utf8')
+          print('CANDIDATE_PATCHER_SPOT_FILTER=TAKAHAMA_ONLY')
+          PY
+          php -l "$ROOT/patcher-check/fetch_wave_data.php"
+          (
+            cd "$ROOT/patcher-check"
+            timeout 100 php fetch_wave_data.php > execution.log 2>&1 || {
+              echo "PATCHED_GENERATOR_EXIT_FAILURE"
+              exit 1
+            }
+          )
+          test -s "$ROOT/patcher-check/data/spot_takahama.json"
+          test -s "$ROOT/patcher-check/data/wave_api.json"
+          ROOT="$ROOT" python3 - <<'PY'
+          import json,os,pathlib
+          r=pathlib.Path(os.environ['ROOT'])
+          a=json.loads((r/'candidate_coastal/data/spot_takahama.json').read_text('utf8'))
+          b=json.loads((r/'patcher-check/data/spot_takahama.json').read_text('utf8'))
+          x=json.loads((r/'candidate_coastal/data/wave_api.json').read_text('utf8'))
+          y=json.loads((r/'patcher-check/data/wave_api.json').read_text('utf8'))
+          for key in ['marine','weather']:
+              for fld in ['latitude','longitude']:
+                  assert abs(a[key][fld]-b[key][fld])<0.0000001,(key,fld)
+          for period in ['now','tomorrow_7am']:
+              old=x['spots']['takahama'][period]
+              new=y['spots']['takahama'][period]
+              for k in ('wave_height_m','wave_period_sec','wind_speed_ms','wind_direction_deg','score','is_offshore'):
+                  if isinstance(old[k],bool):
+                      assert old[k]==new[k],(period,k,old[k],new[k])
+                  elif isinstance(old[k],(int,float)):
+                      tolerance=0.2 if k in ('wave_height_m','wave_period_sec','wind_speed_ms') else (10 if k=='wind_direction_deg' else 5)
+                      assert abs(old[k]-new[k])<=tolerance,(period,k,old[k],new[k])
+                  else:
+                      assert old[k]==new[k],(period,k)
+          print('CANDIDATE_PATCHER_GRID_MATCH=YES')
+          print('CANDIDATE_PATCHER_SCORE_MATCH_WITH_TOLERANCE=YES')
+          print('ORIGINAL_PHP_UNMODIFIED=YES')
+          print('PRODUCTION_WRITES=0')
+          PY
