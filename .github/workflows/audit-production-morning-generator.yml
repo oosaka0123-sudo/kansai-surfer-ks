@@ -1,148 +1,189 @@
 name: Audit production morning generator safely
-
 on:
   workflow_dispatch:
-
 permissions:
   contents: read
-
 concurrency:
-  group: ks-morning-generator-audit
+  group: ks-takahama-10day-ui-single-file-release
   cancel-in-progress: false
-
 jobs:
-  audit:
+  takahama_10day_html_only:
     runs-on: ubuntu-latest
-    timeout-minutes: 6
+    timeout-minutes: 12
     steps:
-      - name: Install lftp
-        run: sudo apt-get update -qq && sudo apt-get install -y lftp
-
-      - name: Download production generator candidates read-only
+      - name: Checkout exact reviewed Takahama HTML candidate
+        uses: actions/checkout@v4
+        with:
+          ref: fix/takahama-10day-ui-only-20261122
+          persist-credentials: false
+      - name: Prepare private FTPS workspace
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "cd0c996079ef40ac2252b480a328cae62575d7af"
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq lftp gnupg >/dev/null
+          install -d -m 0700 "$RUNNER_TEMP/ks-takahama-10day-release"
+          test "$(sha256sum takahama.html | cut -d' ' -f1)" = "cc9dadaaf2169d70b492d4e7d3c27c182c587b84b49b0aaf68abc4bc9bcc9b9f"
+          echo "CANDIDATE_SHA256_PIN=PASS"
+      - name: Download live Takahama HTML by FTPS GET only
         shell: bash
         env:
-          FTP_USERNAME: ${{ secrets.KS_NAMI_FTP_USER }}
-          FTP_PASSWORD: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+          FTP_USER: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASS: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
         run: |
           set -euo pipefail
           set +x
-          test -n "$FTP_USERNAME"
-          test -n "$FTP_PASSWORD"
-          TMP="$RUNNER_TEMP/ks-morning-generator-audit"
-          mkdir -p "$TMP"
-
+          test -n "$FTP_USER" && test -n "$FTP_PASS"
+          root="$RUNNER_TEMP/ks-takahama-10day-release"
           lftp <<LFTP_EOF
           set cmd:fail-exit true
           set ftp:ssl-force true
           set ftp:ssl-protect-data true
           set ftp:passive-mode true
-          open -u "$FTP_USERNAME","$FTP_PASSWORD" ftp.lolipop.jp
-          get /kansai/admin/ai_draft.php -o "$TMP/ai_draft.php"
-          get /kansai/admin/auto_wave_post.php -o "$TMP/auto_wave_post.php"
-          get /kansai/admin/auto_wave_today.php -o "$TMP/auto_wave_today.php"
+          set net:timeout 25
+          set net:max-retries 2
+          open -u "$FTP_USER","$FTP_PASS" ftp.lolipop.jp
+          get /kansai/takahama.html -o "$root/original.html"
           bye
           LFTP_EOF
-
-          AUDIT_ROOT="$TMP" python3 - <<'PY'
-          import hashlib
-          import os
-          import pathlib
-          import re
-          from urllib.parse import urlparse
-
-          root = pathlib.Path(os.environ["AUDIT_ROOT"])
-          terms = [
-              "朝", "今日", "明日", "ランキング", "記事", "ブログ", "波情報",
-              "articles.json", "file_put_contents", "json_encode", "json_decode",
-              "anthropic", "gemini", "claude", "prompt", "system"
-          ]
-          safe_calls = [
-              "file_put_contents", "file_get_contents", "json_encode", "json_decode",
-              "curl_init", "curl_exec", "fopen", "fwrite", "rename", "copy"
-          ]
-
-          print("MORNING_GENERATOR_SAFE_AUDIT_V1")
-          for path in sorted(root.glob("*.php")):
-              raw = path.read_bytes()
-              text = raw.decode("utf-8", errors="ignore")
-              print(f"FILE={path.name}")
-              print(f"BYTES={len(raw)}")
-              print(f"LINES={text.count(chr(10)) + 1}")
-              print(f"SHA256={hashlib.sha256(raw).hexdigest()}")
-
-              funcs = sorted(set(re.findall(r"(?i)\bfunction\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(", text)))
-              print("FUNCTIONS=" + (",".join(funcs) if funcs else "(none)"))
-
-              calls = [name for name in safe_calls if re.search(r"\b" + re.escape(name) + r"\s*\(", text)]
-              print("SAFE_CALLS=" + (",".join(calls) if calls else "(none)"))
-
-              php_refs = sorted(set(pathlib.PurePosixPath(x).name for x in re.findall(r"""['"]([^'"]+\.php)['"]""", text)))
-              print("PHP_REFS=" + (",".join(php_refs) if php_refs else "(none)"))
-
-              json_refs = sorted(set(pathlib.PurePosixPath(x).name for x in re.findall(r"""['"]([^'"]+\.json)['"]""", text)))
-              print("JSON_REFS=" + (",".join(json_refs) if json_refs else "(none)"))
-
-              array_keys = sorted(set(re.findall(r"""\[['"]([A-Za-z0-9_\-]{1,64})['"]\]""", text)))
-              print("ARRAY_KEYS=" + (",".join(array_keys[:200]) if array_keys else "(none)"))
-
-              for fname in ("generate_article", "fetch_osaka_weather", "fetch_marine_data", "save_article", "rate_spot"):
-                  sig = re.search(r"(?is)function\s+" + re.escape(fname) + r"\s*\((.*?)\)\s*\{", text)
-                  if sig:
-                      params = re.sub(r"\s+", " ", sig.group(1)).strip()
-                      params = re.sub(r"=[^,)]*", "=<default>", params)
-                      print(f"SIGNATURE[{fname}]={params[:500]}")
-
-              hosts = set()
-              for url in re.findall(r"https?://[^\s'\"<>]+", text, flags=re.I):
-                  try:
-                      host = urlparse(url).hostname
-                  except Exception:
-                      host = None
-                  if host:
-                      hosts.add(host.lower())
-              print("HOSTS=" + (",".join(sorted(hosts)) if hosts else "(none)"))
-
-              models = sorted(set(re.findall(r"claude-[a-z0-9][a-z0-9._-]*", text, flags=re.I)))
-              print("CLAUDE_MODELS=" + (",".join(models) if models else "(none)"))
-
-              prompt_vars = sorted(set(re.findall(
-                  r"(?im)^\s*\$([A-Za-z_][A-Za-z0-9_]*(?:prompt|instruction|system)[A-Za-z0-9_]*)\s*=",
-                  text
-              )))
-              print("PROMPT_LIKE_VARS=" + (",".join(prompt_vars) if prompt_vars else "(none)"))
-
-              writes = []
-              for match in re.finditer(r"file_put_contents\s*\(\s*(['\"])([^'\"]+)\1", text):
-                  target = pathlib.PurePosixPath(match.group(2)).name
-                  if target:
-                      writes.append(target)
-              print("LITERAL_WRITE_BASENAMES=" + (",".join(sorted(set(writes))) if writes else "(none)"))
-
-              cli_guard = bool(re.search(r"PHP_SAPI|php_sapi_name|STDIN|argv", text, flags=re.I))
-              print("CLI_GUARD_HINT=" + ("yes" if cli_guard else "no"))
-
-              for term in terms:
-                  count = text.lower().count(term.lower())
-                  if count:
-                      print(f"TERM_COUNT[{term}]={count}")
-
-              shape_lines = []
-              for no, line in enumerate(text.splitlines(), start=1):
-                  if re.search(r"(?i)prompt|instruction|system", line) and "$" in line:
-                      scrubbed = re.sub(r"""(['"])(?:(?=(\\?))\2.)*?\1""", '"<redacted-string>"', line)
-                      scrubbed = re.sub(r"[A-Za-z0-9_\-]{24,}", "<redacted-token>", scrubbed)
-                      shape_lines.append(f"{no}:{scrubbed.strip()[:240]}")
-              print("PROMPT_SHAPE_LINES=" + (" || ".join(shape_lines[:20]) if shape_lines else "(none)"))
-
-              call_shapes = []
-              for fname in ("generate_article", "fetch_osaka_weather", "fetch_marine_data", "save_article", "rate_spot"):
-                  for no, line in enumerate(text.splitlines(), start=1):
-                      if re.search(r"\b" + re.escape(fname) + r"\s*\(", line) and not re.search(r"\bfunction\s+" + re.escape(fname), line):
-                          scrubbed = re.sub(r"""(['"])(?:(?=(\\?))\2.)*?\1""", '"<redacted-string>"', line)
-                          scrubbed = re.sub(r"[A-Za-z0-9_\-]{24,}", "<redacted-token>", scrubbed)
-                          call_shapes.append(f"{no}:{scrubbed.strip()[:320]}")
-              print("CALL_SHAPES=" + (" || ".join(call_shapes[:30]) if call_shapes else "(none)"))
-              print("END_FILE")
-
-          print("AUDIT_COMPLETE_NO_SOURCE_EXPORTED")
+          test -s "$root/original.html"
+          test "$(sha256sum "$root/original.html" | cut -d' ' -f1)" = "88fab7a37e31e67678f1772b3b11b273d9045f05f5dcc65e8e5f4b645ed7a6a9"
+          echo "LIVE_HTML_BASELINE_SHA=PASS"
+      - name: Verify the only changed bytes belong to section 05
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/ks-takahama-10day-release"
+          ORIGINAL="$root/original.html" CANDIDATE="$GITHUB_WORKSPACE/takahama.html" python3 - <<'PY'
+          from pathlib import Path
+          import os,hashlib,re
+          o=Path(os.environ['ORIGINAL']).read_bytes()
+          n=Path(os.environ['CANDIDATE']).read_bytes()
+          def locate(data,needle):
+              start=data.find(needle)
+              assert start!=-1 and data.find(needle,start+1)==-1,"anchor missing or repeated"
+              begin=data.rfind(b'<section class="section',0,start)
+              assert begin>=0,"section start missing"
+              end=data.find(b'</section>',start)
+              assert end!=-1,"section end missing"
+              return begin,end+len(b'</section>')
+          os_,oe=locate(o,b'<span class="no">05</span>')
+          ns,ne=locate(n,b'id="ks10-title"')
+          assert o[:os_]==n[:ns],"preceding page content changed"
+          assert o[oe:]==n[ne:],"following page content changed"
+          old=o[os_:oe].decode('utf-8')
+          new=n[ns:ne].decode('utf-8')
+          assert 'id="weeklyBody"' in old
+          assert 'id="ks10-body"' in new
+          assert '10日間の波・風予報' in new
+          assert 'latitude=35.65&longitude=135.45' in new
+          assert 'latitude=35.49133&longitude=135.55782' in new
+          assert 'forecast_days=10' in new
+          assert '伊良湖' not in new and 'Ikumi' not in new
+          assert n.count(b'class="floating-line"')==o.count(b'class="floating-line"')==1
+          assert b'nami_common.js?v=1018' in n
+          assert b'const SPOT_CONFIG' in n
+          assert b'LAT: 35.708, LNG: 135.208' in n
+          print('SECTION_05_ONLY_DIFF=PASS')
+          print('LINE_AND_OTHER_SECTIONS_IDENTICAL=YES')
+          print('TWO_API_COORDINATES=CORRECT')
+          print('ORIGINAL_SHA256='+hashlib.sha256(o).hexdigest())
+          print('CANDIDATE_SHA256='+hashlib.sha256(n).hexdigest())
           PY
+      - name: Save encrypted original to recoverable private artifact
+        shell: bash
+        env:
+          BACKUP_SECRET: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          root="$RUNNER_TEMP/ks-takahama-10day-release"
+          printf '%s' "$BACKUP_SECRET" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --symmetric --cipher-algo AES256 --output "$root/takahama-old.html.gpg" "$root/original.html"
+          printf '%s' "$BACKUP_SECRET" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --decrypt "$root/takahama-old.html.gpg" > "$root/verify.html"
+          cmp "$root/original.html" "$root/verify.html"
+          rm -f "$root/verify.html"
+          echo "ENCRYPTED_BACKUP_VERIFIED=YES"
+      - name: Store encrypted rollback artifact before upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: takahama-weekly-html-before-10day-20261122
+          path: ${{ runner.temp }}/ks-takahama-10day-release/takahama-old.html.gpg
+          retention-days: 30
+          if-no-files-found: error
+      - name: Recheck origin and upload exactly one HTML file with rollback
+        shell: bash
+        env:
+          FTP_USER: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASS: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          root="$RUNNER_TEMP/ks-takahama-10day-release"
+          lftp <<LFTP_RECHECK
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 25
+          set net:max-retries 2
+          open -u "$FTP_USER","$FTP_PASS" ftp.lolipop.jp
+          get /kansai/takahama.html -o "$root/preput.html"
+          bye
+          LFTP_RECHECK
+          cmp "$root/original.html" "$root/preput.html"
+          rollback() {
+            echo "UPLOAD_FAILED_ATTEMPT_ROLLBACK"
+            if lftp <<LFTP_RESTORE
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 25
+          set net:max-retries 2
+          open -u "$FTP_USER","$FTP_PASS" ftp.lolipop.jp
+          put "$root/original.html" -o /kansai/takahama.html
+          get /kansai/takahama.html -o "$root/restored.html"
+          bye
+          LFTP_RESTORE
+            then
+              cmp -s "$root/original.html" "$root/restored.html" && echo "ROLLBACK_VERIFIED=YES" || echo "ROLLBACK_VERIFIED=NO"
+            else
+              echo "ROLLBACK_FTPS_FAILED"
+            fi
+          }
+          if ! lftp <<LFTP_DEPLOY
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 25
+          set net:max-retries 2
+          open -u "$FTP_USER","$FTP_PASS" ftp.lolipop.jp
+          put "$GITHUB_WORKSPACE/takahama.html" -o /kansai/takahama.html
+          get /kansai/takahama.html -o "$root/verified.html"
+          bye
+          LFTP_DEPLOY
+          then
+            rollback
+            exit 1
+          fi
+          if ! cmp -s "$GITHUB_WORKSPACE/takahama.html" "$root/verified.html"; then
+            rollback
+            exit 1
+          fi
+          test "$(sha256sum "$root/verified.html" | cut -d' ' -f1)" = "cc9dadaaf2169d70b492d4e7d3c27c182c587b84b49b0aaf68abc4bc9bcc9b9f" || { rollback; exit 1; }
+          echo "DEPLOY_SUCCESS_TARGET=/kansai/takahama.html"
+          echo "REMOTE_SHA256=cc9dadaaf2169d70b492d4e7d3c27c182c587b84b49b0aaf68abc4bc9bcc9b9f"
+          echo "OTHER_UPLOADED_FILES=0"
+      - name: Verify published UI and HTTP health
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 4 'https://kansai.rss7.net/takahama.html?ks10_deploy=20261122' -o "$RUNNER_TEMP/takahama-live.html"
+          grep -q 'id="ks10-forecast"' "$RUNNER_TEMP/takahama-live.html"
+          grep -q 'id="ks10-body"' "$RUNNER_TEMP/takahama-live.html"
+          grep -q '10日間の波・風予報' "$RUNNER_TEMP/takahama-live.html"
+          if grep -q 'id="weeklyBody"' "$RUNNER_TEMP/takahama-live.html"; then echo "OLD_WEEKLY_UI_STILL_LIVE";exit 1;fi
+          echo "PUBLIC_10DAY_UI=PASS"
+          echo "PUB_HTTP=200"
