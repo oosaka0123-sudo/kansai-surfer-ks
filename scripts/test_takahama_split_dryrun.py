@@ -49,12 +49,12 @@ class PatchTests(unittest.TestCase):
     def test_sha_guard_and_private_output(self):
         with tempfile.TemporaryDirectory() as d:
             p = Path(d)/'production.php'
-            p.write_text(PHP)
+            p.write_text(PHP, encoding='utf-8')
             target=Path(d)/'preview.php'
             correct=hashlib.sha256(p.read_bytes()).hexdigest()
             self.assertEqual(main(['--input',str(p),'--expected-sha256',correct,'--output',str(target)]),0)
             self.assertTrue(target.is_file())
-            self.assertEqual(p.read_text(),PHP)
+            self.assertEqual(p.read_text(encoding='utf-8'),PHP)
             with self.assertRaises(UnsafePatch):
                 main(['--input',str(p),'--expected-sha256','0'*64])
             with self.assertRaises(UnsafePatch):
@@ -90,12 +90,12 @@ echo json_encode($captured, JSON_THROW_ON_ERROR);
 
 @unittest.skipUnless(shutil.which('php'), 'PHP CLI is required for executable URL tests')
 class ExecutableUrlTests(unittest.TestCase):
-    def run_php(self, source: str) -> tuple[subprocess.CompletedProcess[str], list[str] | None]:
+    def run_php(self, source: str, php_options: tuple[str, ...] = ()) -> tuple[subprocess.CompletedProcess[str], list[str] | None]:
         with tempfile.TemporaryDirectory(prefix='ks-takahama-sandbox-') as directory:
             path = Path(directory) / 'fixture.php'
             path.write_text(source, encoding='utf-8')
             result = subprocess.run(
-                ['php', str(path)],
+                ['php', *php_options, str(path)],
                 capture_output=True, text=True, encoding='utf-8', errors='replace',
                 timeout=15, check=False,
             )
@@ -147,6 +147,18 @@ class ExecutableUrlTests(unittest.TestCase):
                 self.assertEqual(params['latitude'], [lat], name)
                 self.assertEqual(params['longitude'], [lon], name)
 
+
+    def test_url_separator_is_not_controlled_by_php_ini(self):
+        patched = build_preview(EXECUTABLE_PHP.encode()).decode()
+        result, urls = self.run_php(
+            patched, ('-d', 'arg_separator.output=&amp;'),
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        wind = parse_qs(urlparse(urls[1]).query)
+        self.assertEqual(wind['latitude'], ['35.49133'])
+        self.assertEqual(wind['longitude'], ['135.55782'])
+        self.assertEqual(wind['timezone'], ['Asia/Tokyo'])
+
     def test_php_source_is_not_executed_with_network(self):
         # Explicitly verify our fixture uses only the capturing stub.
         self.assertIn('function fetchUrl($url)', EXECUTABLE_PHP)
@@ -163,14 +175,32 @@ class AdditionalGuardTests(unittest.TestCase):
         with self.assertRaises(UnsafePatch):
             build_preview(duplicated.encode())
 
+
+    def test_uppercase_takahama_key_is_rejected(self):
+        changed = PHP.replace("'takahama' =>", "'Takahama' =>", 1)
+        with self.assertRaisesRegex(UnsafePatch, 'Exactly one Takahama'):
+            build_preview(changed.encode('utf-8'))
+
+    def test_output_outside_private_temp_root_is_rejected(self):
+        with tempfile.TemporaryDirectory() as d:
+            source = Path(d) / 'source.php'
+            source.write_text(PHP, encoding='utf-8')
+            candidate = Path.home() / 'ks-takahama-preview-forbidden.php'
+            self.assertFalse(candidate.exists(), 'Test filename must not already exist')
+            sha = hashlib.sha256(source.read_bytes()).hexdigest()
+            with self.assertRaisesRegex(UnsafePatch, 'private temporary directory'):
+                main(['--input', str(source), '--expected-sha256', sha,
+                      '--output', str(candidate)])
+            self.assertFalse(candidate.exists())
+
     def test_existing_output_not_overwritten(self):
         with tempfile.TemporaryDirectory() as directory:
             source = Path(directory) / 'source.php'
             out = Path(directory) / 'existing.php'
-            source.write_text(PHP)
+            source.write_text(PHP, encoding='utf-8')
             out.write_text('KEEP-ME')
             digest = hashlib.sha256(source.read_bytes()).hexdigest()
-            with self.assertRaises(UnsafePatch):
+            with self.assertRaisesRegex(UnsafePatch, 'Output already exists'):
                 main(['--input', str(source), '--expected-sha256', digest,
                       '--output', str(out)])
             self.assertEqual(out.read_text(), 'KEEP-ME')
