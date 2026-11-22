@@ -1,4 +1,8 @@
+from __future__ import annotations
+
 import hashlib
+import os
+import stat
 import json
 import shutil
 import subprocess
@@ -88,8 +92,12 @@ echo json_encode($captured, JSON_THROW_ON_ERROR);
 '''
 
 
-@unittest.skipUnless(shutil.which('php'), 'PHP CLI is required for executable URL tests')
 class ExecutableUrlTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        if shutil.which('php') is None:
+            raise RuntimeError('PHP CLI is mandatory for executable URL tests')
+
     def run_php(self, source: str, php_options: tuple[str, ...] = ()) -> tuple[subprocess.CompletedProcess[str], list[str] | None]:
         with tempfile.TemporaryDirectory(prefix='ks-takahama-sandbox-') as directory:
             path = Path(directory) / 'fixture.php'
@@ -122,6 +130,19 @@ class ExecutableUrlTests(unittest.TestCase):
             for key in set(original) - {'latitude', 'longitude'}:
                 self.assertEqual(revised.get(key), original[key], (i, key))
         self.assertEqual(after[2:], before[2:], 'Other surf spots must be byte-identical')
+
+    def test_unexpected_weather_url_components_fail_closed(self):
+        for replacement in (
+            'http://api.open-meteo.com/v1/forecast',
+            'https://api.open-meteo.com:8443/v1/forecast',
+        ):
+            with self.subTest(url=replacement):
+                fixture = EXECUTABLE_PHP.replace(
+                    'https://api.open-meteo.com/v1/forecast', replacement, 1)
+                result, urls = self.run_php(build_preview(fixture.encode()).decode())
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIsNone(urls)
+                self.assertIn('Unsupported Takahama weather URL components', result.stderr)
 
     def test_missing_weather_longitude_fails_closed(self):
         # The tool may create a preview of a changed API URL shape; the PHP
@@ -167,6 +188,45 @@ class ExecutableUrlTests(unittest.TestCase):
 
 
 class AdditionalGuardTests(unittest.TestCase):
+    def test_output_parent_must_preexist(self):
+        with tempfile.TemporaryDirectory() as d:
+            source = Path(d) / 'source.php'
+            source.write_text(PHP, encoding='utf-8')
+            sha = hashlib.sha256(source.read_bytes()).hexdigest()
+            output = Path(d) / 'nonexistent' / 'preview.php'
+            with self.assertRaisesRegex(UnsafePatch, 'parent directory must exist'):
+                main(['--input', str(source), '--expected-sha256', sha,
+                      '--output', str(output)])
+            self.assertFalse(output.exists())
+
+    def test_posix_file_permissions_owner_only(self):
+        if os.name != 'posix':
+            self.skipTest('POSIX permission test')
+        with tempfile.TemporaryDirectory() as d:
+            source = Path(d) / 'source.php'
+            source.write_text(PHP, encoding='utf-8')
+            sha = hashlib.sha256(source.read_bytes()).hexdigest()
+            output = Path(d) / 'private_preview.php'
+            self.assertEqual(main(['--input', str(source), '--expected-sha256', sha,
+                                   '--output', str(output)]), 0)
+            self.assertEqual(stat.S_IMODE(output.stat().st_mode), 0o600)
+
+    def test_world_readable_posix_parent_rejected(self):
+        if os.name != 'posix':
+            self.skipTest('POSIX permission test')
+        with tempfile.TemporaryDirectory() as d:
+            source = Path(d) / 'source.php'
+            source.write_text(PHP, encoding='utf-8')
+            sha = hashlib.sha256(source.read_bytes()).hexdigest()
+            public = Path(d) / 'public'
+            public.mkdir(mode=0o755)
+            public.chmod(0o755)
+            output = public / 'preview.php'
+            with self.assertRaisesRegex(UnsafePatch, 'owner-only'):
+                main(['--input', str(source), '--expected-sha256', sha,
+                      '--output', str(output)])
+            self.assertFalse(output.exists())
+
     def test_duplicate_takahama_entry_rejected(self):
         duplicated = PHP.replace(
             "  'ikumi' =>",
