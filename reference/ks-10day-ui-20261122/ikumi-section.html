@@ -1,0 +1,257 @@
+<section class="section ks10-section" id="ks10-forecast" aria-labelledby="ks10-title">
+  <div class="ks10-heading">
+    <h2 class="section-title ks10-title" id="ks10-title"><span class="no">05</span><i class="fa-solid fa-calendar-week ico" aria-hidden="true"></i>10日間の波・風予報</h2>
+    <span class="ks10-subtitle">生見｜5:00〜17:00</span>
+  </div>
+  <div class="ks10-table-wrap">
+    <table class="ks10-table" aria-label="生見 10日間の波と風の予報">
+      <colgroup><col style="width:15%"><col style="width:9%"><col style="width:25%"><col style="width:23%"><col style="width:12%"><col style="width:16%"></colgroup>
+      <thead><tr>
+        <th scope="col">日付</th>
+        <th scope="col">天気</th>
+        <th scope="col">波高 <small>(m)</small></th>
+        <th scope="col">風速 <small>(m/s)</small></th>
+        <th scope="col">風向</th>
+        <th scope="col">判定</th>
+      </tr></thead>
+      <tbody id="ks10-body"><tr><td colspan="6">データ取得中...</td></tr></tbody>
+    </table>
+  </div>
+  <div class="ks10-meta"><span id="ks10-updated">データ取得中...</span><span>提供：Open-Meteo</span></div>
+  <p class="ks10-note">波高：5〜17時の最小〜最大／風速：同時間帯の平均値／風向：同時間帯の代表風向／判定：従来のKS評価方式。横棒はこの10日間での相対比較です。データ不足時は「—」と表示し、推測補完しません。波高は沖合の海洋予報モデル推算値で、現地の波サイズの実測ではありません。判定も予測に基づく目安です。</p>
+  <style>
+    #ks10-forecast{min-width:0}
+    #ks10-forecast .ks10-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+    #ks10-forecast .ks10-title{margin:0;line-height:1.3;letter-spacing:-.025em;flex:1 1 auto}
+    #ks10-forecast .ks10-title .ico{margin-right:7px}
+    #ks10-forecast .ks10-subtitle{font-size:11px;color:#b4d5e4;white-space:nowrap;padding-left:3px}
+    #ks10-forecast .ks10-table-wrap{border:0.5px solid rgba(64,181,224,.55);border-radius:15px;overflow:hidden;background:#05263a}
+    #ks10-forecast .ks10-table{width:100%;min-width:0;border:0;border-collapse:separate;border-spacing:0;table-layout:fixed;margin:0;background:transparent;color:#f6fbff;font-variant-numeric:tabular-nums}
+    #ks10-forecast .ks10-table th,#ks10-forecast .ks10-table td{padding:9px 3px;border-right:0.5px solid rgba(90,170,207,.20);border-bottom:0.5px solid rgba(90,170,207,.20);text-align:center;vertical-align:middle;overflow:hidden;white-space:nowrap;box-sizing:border-box}
+    #ks10-forecast .ks10-table th:last-child,#ks10-forecast .ks10-table td:last-child{border-right:0}
+    #ks10-forecast .ks10-table tr:last-child td{border-bottom:0}
+    #ks10-forecast .ks10-table th{height:37px;font-size:10px;line-height:1.2;font-weight:700;letter-spacing:0;background:#083044}
+    #ks10-forecast .ks10-table th small{font-size:8px}
+    #ks10-forecast .ks10-table td{height:50px;font-size:10px;line-height:1.2;background:transparent}
+    #ks10-forecast .ks10-table tbody tr:first-child td{background:rgba(10,128,159,.19);box-shadow:inset 0 1px rgba(34,207,236,.23)}
+    #ks10-forecast .ks10-date{font-size:9px;font-weight:700}
+    #ks10-forecast .ks10-sat{color:#3dd0fa}
+    #ks10-forecast .ks10-sun{color:#ff7487}
+    #ks10-forecast .ks10-weather{font-size:17px;line-height:1}
+    #ks10-forecast .ks10-track{height:30px;border-radius:7px;background:#183f54;display:flex;position:relative;align-items:center;justify-content:center;overflow:hidden}
+    #ks10-forecast .ks10-fill{position:absolute;top:0;bottom:0;left:0;border-radius:7px;width:var(--ks10-fill,0%);max-width:100%;transition:width .35s ease}
+    #ks10-forecast .ks10-wave{background:linear-gradient(90deg,#058cb4,#19d1ed)}
+    #ks10-forecast .ks10-wind{background:linear-gradient(90deg,#b55b0a,#ffa826)}
+    #ks10-forecast .ks10-val{position:relative;z-index:1;font-size:9px;line-height:1;white-space:nowrap;font-weight:600;color:#f9fcff;text-shadow:0 1px 2px #031b28}
+    #ks10-forecast .ks10-dir{display:flex;gap:0;align-items:center;justify-content:center;white-space:nowrap;font-size:9px;font-weight:600}
+    #ks10-forecast .ks10-arrow{font-size:13px;line-height:1}
+    #ks10-forecast .ks10-judgment{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;line-height:1.12;min-width:0}
+    #ks10-forecast .ks10-judgment-main{font-size:8.5px;font-weight:700;letter-spacing:-.03em;white-space:nowrap}
+    #ks10-forecast .ks10-judgment-stars{font-size:8px;letter-spacing:-.045em;white-space:nowrap;color:#ffd57a}
+    #ks10-forecast .ks10-action-go .ks10-judgment-main{color:#6df3b8}
+    #ks10-forecast .ks10-action-ok .ks10-judgment-main{color:#7de2f5}
+    #ks10-forecast .ks10-action-meh .ks10-judgment-main{color:#f4c87e}
+    #ks10-forecast .ks10-action-no .ks10-judgment-main{color:#abb9c8}
+    #ks10-forecast .ks10-meta{display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap;margin:12px 2px 8px;font-size:11px;color:#a5c7d8}
+    #ks10-forecast .ks10-note{margin:0 2px;font-size:11px;line-height:1.6;color:#a5c7d8}
+    @media(max-width:390px){
+      #ks10-forecast .ks10-table th,#ks10-forecast .ks10-table td{padding-left:2px;padding-right:2px}
+      #ks10-forecast .ks10-table th{font-size:9px}
+      #ks10-forecast .ks10-table td{height:48px}
+      #ks10-forecast .ks10-val{font-size:9px}
+      #ks10-forecast .ks10-dir{font-size:8px}
+      #ks10-forecast .ks10-arrow{font-size:12px}
+      #ks10-forecast .ks10-date{font-size:9px}
+    }
+    @media(prefers-reduced-motion:reduce){#ks10-forecast .ks10-fill{transition:none}}
+  </style>
+  <script>
+  (function(){
+    'use strict';
+    var body=document.getElementById('ks10-body'),updated=document.getElementById('ks10-updated');
+    if(!body||!updated)return;
+    var days=['日','月','火','水','木','金','土'];
+    var dirs=['北','北東','東','南東','南','南西','西','北西'];
+    var arrows=['↑','↗','→','↘','↓','↙','←','↖'];
+    // SPOT_CONFIG は05セクションより後のscriptで宣言されるため、取得時に読み込む。
+    // 判定は既存 nami_common.js の getVerdict/calcScore と同じ実装を、このセクション内で再利用。
+    function getSpotConfig(){
+        try { if (typeof SPOT_CONFIG !== 'undefined') return SPOT_CONFIG; } catch(e) {}
+        return null;
+      }
+    
+    function isOffshore(deg) {
+        const cfg = getSpotConfig(); if (!cfg || deg == null || isNaN(deg)) return false;
+        const start = cfg.OFFSHORE_START, end = cfg.OFFSHORE_END;
+        if (start > end) return deg >= start || deg <= end;
+        return deg >= start && deg <= end;
+      }
+    
+    function isOnshore(deg) {
+        const cfg = getSpotConfig(); if (!cfg || deg == null || isNaN(deg)) return false;
+        const start = cfg.OFFSHORE_START, end = cfg.OFFSHORE_END;
+        let offshoreCenter = start > end ? ((start + end + 360) / 2) % 360 : (start + end) / 2;
+        const onshoreCenter = (offshoreCenter + 180) % 360;
+        let diff = Math.abs(deg - onshoreCenter); if (diff > 180) diff = 360 - diff;
+        return diff <= 60;
+      }
+    
+    function swellDirScore(dir) {
+        const cfg = getSpotConfig(); if (!cfg || dir == null) return 0.7;
+        const min = cfg.SWELL_BEST_MIN, max = cfg.SWELL_BEST_MAX;
+        if (dir >= min && dir <= max) return 1.0;
+        if (dir >= min - 30 && dir <= max + 30) return 0.7;
+        return 0.4;
+      }
+    
+    function calcScore(h, p, ws, wd, sd) {
+        const cfg = getSpotConfig();
+        if (h == null || h < 0.2) return 0.5;
+        if (h < 0.3) return Math.min(1.5, h * 4);
+        let sizeScore;
+        if (h < 0.4) sizeScore = 1.5;
+        else if (h < 0.6) sizeScore = 2.5;
+        else if (h < 1.0) sizeScore = 4.0;
+        else if (h < 1.5) sizeScore = 5.0;
+        else if (h < 2.0) sizeScore = 4.5;
+        else if (h < 2.5) sizeScore = 3.5;
+        else sizeScore = 2.5;
+        let periodScore = 1.0;
+        if (p != null) {
+          if (p < 5) periodScore = 0.3;
+          else if (p < 7) periodScore = 0.8;
+          else if (p < 9) periodScore = 1.3;
+          else if (p < 11) periodScore = 1.7;
+          else periodScore = 2.0;
+        }
+        let windMult; const ws_ = ws != null ? ws : 5;
+        const windTol = (cfg && cfg.WIND_TOLERANCE) ? cfg.WIND_TOLERANCE : 1.0;
+        const onshoreBoost = (cfg && cfg.ONSHORE_BOOST) ? 1.0 : 0;
+        if (ws_ < 1.5) windMult = 1.0;
+        else if (isOffshore(wd)) {
+          if (ws_ < 4 * windTol) windMult = 1.0;
+          else if (ws_ < 7 * windTol) windMult = 0.95;
+          else if (ws_ < 10 * windTol) windMult = 0.85;
+          else windMult = 0.7;
+        } else if (isOnshore(wd)) {
+          if (ws_ < 3 * windTol) windMult = 0.85 + 0.1 * onshoreBoost;
+          else if (ws_ < 5 * windTol) windMult = 0.65 + 0.15 * onshoreBoost;
+          else if (ws_ < 8 * windTol) windMult = 0.5 + 0.1 * onshoreBoost;
+          else windMult = 0.35 + 0.1 * onshoreBoost;
+        } else {
+          if (ws_ < 3 * windTol) windMult = 0.95;
+          else if (ws_ < 6 * windTol) windMult = 0.85;
+          else if (ws_ < 9 * windTol) windMult = 0.7;
+          else windMult = 0.55;
+        }
+        let periodBonus = 0;
+        if (cfg && cfg.ONSHORE_BOOST && p != null && p >= 5 && p < 8) periodBonus = 0.5;
+        return Math.min(10, Math.max(0, (sizeScore + periodScore + periodBonus) * windMult * swellDirScore(sd)));
+      }
+    
+    function scoreToStars(score) {
+        let stars = 1; if (score >= 2.5) stars = 2; if (score >= 4.0) stars = 3; if (score >= 5.5) stars = 4; if (score >= 7.0) stars = 5;
+        return '★'.repeat(stars) + '☆'.repeat(5 - stars);
+      }
+    
+    function getVerdict(score, waveH) {
+        if (waveH == null) return { emoji: '❓', text: 'データ取得中', action: 'action-meh' };
+        if (waveH < 0.25) return { emoji: '😴', text: '諦めよ', action: 'action-no' };
+        if (score >= 7.0) return { emoji: '🔥', text: '完全GO', action: 'action-go' };
+        if (score >= 5.5) return { emoji: '✨', text: '行くべし', action: 'action-go' };
+        if (score >= 4.0) return { emoji: '👍', text: 'アリ', action: 'action-ok' };
+        if (score >= 2.5) return { emoji: '🤔', text: '微妙', action: 'action-meh' };
+        return { emoji: '😴', text: '諦めよ', action: 'action-no' };
+      }
+    function finite(v){return typeof v==='number'&&Number.isFinite(v)?v:null;}
+    function dateJST(){return new Date(Date.now()+9*3600000).toISOString().slice(0,10);}
+    function plusDate(date,n){var d=new Date(date+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10);}
+    function dateLabel(date){var d=new Date(date+'T00:00:00Z'),w=d.getUTCDay(),week='('+days[w]+')';return {text:(d.getUTCMonth()+1)+'/'+d.getUTCDate(),week:week,cls:w===6?'ks10-sat':w===0?'ks10-sun':''};}
+    function icon(code){if(code===null)return '—';if(code===0)return '☀️';if(code<=2)return '🌤️';if(code===3)return '☁️';if(code<=48)return '🌫️';if(code<=57)return '🌦️';if(code<=67)return '🌧️';if(code<=77)return '🌨️';if(code<=82)return '🌧️';if(code<=86)return '🌨️';if(code>=95)return '⛈️';return '☁️';}
+    function dailyMap(x){var out=new Map(),d=x&&x.daily;if(d&&Array.isArray(d.time))d.time.forEach(function(t,i){out.set(t,i);});return out;}
+    function hourlyMap(x){var m=new Map(),h=x&&x.hourly;if(!h||!Array.isArray(h.time))return m;h.time.forEach(function(t,i){if(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(t))m.set(t,i);});return m;}
+    function rowsOf(marine,weather){
+      var m=marine&&marine.hourly||{},w=weather&&weather.hourly||{},mi=hourlyMap(marine),wi=hourlyMap(weather),md=marine&&marine.daily||{},wd=weather&&weather.daily||{},mdi=dailyMap(marine),wdi=dailyMap(weather),start=dateJST(),rows=[];
+      for(var d=0;d<10;d++){
+        var date=plusDate(start,d),waves=[],winds=[],sumX=0,sumY=0,angleWeight=0,weatherAt11=null;
+        for(var hour=5;hour<=17;hour++){
+          var time=date+'T'+String(hour).padStart(2,'0')+':00',a=mi.get(time),b=wi.get(time);
+          if(a!==undefined){var h=finite(m.wave_height&&m.wave_height[a]);if(h!==null&&h>=0)waves.push(h);}
+          if(b!==undefined){
+            var v=finite(w.wind_speed_10m&&w.wind_speed_10m[b]),deg=finite(w.wind_direction_10m&&w.wind_direction_10m[b]);
+            if(v!==null&&v>=0)winds.push(v);
+            if(v!==null&&v>=0&&deg!==null){var rad=deg*Math.PI/180;sumX+=Math.sin(rad)*v;sumY+=Math.cos(rad)*v;angleWeight+=v;}
+            if(hour===11)weatherAt11=finite(w.weather_code&&w.weather_code[b]);
+          }
+        }
+        var waveMin=waves.length?Math.min.apply(null,waves):null,waveMax=waves.length?Math.max.apply(null,waves):null;
+        var speed=winds.length?winds.reduce(function(s,v){return s+v;},0)/winds.length:null;
+        var direction=angleWeight>0&&Math.hypot(sumX,sumY)>0.01?(Math.atan2(sumX,sumY)*180/Math.PI+360)%360:null;
+        // 元の週間予報と同じ日別データ・判定式を使用。欠損時は判定しない。
+        var dm=mdi.get(date),dw=wdi.get(date),judgment=null;
+        if(dm!==undefined&&dw!==undefined){
+          var h=finite(md.wave_height_max&&md.wave_height_max[dm]);
+          var p=finite(md.wave_period_max&&md.wave_period_max[dm]);
+          var waveDir=finite(md.wave_direction_dominant&&md.wave_direction_dominant[dm]);
+          var windMax=finite(wd.wind_speed_10m_max&&wd.wind_speed_10m_max[dw]);
+          var windDir=finite(wd.wind_direction_10m_dominant&&wd.wind_direction_10m_dominant[dw]);
+          if(h!==null&&p!==null&&waveDir!==null&&windMax!==null&&windDir!==null){
+            var score=calcScore(h,p,windMax*0.6,windDir,waveDir);
+            judgment={result:getVerdict(score,h),stars:scoreToStars(score)};
+          }
+        }
+        rows.push({date:date,min:waveMin,max:waveMax,speed:speed,dir:direction,code:weatherAt11,judgment:judgment});
+      }
+      return rows;
+    }
+    function track(kind,value,max,text){
+      if(value===null)return '<div class="ks10-track"><span class="ks10-val">—</span></div>';
+      var pct=max>0?Math.min(100,Math.max(0,100*value/max)):0;
+      return '<div class="ks10-track"><span class="ks10-fill ks10-'+kind+'" style="--ks10-fill:'+pct.toFixed(1)+'%"></span><span class="ks10-val">'+text+'</span></div>';
+    }
+    function render(marine,weather){
+      var rows=rowsOf(marine,weather);
+      var maxWave=Math.max.apply(null,[0].concat(rows.map(function(r){return r.max||0;})));
+      var maxWind=Math.max.apply(null,[0].concat(rows.map(function(r){return r.speed||0;})));
+      body.innerHTML=rows.map(function(r){
+        var lab=dateLabel(r.date),wv=r.min!==null&&r.max!==null?r.min.toFixed(1)+'-'+r.max.toFixed(1)+'m':'—';
+        var ws=r.speed!==null?r.speed.toFixed(1)+'m/s':'—',sector=r.dir===null?-1:Math.round(r.dir/45)%8;
+        var dir=sector<0?'—':'<span class="ks10-arrow" aria-hidden="true">'+arrows[sector]+'</span>'+dirs[sector];
+        return '<tr><td class="ks10-date">'+lab.text+' <span class="'+lab.cls+'">'+lab.week+'</span></td>'+
+          '<td class="ks10-weather" aria-label="天気">'+icon(r.code)+'</td>'+
+          '<td>'+track('wave',r.max,maxWave,wv)+'</td>'+
+          '<td>'+track('wind',r.speed,maxWind,ws)+'</td>'+
+          '<td><span class="ks10-dir">'+dir+'</span></td>'+
+          '<td>'+(r.judgment?'<span class="ks10-judgment ks10-'+r.judgment.result.action+'">'+
+          '<span class="ks10-judgment-main">'+r.judgment.result.emoji+' '+r.judgment.result.text+'</span>'+
+          '<span class="ks10-judgment-stars">'+r.judgment.stars+'</span></span>':'—')+'</td></tr>';
+      }).join('');
+    }
+    async function getJSON(url){var res=await fetch(url,{cache:'no-store'});if(!res.ok)throw new Error('HTTP '+res.status);return res.json();}
+    var running=false;
+    async function load(){
+      if(running)return;running=true;
+      var config=getSpotConfig();
+      if(!config||!Number.isFinite(config.LAT)||!Number.isFinite(config.LNG)){
+        updated.textContent='予報地点を確認できません';running=false;return;
+      }
+      var coords='latitude='+config.LAT+'&longitude='+config.LNG+'&timezone=Asia%2FTokyo&forecast_days=10';
+      var marine='https://marine-api.open-meteo.com/v1/marine?'+coords+'&hourly=wave_height&daily=wave_height_max,wave_period_max,wave_direction_dominant';
+      var weather='https://api.open-meteo.com/v1/forecast?'+coords+'&hourly=weather_code,wind_speed_10m,wind_direction_10m&daily=wind_speed_10m_max,wind_direction_10m_dominant&wind_speed_unit=ms';
+      try{
+        var results=await Promise.allSettled([getJSON(marine),getJSON(weather)]);
+        var m=results[0].status==='fulfilled'?results[0].value:null;
+        var w=results[1].status==='fulfilled'?results[1].value:null;
+        render(m,w);
+        var stamp=new Date().toLocaleString('ja-JP',{timeZone:'Asia/Tokyo',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+        updated.textContent=(m&&w?'データ取得：':'一部データ取得不可：')+stamp+' JST';
+      }catch(e){render(null,null);updated.textContent='データ取得不可';console.warn('Ikumi 10day forecast',e);}
+      finally{running=false;}
+    }
+    render(null,null);
+    setTimeout(load,0); // 下部のSPOT_CONFIG宣言後に初回取得する
+    var refresh=document.getElementById('refreshBtn');if(refresh)refresh.addEventListener('click',load);
+    setInterval(load,10*60*1000);
+  })();
+  </script>
+</section>
