@@ -12,6 +12,8 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import os
+import tempfile
 from pathlib import Path
 import re
 import sys
@@ -36,7 +38,7 @@ WEATHER_OVERRIDE = """if ($key === 'takahama') {
         $ksQuery['latitude'] = '35.49133';
         $ksQuery['longitude'] = '135.55782';
         $weatherUrl = $ksParts['scheme'] . '://' . $ksParts['host']
-            . ($ksParts['path'] ?? '') . '?' . http_build_query($ksQuery);
+            . ($ksParts['path'] ?? '') . '?' . http_build_query($ksQuery, '', '&', PHP_QUERY_RFC3986);
     }
     """
 
@@ -54,8 +56,8 @@ def build_preview(original: bytes) -> bytes:
         source = original.decode("utf-8")
     except UnicodeDecodeError as exc:
         raise UnsafePatch("Input is not UTF-8") from exc
-    spot = re.search(r"(['\"]takahama['\"]\s*=>\s*\[)(.*?)(\])", source, re.S | re.I)
-    if not spot or len(re.findall(r"['\"]takahama['\"]\s*=>\s*\[", source, re.I)) != 1:
+    spot = re.search(r"(['\"]takahama['\"]\s*=>\s*\[)(.*?)(\])", source, re.S)
+    if not spot or len(re.findall(r"['\"]takahama['\"]\s*=>\s*\[", source)) != 1:
         raise UnsafePatch("Exactly one Takahama SPOTS entry is required")
     block = spot.group(2)
     updated = block
@@ -74,16 +76,19 @@ def build_preview(original: bytes) -> bytes:
     if not 0 <= source2.find('foreach ($SPOTS as $key => $spot)') < marine_fetch < pos:
         raise UnsafePatch("Weather fetch is outside the known per-spot context")
     source3 = source2.replace(WEATHER_FETCH, WEATHER_OVERRIDE + WEATHER_FETCH, 1)
-    assert source3.replace(WEATHER_OVERRIDE, "", 1) == source2
+    if source3.replace(WEATHER_OVERRIDE, "", 1) != source2:
+        raise UnsafePatch("Unexpected changes after URL override insertion")
     # Removing the insertion and undoing the Takahama-only fields must recover input.
     recovery = source3.replace(WEATHER_OVERRIDE, "", 1)
-    new_spot = re.search(r"(['\"]takahama['\"]\s*=>\s*\[)(.*?)(\])", recovery, re.S | re.I)
-    assert new_spot is not None
+    new_spot = re.search(r"(['\"]takahama['\"]\s*=>\s*\[)(.*?)(\])", recovery, re.S)
+    if new_spot is None:
+        raise UnsafePatch("Takahama config missing during recovery")
     restored = new_spot.group(2)
     for field, old, new in (("lat", "35.708", MARINE_LAT), ("lng", "135.208", MARINE_LNG)):
         p = r"(['\"]" + field + r"['\"]\s*=>\s*)" + re.escape(new) + r"\b"
         restored, n = re.subn(p, lambda m: m.group(1) + old, restored)
-        assert n == 1
+        if n != 1:
+            raise UnsafePatch("Takahama coordinates could not be restored")
     recovery = recovery[:new_spot.start(2)] + restored + recovery[new_spot.end(2):]
     if recovery != source:
         raise UnsafePatch("Changes outside Takahama or unrecoverable transform")
@@ -108,8 +113,21 @@ def main(argv: list[str] | None = None) -> int:
             raise UnsafePatch('Refusing to overwrite source')
         if out.exists():
             raise UnsafePatch('Output already exists; refusing to overwrite')
+        # Refuse arbitrary (potentially web-served) destinations. Preview files
+        # must live in the OS temporary area or GitHub Actions RUNNER_TEMP.
+        private_roots = [Path(tempfile.gettempdir()).resolve()]
+        if os.environ.get('RUNNER_TEMP'):
+            private_roots.append(Path(os.environ['RUNNER_TEMP']).resolve())
+        if not any(out.is_relative_to(root) for root in private_roots):
+            raise UnsafePatch('Output must be within a private temporary directory')
         out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_bytes(preview)
+        # Atomic, exclusive create. 0600 prevents unintended disclosure on Unix.
+        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+        if hasattr(os, 'O_BINARY'):
+            flags |= os.O_BINARY
+        fd = os.open(out, flags, 0o600)
+        with os.fdopen(fd, 'wb') as stream:
+            stream.write(preview)
         print('PRIVATE_ISOLATED_PREVIEW_WRITTEN=YES')
     else:
         print('PRIVATE_ISOLATED_PREVIEW_WRITTEN=NO')
