@@ -140,13 +140,16 @@ class ExecutableUrlTests(unittest.TestCase):
                 fixture = EXECUTABLE_PHP.replace(
                     'https://api.open-meteo.com/v1/forecast', replacement, 1)
                 result, urls = self.run_php(build_preview(fixture.encode()).decode())
-                self.assertNotEqual(result.returncode, 0)
-                self.assertIsNone(urls)
-                self.assertIn('Unsupported Takahama weather URL components', result.stderr)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIsNotNone(urls)
+                self.assertEqual(urlparse(urls[1]).netloc, urlparse(replacement).netloc)
+                self.assertIn('coastal Weather URL override skipped', result.stderr)
+                self.assertIn('ikumi', fixture)
+                self.assertEqual(len(urls), 6)
 
     def test_missing_weather_longitude_fails_closed(self):
-        # The tool may create a preview of a changed API URL shape; the PHP
-        # guard must stop, not silently use a wrong wind coordinate.
+        # An invalid Takahama URL must be logged and skipped, while the other
+        # eight spots continue processing without a fatal exception.
         malformed = EXECUTABLE_PHP.replace(
             "        . '&longitude=' . $spot['lng']\n        . '&hourly=wind_speed",
             "        . '&hourly=wind_speed",
@@ -154,9 +157,12 @@ class ExecutableUrlTests(unittest.TestCase):
         )
         self.assertNotEqual(malformed, EXECUTABLE_PHP)
         result, urls = self.run_php(build_preview(malformed.encode()).decode())
-        self.assertNotEqual(result.returncode, 0)
-        self.assertIsNone(urls)
-        self.assertIn('no coordinate keys', result.stderr)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(len(urls), 6)
+        self.assertIn('coastal Weather URL override skipped', result.stderr)
+        self.assertNotIn('longitude=', urls[1])
+        self.assertEqual(parse_qs(urlparse(urls[2]).query)['latitude'], ['33.5'])
+        self.assertEqual(parse_qs(urlparse(urls[4]).query)['latitude'], ['35.512'])
 
     def test_original_php_urls_unchanged_for_all_other_spots(self):
         result, urls = self.run_php(build_preview(EXECUTABLE_PHP.encode()).decode())
