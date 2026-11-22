@@ -108,3 +108,45 @@ jobs:
           print('PRODUCTION_WRITES=0')
           print('ORIGINAL_SOURCE_NOT_EXPORTED=YES')
           PY
+
+      - name: Checkout PR138 hardened patch without credentials
+        uses: actions/checkout@v4
+        with:
+          ref: proposal/ks-takahama-split-dryrun-20261122
+          persist-credentials: false
+      - name: Verify exact hardened candidate and install PHP
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "ee91eb8649a50f1ee25ae96254ec21f95ab7cb60"
+          sudo apt-get install -y -qq php-cli >/dev/null
+          echo "CANDIDATE_SHA=VERIFIED"
+      - name: Apply protected private preview to current production source (no API call)
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/takahama-pr138-coord-audit"
+          python3 scripts/takahama_split_dryrun.py \
+            --input "$root/production.php" \
+            --expected-sha256 "18026fb8285570dbb85170a8b5edb55a02ecbe340a34d6693995257f3a2f7caf" \
+            --output "$root/preview.php"
+          php -l "$root/preview.php"
+          PREVIEW_ROOT="$root" python3 - <<'PY'
+          from pathlib import Path
+          import hashlib,os
+          root=Path(os.environ['PREVIEW_ROOT'])
+          original=(root/'production.php').read_bytes()
+          preview=(root/'preview.php').read_bytes()
+          assert original != preview
+          assert original.count(b"$weatherJson = fetchUrl($weatherUrl);")==1
+          assert preview.count(b"$weatherJson = fetchUrl($weatherUrl);")==1
+          assert b"$ksQuery['latitude'] = '35.49133';" in preview
+          assert b"$ksQuery['longitude'] = '135.55782';" in preview
+          assert b"PHP_QUERY_RFC3986" in preview
+          assert len(preview)>len(original)
+          print('ACTUAL_PRODUCTION_SOURCE_PATCH=PASS')
+          print('ORIGINAL_SOURCE_SHA256='+hashlib.sha256(original).hexdigest())
+          print('PREVIEW_SOURCE_SHA256='+hashlib.sha256(preview).hexdigest())
+          print('PREVIEW_ONLY_PRIVATE_TEMP=TRUE')
+          print('PRODUCTION_WRITE_COUNT=0')
+          PY
