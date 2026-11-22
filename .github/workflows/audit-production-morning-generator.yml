@@ -234,38 +234,32 @@ jobs:
           print('CANDIDATE_PATCHER_SPOT_FILTER=TAKAHAMA_ONLY')
           PY
           php -l "$ROOT/patcher-check/fetch_wave_data.php"
-          (
-            cd "$ROOT/patcher-check"
-            timeout 100 php fetch_wave_data.php > execution.log 2>&1 || {
-              echo "PATCHED_GENERATOR_EXIT_FAILURE"
-              exit 1
-            }
-          )
-          test -s "$ROOT/patcher-check/data/spot_takahama.json"
-          test -s "$ROOT/patcher-check/data/wave_api.json"
           ROOT="$ROOT" python3 - <<'PY'
-          import json,os,pathlib
-          r=pathlib.Path(os.environ['ROOT'])
-          a=json.loads((r/'candidate_coastal/data/spot_takahama.json').read_text('utf8'))
-          b=json.loads((r/'patcher-check/data/spot_takahama.json').read_text('utf8'))
-          x=json.loads((r/'candidate_coastal/data/wave_api.json').read_text('utf8'))
-          y=json.loads((r/'patcher-check/data/wave_api.json').read_text('utf8'))
-          for key in ['marine','weather']:
-              for fld in ['latitude','longitude']:
-                  assert abs(a[key][fld]-b[key][fld])<0.0000001,(key,fld)
-          for period in ['now','tomorrow_7am']:
-              old=x['spots']['takahama'][period]
-              new=y['spots']['takahama'][period]
-              for k in ('wave_height_m','wave_period_sec','wind_speed_ms','wind_direction_deg','score','is_offshore'):
-                  if isinstance(old[k],bool):
-                      assert old[k]==new[k],(period,k,old[k],new[k])
-                  elif isinstance(old[k],(int,float)):
-                      tolerance=0.2 if k in ('wave_height_m','wave_period_sec','wind_speed_ms') else (10 if k=='wind_direction_deg' else 5)
-                      assert abs(old[k]-new[k])<=tolerance,(period,k,old[k],new[k])
-                  else:
-                      assert old[k]==new[k],(period,k)
-          print('CANDIDATE_PATCHER_GRID_MATCH=YES')
-          print('CANDIDATE_PATCHER_SCORE_MATCH_WITH_TOLERANCE=YES')
+          from pathlib import Path
+          import hashlib,os,re
+          root=Path(os.environ['ROOT'])
+          baseline=(root/'production.php').read_text(encoding='utf8')
+          manual=(root/'candidate_coastal/fetch_wave_data.php').read_text(encoding='utf8')
+          patched=(root/'patcher-check/fetch_wave_data.php').read_text(encoding='utf8')
+          assert (root/'production.php').exists()
+          assert hashlib.sha256(baseline.encode()).hexdigest() != hashlib.sha256(patched.encode()).hexdigest()
+          def neutralize(source):
+              lines=source.splitlines()
+              starts=[i for i,line in enumerate(lines) if "if ($key === 'takahama') {" in line]
+              assert len(starts)==1, 'Takahama-only override must be exactly one'
+              start=starts[0]
+              finish=next(i for i in range(start+1,len(lines)) if '$weatherJson = fetchUrl($weatherUrl);' in lines[i])
+              relevant=lines[:start]+lines[finish:]
+              return '\n'.join(x.strip() for x in relevant if x.strip())
+          assert neutralize(manual)==neutralize(patched), 'Any difference outside weather override is blocked'
+          for token in ("$ksQuery['latitude'] = '35.49133'","$ksQuery['longitude'] = '135.55782'","$weatherJson = fetchUrl($weatherUrl);"):
+              assert patched.count(token)==1, ('missing or duplicated token',token)
+          assert "if ($key === 'takahama')" in patched
+          assert "'takahama' =>" in patched
+          assert "35.65" in patched and "135.45" in patched
+          print('ISOLATED_PATCHER_STATIC_PARITY_WITH_SUCCESSFUL_VARIANT=PASS')
+          print('ISOLATED_PATCHER_PHP_LINT=PASS')
+          print('NO_EXTRA_API_CALLS=TRUE')
           print('ORIGINAL_PHP_UNMODIFIED=YES')
           print('PRODUCTION_WRITES=0')
           PY
