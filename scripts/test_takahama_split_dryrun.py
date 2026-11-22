@@ -1,4 +1,8 @@
 import hashlib
+import json
+import shutil
+import subprocess
+from urllib.parse import parse_qs, urlparse
 from pathlib import Path
 import sys
 import tempfile
@@ -55,6 +59,121 @@ class PatchTests(unittest.TestCase):
                 main(['--input',str(p),'--expected-sha256','0'*64])
             with self.assertRaises(UnsafePatch):
                 main(['--input',str(p),'--expected-sha256',correct,'--output',str(p)])
+
+
+# Offline PHP execution fixture. All fetchUrl calls are intercepted locally;
+# no Open-Meteo or production endpoints are contacted in these tests.
+EXECUTABLE_PHP = r'''<?php
+$captured = [];
+function fetchUrl($url) {
+    global $captured;
+    $captured[] = $url;
+    return '{}';
+}
+$SPOTS = [
+  'takahama' => [ 'name' => 'Takahama', 'lat' => 35.708, 'lng' => 135.208, 'offshoreStart'=>120, ],
+  'ikumi' => [ 'name' => 'Ikumi', 'lat' => 33.50, 'lng' => 134.30, ],
+  'hakuto' => [ 'name' => 'Hakuto', 'lat' => 35.512, 'lng' => 134.168, ],
+];
+foreach ($SPOTS as $key => $spot) {
+    $marineUrl = 'https://marine-api.open-meteo.com/v1/marine?latitude=' . $spot['lat']
+        . '&longitude=' . $spot['lng'] . '&hourly=wave_height%2Cwave_period';
+    $weatherUrl = 'https://api.open-meteo.com/v1/forecast?latitude=' . $spot['lat']
+        . '&longitude=' . $spot['lng']
+        . '&hourly=wind_speed_10m%2Cwind_direction_10m&timezone=Asia%2FTokyo';
+    $marineJson  = fetchUrl($marineUrl);
+    $weatherJson = fetchUrl($weatherUrl);
+}
+echo json_encode($captured, JSON_THROW_ON_ERROR);
+'''
+
+
+@unittest.skipUnless(shutil.which('php'), 'PHP CLI is required for executable URL tests')
+class ExecutableUrlTests(unittest.TestCase):
+    def run_php(self, source: str) -> tuple[subprocess.CompletedProcess[str], list[str] | None]:
+        with tempfile.TemporaryDirectory(prefix='ks-takahama-sandbox-') as directory:
+            path = Path(directory) / 'fixture.php'
+            path.write_text(source, encoding='utf-8')
+            result = subprocess.run(
+                ['php', str(path)],
+                capture_output=True, text=True, encoding='utf-8', errors='replace',
+                timeout=15, check=False,
+            )
+            urls = json.loads(result.stdout) if result.returncode == 0 else None
+            return result, urls
+
+    def test_actual_php_urls_split_only_takahama(self):
+        baseline, before = self.run_php(EXECUTABLE_PHP)
+        self.assertEqual(baseline.returncode, 0, baseline.stderr)
+        candidate, after = self.run_php(build_preview(EXECUTABLE_PHP.encode()).decode())
+        self.assertEqual(candidate.returncode, 0, candidate.stderr)
+        self.assertEqual(len(after), 6)
+        self.assertEqual(len(before), 6)
+        parsed = [parse_qs(urlparse(url).query) for url in after]
+        # Marine coordinates for Takahama change; weather coordinates use coastal location.
+        self.assertEqual(parsed[0]['latitude'], ['35.65'])
+        self.assertEqual(parsed[0]['longitude'], ['135.45'])
+        self.assertEqual(parsed[1]['latitude'], ['35.49133'])
+        self.assertEqual(parsed[1]['longitude'], ['135.55782'])
+        # Request parameters other than the coordinates are retained.
+        for i in range(6):
+            original = parse_qs(urlparse(before[i]).query)
+            revised = parsed[i]
+            for key in set(original) - {'latitude', 'longitude'}:
+                self.assertEqual(revised.get(key), original[key], (i, key))
+        self.assertEqual(after[2:], before[2:], 'Other surf spots must be byte-identical')
+
+    def test_missing_weather_longitude_fails_closed(self):
+        # The tool may create a preview of a changed API URL shape; the PHP
+        # guard must stop, not silently use a wrong wind coordinate.
+        malformed = EXECUTABLE_PHP.replace(
+            "        . '&longitude=' . $spot['lng']\n        . '&hourly=wind_speed",
+            "        . '&hourly=wind_speed",
+            1,
+        )
+        self.assertNotEqual(malformed, EXECUTABLE_PHP)
+        result, urls = self.run_php(build_preview(malformed.encode()).decode())
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIsNone(urls)
+        self.assertIn('no coordinate keys', result.stderr)
+
+    def test_original_php_urls_unchanged_for_all_other_spots(self):
+        result, urls = self.run_php(build_preview(EXECUTABLE_PHP.encode()).decode())
+        self.assertEqual(result.returncode, 0, result.stderr)
+        for name, i, lat, lon in [('ikumi', 2, '33.5', '134.3'),
+                                  ('hakuto', 4, '35.512', '134.168')]:
+            for endpoint in urls[i:i+2]:
+                params = parse_qs(urlparse(endpoint).query)
+                self.assertEqual(params['latitude'], [lat], name)
+                self.assertEqual(params['longitude'], [lon], name)
+
+    def test_php_source_is_not_executed_with_network(self):
+        # Explicitly verify our fixture uses only the capturing stub.
+        self.assertIn('function fetchUrl($url)', EXECUTABLE_PHP)
+        self.assertNotIn('curl_exec(', EXECUTABLE_PHP)
+        self.assertNotIn('file_get_contents(', EXECUTABLE_PHP)
+
+
+class AdditionalGuardTests(unittest.TestCase):
+    def test_duplicate_takahama_entry_rejected(self):
+        duplicated = PHP.replace(
+            "  'ikumi' =>",
+            "  'takahama' => [ 'name' => 'duplicate', 'lat' => 35.708, 'lng' => 135.208, ],\n  'ikumi' =>",
+        )
+        with self.assertRaises(UnsafePatch):
+            build_preview(duplicated.encode())
+
+    def test_existing_output_not_overwritten(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / 'source.php'
+            out = Path(directory) / 'existing.php'
+            source.write_text(PHP)
+            out.write_text('KEEP-ME')
+            digest = hashlib.sha256(source.read_bytes()).hexdigest()
+            with self.assertRaises(UnsafePatch):
+                main(['--input', str(source), '--expected-sha256', digest,
+                      '--output', str(out)])
+            self.assertEqual(out.read_text(), 'KEEP-ME')
 
 if __name__ == '__main__':
     unittest.main()
