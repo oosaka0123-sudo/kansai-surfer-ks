@@ -24,13 +24,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "21ab30ee72ecf84a74a11be848952d65a2988f36"
+          test "$(git rev-parse HEAD)" = "ee91eb8649a50f1ee25ae96254ec21f95ab7cb60"
           test -f scripts/takahama_split_dryrun.py
           test -f scripts/test_takahama_split_dryrun.py
           echo "REVIEWED_SHA_GUARD=PASS"
       - name: Install PHP CLI
         run: sudo apt-get update -qq && sudo apt-get install -y -qq php-cli >/dev/null
-      - name: Execute 11 offline unit and PHP URL tests (no external API)
+      - name: Execute 14 offline unit and PHP URL tests (no external API)
         shell: bash
         run: |
           set -euo pipefail
@@ -95,6 +95,16 @@ jobs:
           print('SPOT_COORD_REF_TOTAL='+str(sum(n for _,n,_ in found)))
           for line,n,kind in found:
               print('REF_LINE='+str(line)+' COUNT='+str(n)+' CONTEXT='+kind)
+          var_rx=re.compile(r'\$(?:lat|lng)\b')
+          derived=[]
+          for i,line in enumerate(lines):
+              n=len(var_rx.findall(line))
+              if n:
+                  kind='marine_url' if 'marineUrl' in line else ('weather_url' if 'weatherUrl' in line else 'other')
+                  derived.append((i+1,n,kind))
+          print('DERIVED_COORD_VAR_REF_SITES='+str(len(derived)))
+          for i,n,kind in derived:
+              print('DERIVED_LINE='+str(i)+' COUNT='+str(n)+' KIND='+kind)
           print('PRODUCTION_WRITES=0')
           print('ORIGINAL_SOURCE_NOT_EXPORTED=YES')
           PY
