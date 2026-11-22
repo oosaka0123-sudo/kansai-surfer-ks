@@ -146,5 +146,3 @@ jobs:
           CHANGED=0
           trap - EXIT
           echo "DEPLOY_OK_SPOT=$SPOT SINGLE_HTML_ONLY"
-
-[executed on device: ks04 (566deeec-cec0-47fb-98ec-26c861b4dc0d)]
