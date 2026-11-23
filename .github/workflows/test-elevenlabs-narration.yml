@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
-      ELEVENLABS_API_KEY: \${{ secrets.ELEVENLABS_API_KEY }}
+      ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
     steps:
       - name: Generate a short Japanese MP3 without exposing API key
         shell: bash
