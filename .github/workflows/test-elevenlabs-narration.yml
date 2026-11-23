@@ -1,0 +1,77 @@
+name: ElevenLabs Japanese narration smoke test
+
+on:
+  push:
+    branches:
+      - test/elevenlabs-tts-smoke-20261123
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  narration-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      ELEVENLABS_API_KEY: \${{ secrets.ELEVENLABS_API_KEY }}
+    steps:
+      - name: Generate a short Japanese MP3 without exposing API key
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import pathlib
+          import sys
+          import urllib.error
+          import urllib.request
+
+          secret = os.environ.get("ELEVENLABS_API_KEY")
+          if not secret:
+              print("FAILED: ELEVENLABS_API_KEY GitHub secret is unavailable")
+              sys.exit(2)
+
+          payload = json.dumps({
+              "text": "関西サーファー、音声生成のテストです。生見はイクミ、宍喰はシシクイです。",
+              "model_id": "eleven_multilingual_v2",
+          }, ensure_ascii=False).encode("utf-8")
+          request = urllib.request.Request(
+              "https://api.elevenlabs.io/v1/text-to-speech/JBFqnCBsd6RMkjVDRZzb?output_format=mp3_44100_128",
+              data=payload,
+              headers={"xi-api-key": secret, "Content-Type": "application/json"},
+              method="POST",
+          )
+          try:
+              with urllib.request.urlopen(request, timeout=45) as response:
+                  audio = response.read()
+                  content_type = response.headers.get("Content-Type", "")
+          except urllib.error.HTTPError as error:
+              try:
+                  body = json.loads(error.read().decode("utf-8", "replace"))
+                  detail = body.get("detail", {})
+                  api_code = detail.get("status", "unknown") if isinstance(detail, dict) else "unknown"
+              except Exception:
+                  api_code = "unknown"
+              print(f"FAILED: HTTP {error.code}, error_code={api_code}")
+              sys.exit(1)
+          except Exception as error:
+              print(f"FAILED: connection error {type(error).__name__}")
+              sys.exit(1)
+
+          if "audio/" not in content_type or len(audio) < 500:
+              print(f"FAILED: unexpected response, bytes={len(audio)}")
+              sys.exit(1)
+
+          pathlib.Path("out").mkdir(exist_ok=True)
+          pathlib.Path("out/ks-narration-test.mp3").write_bytes(audio)
+          print(f"SUCCESS: audio_bytes={len(audio)}, audio_type={content_type}")
+          PY
+
+      - name: Save the test MP3 for listening
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ks-elevenlabs-narration-test
+          path: out/ks-narration-test.mp3
+          retention-days: 1
