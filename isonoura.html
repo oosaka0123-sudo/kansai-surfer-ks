@@ -425,6 +425,32 @@
   #ks-h1 .ks-h1-cell{font-size:12px;min-height:45px}
   #ks-h1 .ks-h1-cell.label{font-size:10px}
 }
+/* Smartphone layout: show ~8 hourly slots, not five; retain common time-axis. */
+@media(max-width:520px){
+  .section:has(#ks-h1){padding-top:25px;padding-bottom:30px}
+  #ks-h1{--ks-h1-label:48px;--ks-h1-col:40px;width:calc(100vw - 16px);margin-left:calc(8px - 5vw);margin-right:0;margin-top:8px}
+  #ks-h1 .ks-h1-tabs{gap:6px;margin-bottom:10px}
+  #ks-h1 .ks-h1-tabs button{min-height:35px;font-size:13px}
+  #ks-h1 .ks-h1-legend{gap:7px;padding-bottom:8px;font-size:10px}
+  #ks-h1 .ks-h1-swatch{width:11px;height:13px}
+  #ks-h1 .ks-h1-source{padding:4px 7px;font-size:9px}
+  #ks-h1 .ks-h1-weather{height:28px}
+  #ks-h1 .ks-h1-icon{font-size:17px}
+  #ks-h1 .ks-h1-graph{height:154px}
+  #ks-h1 .ks-h1-cell{min-height:40px;padding:3px 1px;font-size:11px}
+  #ks-h1 .ks-h1-cell.label{padding-left:3px;font-size:10px}
+  #ks-h1 .ks-h1-cell.label small{font-size:8px}
+  #ks-h1 .ks-h1-dir{font-size:16px}
+  #ks-h1 .ks-h1-dir-name{font-size:9px}
+  #ks-h1 .ks-h1-rain-title{font-size:13px;padding-top:12px}
+  #ks-h1 .ks-h1-rain-title small{font-size:10px}
+  #ks-h1 .ks-h1-rain{height:76px}
+  #ks-h1 .ks-h1-status,#ks-h1 .ks-h1-footnote{font-size:10px}
+  /* Preserve the LINE entrance, but avoid the oversized pill obscuring forecast rows. */
+  a.floating-line{width:48px;height:48px;max-width:48px;min-width:48px;padding:7px;gap:0;right:10px;bottom:12px;justify-content:center;border-radius:50%;animation:none}
+  a.floating-line .fl-icon{width:32px;height:32px;font-size:18px;flex:none}
+  a.floating-line .fl-text,a.floating-line .fl-arrow{display:none}
+}
 </style>
 <script id="ks-isonoura-hourly-one-hour-script">
 (function(){
@@ -551,7 +577,7 @@
     const col=parseFloat(css.getPropertyValue('--ks-h1-col'))||55;
     const width=label+24*col;
     canvas.style.width=width+'px';
-    const height=innerWidth<=520?172:200, top=12, bottom=10, plot=height-top-bottom;
+    const height=innerWidth<=520?154:200, top=12, bottom=10, plot=height-top-bottom;
     graph.replaceChildren();
     graph.setAttribute('viewBox','0 0 '+width+' '+height);
     graph.setAttribute('width',width);graph.setAttribute('height',height);
