@@ -356,14 +356,310 @@
   <h2 class="section-title">
     <span class="no">04</span><i class="fa-solid fa-chart-line ico"></i>時間別予報
   </h2>
-  <div class="hourly-chart">
-    <div class="hourly-chart-inner">
-      <svg class="hourly-svg" id="hourlySvg" viewBox="0 0 1200 280" preserveAspectRatio="none"></svg>
-      <div class="hourly-rows" id="hourlyRows">
-        <div class="hrow-label">時刻</div>
-        <div class="hrow-cell" style="grid-column: span 12;"><i class="fa-solid fa-spinner fa-spin"></i> 読込中...</div>
-      </div>
+  <div class="ks-hourly4">
+    <div class="ks-h1" id="ks-h1" aria-label="磯ノ浦の1時間ごとの波と風のモデル予報">
+  <div class="ks-h1-tabs" role="group" aria-label="表示する日付">
+    <button type="button" data-ks-h1-day="0" aria-pressed="true" class="is-active">今日</button>
+    <button type="button" data-ks-h1-day="1" aria-pressed="false">明日</button>
+    <button type="button" data-ks-h1-day="2" aria-pressed="false">明後日</button>
+  </div>
+  <div class="ks-h1-legend">
+    <span><i class="ks-h1-swatch wave"></i>モデル波高(m)</span>
+    <span><i class="ks-h1-swatch wind"></i>風(m/s)</span>
+    <span class="ks-h1-source">モデル予報</span>
+  </div>
+  <div class="ks-h1-scroll" tabindex="0" role="region" aria-label="1時間ごとの波と風の予報。左右へスクロールできます">
+    <div class="ks-h1-canvas" id="ks-h1-canvas">
+      <div class="ks-h1-weather" id="ks-h1-weather" aria-label="各時刻の天気"></div>
+      <svg class="ks-h1-graph" id="ks-h1-graph" role="img" aria-label="水色の棒が波高、オレンジ色の折れ線が風速"></svg>
+      <div class="ks-h1-table" id="ks-h1-table" aria-label="時刻別の予報数値">読み込み中…</div>
+      <div class="ks-h1-rain-title">降水量グラフ <small>1時間の降水量（mm）</small></div>
+      <svg class="ks-h1-rain" id="ks-h1-rain" role="img" aria-label="時間別降水量の棒グラフ"></svg>
     </div>
+  </div>
+  <div class="ks-h1-hint">← 横にスワイプ →</div>
+  <p class="ks-h1-status" id="ks-h1-status" role="status">最新の予報を取得しています…</p>
+  <p class="ks-h1-footnote">波高は海洋モデルの値で、実際のブレイクサイズではありません。波高と風速は別々の目盛りです。時刻は日本時間、表示は1時間間隔です。</p>
+</div>
+<style id="ks-isonoura-hourly-one-hour-style">
+/* Scoped to Isonoura section 04; existing sections and the common forecast are untouched. */
+#ks-h1{--ks-h1-label:66px;--ks-h1-col:58px;margin:12px 0 20px;color:#e8f4fa;font-family:"Noto Sans JP","Hiragino Kaku Gothic ProN",sans-serif;min-width:0}
+#ks-h1 *{box-sizing:border-box}
+#ks-h1 .ks-h1-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:0 0 12px}
+#ks-h1 .ks-h1-tabs button{border:1px solid #35596b;border-radius:999px;color:#edf8ff;background:transparent;min-height:43px;font-size:15px;font-weight:600;line-height:1.3;font-family:inherit;cursor:pointer}
+#ks-h1 .ks-h1-tabs button.is-active{background:#13879b;border-color:#35b9d0;color:#fff}
+#ks-h1 .ks-h1-tabs button:focus-visible,#ks-h1 .ks-h1-scroll:focus-visible{outline:2px solid #ffab5c;outline-offset:2px}
+#ks-h1 .ks-h1-legend{display:flex;align-items:center;flex-wrap:wrap;gap:12px;color:#adcad9;font-size:12px;padding:0 2px 11px}
+#ks-h1 .ks-h1-legend>span{display:inline-flex;gap:6px;align-items:center}
+#ks-h1 .ks-h1-swatch{display:inline-block;width:14px;height:16px;border-radius:3px}
+#ks-h1 .ks-h1-swatch.wave{background:#13a7c5}
+#ks-h1 .ks-h1-swatch.wind{background:#f48241}
+#ks-h1 .ks-h1-source{margin-left:auto;border:1px solid #35596b;border-radius:999px;font-size:10px;padding:5px 10px}
+#ks-h1 .ks-h1-scroll{width:100%;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:#507e93 #082434;border-bottom:1px solid #355264}
+#ks-h1 .ks-h1-canvas{width:max-content;min-width:100%;background:#082535}
+#ks-h1 .ks-h1-weather{display:grid;grid-template-columns:var(--ks-h1-label) repeat(24,var(--ks-h1-col));height:36px;align-items:center}
+#ks-h1 .ks-h1-icon{font-size:20px;text-align:center;line-height:1.1;white-space:nowrap}
+#ks-h1 .ks-h1-icon:first-child{position:sticky;left:0;z-index:3;background:#082535}
+#ks-h1 .ks-h1-graph{height:200px;display:block;max-width:none}
+#ks-h1 .ks-h1-table{display:grid;grid-template-columns:var(--ks-h1-label) repeat(24,var(--ks-h1-col));width:max-content;min-width:100%;border-top:1px solid #4c6775}
+#ks-h1 .ks-h1-cell{min-height:52px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:2px;padding:4px 2px;border-right:1px solid #2f4a5a;border-bottom:1px solid #315061;text-align:center;font-variant-numeric:tabular-nums;font-size:13px;line-height:1.2;color:#e3f3fb;white-space:nowrap}
+#ks-h1 .ks-h1-cell.label{position:sticky;left:0;z-index:5;background:#082535;align-items:flex-start;padding-left:5px;color:#f27a62;font-weight:700;font-size:11px}
+#ks-h1 .ks-h1-cell.label small{display:block;color:#aec4d2;font-size:9px;font-weight:400}
+#ks-h1 .ks-h1-cell.focus{background:rgba(239,117,76,.15);box-shadow:inset 2px 0 #f07854}
+#ks-h1 .ks-h1-dir{font-size:18px;font-weight:700;line-height:1}
+#ks-h1 .ks-h1-dir-name{font-size:10px;color:#ffc0a4}
+#ks-h1 .ks-h1-na{color:#94aebb}
+#ks-h1 .ks-h1-rain-title{position:sticky;left:0;width:fit-content;padding:16px 8px 8px;font-size:15px;font-weight:700;color:#e6f6fb}
+#ks-h1 .ks-h1-rain-title small{font-weight:400;font-size:11px;color:#aec5d3}
+#ks-h1 .ks-h1-rain{display:block;max-width:none;height:90px}
+#ks-h1 .ks-h1-hint{text-align:right;color:#90b4c5;font-size:11px;padding:6px 4px 3px}
+#ks-h1 .ks-h1-status{font-size:11px;color:#a9cada;margin:5px 3px}
+#ks-h1 .ks-h1-footnote{font-size:11px;color:#8eb2c1;line-height:1.65;margin:7px 3px 0}
+@media(max-width:520px){
+  #ks-h1{--ks-h1-label:55px;--ks-h1-col:55px;margin-top:8px}
+  #ks-h1 .ks-h1-tabs button{min-height:40px;font-size:14px}
+  #ks-h1 .ks-h1-legend{font-size:10px;gap:8px}
+  #ks-h1 .ks-h1-graph{height:172px}
+  #ks-h1 .ks-h1-weather{height:32px}
+  #ks-h1 .ks-h1-icon{font-size:19px}
+  #ks-h1 .ks-h1-cell{font-size:12px;min-height:45px}
+  #ks-h1 .ks-h1-cell.label{font-size:10px}
+}
+</style>
+<script id="ks-isonoura-hourly-one-hour-script">
+(function(){
+  'use strict';
+  const root = document.getElementById('ks-h1');
+  if (!root) return;
+  const dayButtons = Array.from(root.querySelectorAll('[data-ks-h1-day]'));
+  const scroller = root.querySelector('.ks-h1-scroll');
+  const canvas = document.getElementById('ks-h1-canvas');
+  const icons = document.getElementById('ks-h1-weather');
+  const graph = document.getElementById('ks-h1-graph');
+  const table = document.getElementById('ks-h1-table');
+  const rainGraph = document.getElementById('ks-h1-rain');
+  const status = document.getElementById('ks-h1-status');
+  let selectedDay = 0, payload = null, precipitation = null;
+  const NS = 'http://www.w3.org/2000/svg';
+  const number = value => value === null || value === undefined || value === '' || !Number.isFinite(Number(value)) ? null : Number(value);
+  const fixed = value => value === null ? '—' : value.toFixed(1);
+  function dayKey(offset) {
+    const jst = new Date(Date.now() + 9 * 3600000);
+    const midnight = Date.UTC(jst.getUTCFullYear(), jst.getUTCMonth(), jst.getUTCDate() + offset);
+    return new Date(midnight).toISOString().slice(0, 10);
+  }
+  function forecastIcon(code, hour) {
+    if (code === null) return '—';
+    if (code === 0) return hour < 6 || hour >= 18 ? '🌙' : '☀️';
+    if (code <= 2) return hour < 6 || hour >= 18 ? '🌙' : '🌤️';
+    if (code <= 3) return '☁️';
+    if (code <= 48) return '🌫️';
+    if (code <= 57) return '🌦️';
+    if (code <= 67 || code <= 82) return '🌧️';
+    if (code <= 86) return '🌨️';
+    if (code >= 95) return '⛈️';
+    return '☁️';
+  }
+  function compass(deg) {
+    if (deg === null) return {label:'—', arrow:'—'};
+    const names = ['北','北東','東','南東','南','南西','西','北西'];
+    const arrows = ['↓','↙','←','↖','↑','↗','→','↘'];
+    const idx = Math.round(((deg % 360) + 360) % 360 / 45) % 8;
+    return {label:names[idx],arrow:arrows[idx]};
+  }
+  function svgNode(parent, tag, attributes, text) {
+    const n = document.createElementNS(NS, tag);
+    Object.entries(attributes || {}).forEach(([k,v]) => n.setAttribute(k,String(v)));
+    if (text !== undefined) n.textContent = text;
+    parent.appendChild(n);
+    return n;
+  }
+  function atHour(src, key) {
+    if (!src || !src.hourly || !Array.isArray(src.hourly.time)) return new Map();
+    const map = new Map();
+    src.hourly.time.forEach((time,index) => map.set(String(time).slice(0,16),index));
+    return map;
+  }
+  function viewData(day) {
+    const m = payload && payload.marine, w = payload && payload.weather;
+    const mm = atHour(m), wm = atHour(w), rm = atHour(precipitation);
+    return Array.from({length:24},(_,hour)=>{
+      const key = day + 'T' + String(hour).padStart(2,'0') + ':00';
+      const mi = mm.get(key), wi = wm.get(key), ri = rm.get(key);
+      const marine = m && m.hourly, weather = w && w.hourly, rainy = precipitation && precipitation.hourly;
+      const value = (o,field,i) => i !== undefined && o && Array.isArray(o[field]) ? number(o[field][i]) : null;
+      return {hour,
+        wave: value(marine,'wave_height',mi),
+        period: value(marine,'wave_period',mi),
+        wind: value(weather,'wind_speed_10m',wi),
+        dir: value(weather,'wind_direction_10m',wi),
+        temp: value(weather,'temperature_2m',wi),
+        weather: value(weather,'weather_code',wi),
+        rain: value(rainy,'precipitation',ri)
+      };
+    });
+  }
+  function appendCell(row, primary, secondary, focus, isLabel) {
+    const cell = document.createElement('div');
+    cell.className = 'ks-h1-cell' + (isLabel ? ' label' : '') + (focus ? ' focus' : '');
+    const main = document.createElement('span');
+    main.textContent = primary;
+    cell.appendChild(main);
+    if (secondary) {
+      const sub = document.createElement(isLabel ? 'small' : 'span');
+      sub.textContent = secondary;
+      if (!isLabel) sub.className = 'ks-h1-dir-name';
+      cell.appendChild(sub);
+    }
+    row.appendChild(cell);
+  }
+  function drawTable(slots, activeHour) {
+    table.replaceChildren();
+    const rows = [
+      ['時刻','',s=>({main:String(s.hour).padStart(2,'0')+'時'})],
+      ['波高','m',s=>({main:fixed(s.wave)})],
+      ['周期','秒',s=>({main:fixed(s.period)})],
+      ['風速','m/s',s=>({main:fixed(s.wind)})],
+      ['風向','',s=>{const d=compass(s.dir);return{main:d.arrow,sub:d.label};}],
+      ['気温','℃',s=>({main:fixed(s.temp)})]
+    ];
+    rows.forEach(([label,unit,read])=>{
+      appendCell(table,label,unit,false,true);
+      slots.forEach(slot=>{
+        const v = read(slot);
+        appendCell(table,v.main,v.sub,slot.hour===activeHour,false);
+      });
+    });
+  }
+  function drawIcons(slots) {
+    icons.replaceChildren();
+    const empty = document.createElement('span');
+    empty.className = 'ks-h1-icon';
+    empty.setAttribute('aria-hidden','true');
+    icons.appendChild(empty);
+    slots.forEach(slot=>{
+      const el = document.createElement('span');
+      el.className = 'ks-h1-icon';
+      el.textContent = forecastIcon(slot.weather,slot.hour);
+      el.setAttribute('aria-label',String(slot.hour)+'時の天気');
+      icons.appendChild(el);
+    });
+  }
+  function drawGraphs(slots,activeHour) {
+    const css=getComputedStyle(root);
+    const label=parseFloat(css.getPropertyValue('--ks-h1-label'))||55;
+    const col=parseFloat(css.getPropertyValue('--ks-h1-col'))||55;
+    const width=label+24*col;
+    canvas.style.width=width+'px';
+    const height=innerWidth<=520?172:200, top=12, bottom=10, plot=height-top-bottom;
+    graph.replaceChildren();
+    graph.setAttribute('viewBox','0 0 '+width+' '+height);
+    graph.setAttribute('width',width);graph.setAttribute('height',height);
+    const waveMax=Math.max(1,...slots.map(s=>s.wave===null?0:s.wave));
+    const windMax=Math.max(6,...slots.map(s=>s.wind===null?0:s.wind));
+    const x=i=>label+(i+.5)*col;
+    const base=top+plot;
+    for(let i=0;i<24;i++){
+      svgNode(graph,'line',{x1:x(i),y1:top,x2:x(i),y2:base,stroke:'#34505f','stroke-width':.65});
+      if(i===activeHour)svgNode(graph,'rect',{x:label+i*col+1,y:0,width:col-2,height:height,fill:'#fa966b','fill-opacity':.08});
+    }
+    for(let i=1;i<4;i++){
+      const y=top+plot*i/4;
+      svgNode(graph,'line',{x1:label,y1:y,x2:width,y2:y,stroke:'#7aa1b1','stroke-opacity':.28,'stroke-dasharray':'4 7'});
+    }
+    slots.forEach((s,i)=>{
+      if(s.wave===null)return;
+      const barWidth=Math.min(42,col*.74),barH=Math.max(0,s.wave/waveMax*plot);
+      svgNode(graph,'rect',{x:x(i)-barWidth/2,y:base-barH,width:barWidth,height:barH,rx:3,fill:'#13a3bd','fill-opacity':.91});
+    });
+    let path='';
+    slots.forEach((s,i)=>{
+      if(s.wind===null){path='';return;}
+      const cx=x(i),cy=base-s.wind/windMax*plot;
+      const previous=i>0?slots[i-1].wind:null;
+      if(path==='')path='M '+cx+' '+cy;
+      else path+=' L '+cx+' '+cy;
+      if(i===slots.length-1||slots[i+1].wind===null){
+        svgNode(graph,'path',{d:path,fill:'none',stroke:'#fa8246','stroke-width':3.4,'stroke-linecap':'round','stroke-linejoin':'round'});
+        path='';
+      }
+    });
+    const focused=slots[activeHour>=0?activeHour:0];
+    if(focused && focused.wind!==null){
+      const fi=focused.hour,cx=x(fi),cy=base-focused.wind/windMax*plot;
+      svgNode(graph,'circle',{cx,cy,r:5,fill:'#fa8246',stroke:'#fff','stroke-width':2});
+      const labelText=fixed(focused.wind)+'m/s';
+      const labelX=Math.max(label+34,Math.min(width-35,cx));
+      svgNode(graph,'text',{x:labelX,y:Math.max(15,cy-12),fill:'#fff','font-size':12,'font-weight':700,'text-anchor':'middle'},labelText);
+    }
+    rainGraph.replaceChildren();
+    const rh=90, rbottom=80, rplot=65;
+    rainGraph.setAttribute('viewBox','0 0 '+width+' '+rh);
+    rainGraph.setAttribute('width',width);rainGraph.setAttribute('height',rh);
+    const rainfall=slots.map(s=>s.rain);
+    const hasRain=rainfall.some(v=>v!==null);
+    const rainMax=Math.max(.5,...rainfall.map(v=>v===null?0:v));
+    for(let i=0;i<24;i++){
+      svgNode(rainGraph,'line',{x1:x(i),y1:6,x2:x(i),y2:rbottom,stroke:'#34505f','stroke-width':.6});
+      if(rainfall[i]===null)continue;
+      const h=rainfall[i]/rainMax*rplot;
+      svgNode(rainGraph,'rect',{x:x(i)-Math.min(35,col*.60)/2,y:rbottom-h,width:Math.min(35,col*.60),height:h,rx:2,fill:'#298bca','fill-opacity':.92});
+    }
+    if(!hasRain) svgNode(rainGraph,'text',{x:label+15,y:45,fill:'#abc8d6','font-size':12},'降水量データを取得できません');
+  }
+  function render() {
+    dayButtons.forEach(button=>{
+      const active=Number(button.dataset.ksH1Day)===selectedDay;
+      button.classList.toggle('is-active',active);
+      button.setAttribute('aria-pressed',String(active));
+    });
+    if(!payload)return;
+    const key=dayKey(selectedDay);
+    const slots=viewData(key);
+    const nowJst = new Date(Date.now()+9*3600000);
+    const activeHour=selectedDay===0?nowJst.getUTCHours():-1;
+    drawIcons(slots);
+    drawGraphs(slots,activeHour);
+    drawTable(slots,activeHour);
+    const available=slots.filter(s=>s.wave!==null||s.wind!==null).length;
+    status.textContent=key+'｜1時間ごと（00〜23時）｜'+(available?available+'時間分の予報':'この日の予報データなし')+(payload.updated_at?'｜更新 '+payload.updated_at:'');
+    if(selectedDay===0){
+      const col=parseFloat(getComputedStyle(root).getPropertyValue('--ks-h1-col'))||55;
+      scroller.scrollLeft=Math.max(0,(activeHour-1)*col);
+    } else scroller.scrollLeft=0;
+  }
+  async function getJSON(url){
+    const response=await fetch(url,{cache:'no-store'});
+    if(!response.ok)throw new Error('HTTP '+response.status);
+    return response.json();
+  }
+  async function load(){
+    try {
+      payload=await getJSON('data/spot_isonoura.json?_='+Date.now());
+      if(!payload || !payload.marine || !payload.weather || !payload.marine.hourly || !payload.weather.hourly)throw new Error('予報の形式が不正です');
+      render();
+    }catch(error){
+      status.textContent='時間別予報を取得できません。ページを再読み込みしてください。';
+      table.textContent='データ取得不可';
+      console.warn('KS Isonoura hourly forecast',error);
+      return;
+    }
+    try {
+      const url='https://api.open-meteo.com/v1/forecast?latitude=34.18&longitude=135.05&hourly=precipitation&timezone=Asia%2FTokyo&forecast_days=4';
+      precipitation=await getJSON(url);
+      render();
+    } catch(error) {
+      console.info('Isonoura precipitation unavailable; wave and wind remain available',error);
+    }
+  }
+  dayButtons.forEach(button=>button.addEventListener('click',()=>{
+    selectedDay=Number(button.dataset.ksH1Day);
+    render();
+  }));
+  window.addEventListener('resize',()=>{if(payload)render();},{passive:true});
+  load();
+})();
+</script>
 
     <a href="https://www.umitenki.jp/tenki/3022/tide" target="_blank" rel="noopener" class="umitenki-card">
       <div class="umi-left">
