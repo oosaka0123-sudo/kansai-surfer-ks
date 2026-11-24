@@ -98,6 +98,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           backup="$RUNNER_TEMP/ks-isonoura-backup"
+          mkdir -p "$RUNNER_TEMP/immediate/isonoura-hourly" "$RUNNER_TEMP/uploaded/isonoura-hourly"
           done_files=()
           ftps() {
             lftp <<FTP
@@ -126,15 +127,15 @@ jobs:
             exit "$code"
           }
           for file in isonoura.html nami_isonoura.js isonoura-hourly/{index.html,adapter.js,app.js}; do
-            ftps "get \"$ROOT/$file\" -o \"$RUNNER_TEMP/immediate\""
-            cmp "$RUNNER_TEMP/immediate" "$backup/$file"
+            ftps "get \"$ROOT/$file\" -o \"$RUNNER_TEMP/immediate/$file\""
+            cmp "$RUNNER_TEMP/immediate/$file" "$backup/$file"
           done
           trap rollback ERR
           for file in isonoura-beach-wave.js isonoura-hourly/app.js isonoura-hourly/adapter.js isonoura-hourly/index.html nami_isonoura.js isonoura.html; do
             done_files+=("$file")
             ftps "put \"$file\" -o \"$ROOT/$file\""
-            ftps "get \"$ROOT/$file\" -o \"$RUNNER_TEMP/uploaded\""
-            cmp "$file" "$RUNNER_TEMP/uploaded"
+            ftps "get \"$ROOT/$file\" -o \"$RUNNER_TEMP/uploaded/$file\""
+            cmp "$file" "$RUNNER_TEMP/uploaded/$file"
             curl -fsSL --retry 4 --max-time 25 "$SITE/$file?ks_beach=$GITHUB_RUN_ID" -o "$RUNNER_TEMP/public"
             cmp "$file" "$RUNNER_TEMP/public"
           done
