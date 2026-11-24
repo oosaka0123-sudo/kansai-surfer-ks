@@ -209,8 +209,9 @@
       <div class="stats-grid">
         <div class="stat-cell">
           <span class="stat-ico"><i class="fa-solid fa-water"></i></span>
-          <div class="stat-label">波の高さ</div>
+          <div class="stat-label">ビーチ波高（推定）</div>
           <div class="stat-val" id="waveVal">--<span class="unit">m</span></div>
+          <div class="stat-label" id="beachWaveSize"></div>
         </div>
         <div class="stat-cell">
           <span class="stat-ico"><i class="fa-solid fa-stopwatch"></i></span>
@@ -231,13 +232,6 @@
     </div>
   </div>
 </section>
-
-<div class="context-call">
-  <div class="head"><i class="fa-solid fa-circle-info"></i> ポイントの特徴</div>
-  <div class="body">
-    磯ノ浦は和歌山県和歌山市にある関西屈指のサーフポイントです。南西風による風波に反応しやすく、風が10m以上吹けばサーフィン可能なサイズまで上がることもあります。当ページでは磯ノ浦の波情報、ライブカメラ、風向き、波予想を毎日更新しており、最新コンディションをリアルタイムで確認できます。
-  </div>
-</div>
 
 <section class="section" style="padding-top:50px;padding-bottom:50px;">
   <h2 class="section-title">
@@ -357,9 +351,9 @@
     <span class="no">04</span><i class="fa-solid fa-chart-line ico"></i>波・風
   </h2>
   <div class="ks-hourly4">
-    <p style="font-size:11px;text-align:right;margin:0 0 7px;color:#b4d5e4">グラフが読み込まれない場合は <a href="isonoura-hourly/index.html" target="_blank" rel="noopener" style="color:#7de2f5;text-decoration:underline">別画面で開く</a></p>
+    <p style="font-size:11px;text-align:right;margin:0 0 7px;color:#b4d5e4">グラフが読み込まれない場合は <a href="isonoura-hourly/index.html?v=20261125-1" target="_blank" rel="noopener" style="color:#7de2f5;text-decoration:underline">別画面で開く</a></p>
     <iframe id="ks-isonoura-kanto-hourly" class="ks-isonoura-kanto-frame"
-      src="isonoura-hourly/index.html?v=20261123-1"
+      src="isonoura-hourly/index.html?v=20261125-1"
       title="磯ノ浦の波・風・潮位・降水量 1時間別グラフ"
       loading="eager" scrolling="no"></iframe>
     <style id="ks-isonoura-kanto-frame-layout">
@@ -421,7 +415,7 @@
       <thead><tr>
         <th scope="col">日付</th>
         <th scope="col">天気</th>
-        <th scope="col">波高 <small>(m)</small></th>
+        <th scope="col">ビーチ波高 <small>(m)</small></th>
         <th scope="col">風速 <small>(m/s)</small></th>
         <th scope="col">風向</th>
         <th scope="col">判定</th>
@@ -430,7 +424,7 @@
     </table>
   </div>
   <div class="ks10-meta"><span id="ks10-updated" role="status" aria-live="polite">データ取得中...</span><span>提供：Open-Meteo</span></div>
-  <p class="ks10-note">波高：5〜17時のモデル波高（磯ノ浦の地点補正0.7倍）の最小〜最大／風速：同時間帯の平均／風向：同時間帯の代表風向／判定：同じ時刻の波高・波向・風・周期で算出した5〜17時の評価中央値（上部の現在評価とは異なる場合があります）。モデル予報は現地のブレイクサイズの実測ではありません。欠損時は「—」です。</p>
+  <p class="ks10-note">ビーチ波高は、磯ノ浦に届きやすい向きの波をもとに推定した5〜17時の最小〜最大。風速は同時間帯の平均、風向は代表風向、判定は時間別評価の中央値です。データが足りないときは「—」です。</p>
   <style>
     #ks10-forecast{min-width:0}
     #ks10-forecast .ks10-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:12px}
@@ -478,6 +472,7 @@
     }
     @media(prefers-reduced-motion:reduce){#ks10-forecast .ks10-fill{transition:none}}
   </style>
+  <script src="isonoura-beach-wave.js?v=20261125-1"></script>
   <script>
   (function(){
     'use strict';
@@ -585,17 +580,15 @@
     function hourlyMap(x){var m=new Map(),h=x&&x.hourly;if(!h||!Array.isArray(h.time))return m;h.time.forEach(function(t,i){if(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(t))m.set(t,i);});return m;}
     function rowsOf(marine,weather){
       var m=marine&&marine.hourly||{},w=weather&&weather.hourly||{},mi=hourlyMap(marine),wi=hourlyMap(weather),start=dateJST(),rows=[];
-      var cfg=getSpotConfig(),factor=cfg&&Number.isFinite(cfg.WAVE_FACTOR)&&cfg.WAVE_FACTOR>0?cfg.WAVE_FACTOR:1;
       for(var d=0;d<10;d++){
         var date=plusDate(start,d),waves=[],winds=[],scores=[],scoreWaves=[],sumX=0,sumY=0,angleWeight=0,weatherAt11=null;
         for(var hour=5;hour<=17;hour++){
           var time=date+'T'+String(hour).padStart(2,'0')+':00',a=mi.get(time),b=wi.get(time);
           var height=null,period=null,waveDir=null,windSpeed=null,windDir=null;
           if(a!==undefined){
-            var raw=finite(m.wave_height&&m.wave_height[a]);
-            if(raw!==null&&raw>=0){height=raw*factor;waves.push(height);}
-            period=finite(m.wave_period&&m.wave_period[a]);
-            waveDir=finite(m.wave_direction&&m.wave_direction[a]);
+            var beach=window.ksIsonouraBeachWave.estimate(m,a);
+            height=beach.height; period=beach.period; waveDir=beach.direction;
+            if(height!==null)waves.push(height);
           }
           if(b!==undefined){
             windSpeed=finite(w.wind_speed_10m&&w.wind_speed_10m[b]);
@@ -606,7 +599,7 @@
             }
             if(hour===11)weatherAt11=finite(w.weather_code&&w.weather_code[b]);
           }
-          if(height!==null&&period!==null&&waveDir!==null&&windSpeed!==null&&windSpeed>=0&&windDir!==null){
+          if(height!==null&&(height===0||(period!==null&&waveDir!==null))&&windSpeed!==null&&windSpeed>=0&&windDir!==null){
             scores.push(calcScore(height,period,windSpeed,windDir,waveDir));scoreWaves.push(height);
           }
         }
@@ -653,7 +646,7 @@
     async function load(){
       if(running)return;running=true;
       var coords='latitude='+latitude+'&longitude='+longitude+'&timezone=Asia%2FTokyo&forecast_days=10';
-      var marine='https://marine-api.open-meteo.com/v1/marine?'+coords+'&hourly=wave_height,wave_period,wave_direction';
+      var marine='https://marine-api.open-meteo.com/v1/marine?'+coords+'&hourly=wave_height,wave_period,wave_direction,swell_wave_height,swell_wave_period,swell_wave_direction';
       var weather='https://api.open-meteo.com/v1/forecast?'+coords+'&hourly=weather_code,wind_speed_10m,wind_direction_10m&wind_speed_unit=ms';
       try{
         var results=await Promise.allSettled([getJSON(marine),getJSON(weather)]);
@@ -672,6 +665,25 @@
   })();
   </script>
 </section>
+
+<!-- ISONOURA WINDY START: isolated embed; no shared JS changes -->
+<section class="section ks-windy-section" id="isonoura-windy" aria-labelledby="isonoura-windy-title" style="padding-top:34px;padding-bottom:42px;">
+  <h2 class="section-title" id="isonoura-windy-title" style="margin-bottom:12px;">
+    <i class="fa-solid fa-wind ico" aria-hidden="true"></i>Windy｜風・波マップ
+  </h2>
+  <p style="font-size:0.83rem;color:var(--cream-soft);line-height:1.7;margin:0 0 14px;">磯ノ浦周辺の風・波の予測マップです。地図上で日時や表示項目を切り替えられます。</p>
+  <div style="width:100%;overflow:hidden;border-radius:14px;border:1px solid var(--line);background:#0b2839;">
+    <iframe title="Windy 磯ノ浦周辺の風・波予報マップ"
+      src="https://embed.windy.com/embed2.html?lat=34.18&amp;lon=135.05&amp;detailLat=34.18&amp;detailLon=135.05&amp;zoom=9&amp;level=surface&amp;overlay=waves&amp;product=ecmwf&amp;menu=&amp;message=&amp;marker=true&amp;calendar=now&amp;pressure=&amp;type=map&amp;location=coordinates&amp;detail=&amp;metricWind=m%2Fs&amp;metricTemp=%C2%B0C&amp;radarRange=-1"
+      loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen
+      style="display:block;width:100%;height:clamp(370px,75vw,540px);border:0;background:#0b2839;"></iframe>
+  </div>
+  <p style="font-size:0.73rem;color:var(--teal-pale);line-height:1.65;margin:10px 0 0;">
+    ※ Windyは外部のモデル予報で、現地の波高やサーフサイズの実測ではありません。
+    <a href="https://www.windy.com/?waves,34.18,135.05,9" target="_blank" rel="noopener noreferrer" style="color:var(--coral-soft);text-decoration:underline;">Windyで大きく見る</a>
+  </p>
+</section>
+<!-- ISONOURA WINDY END -->
 
 <section class="section">
   <h2 class="section-title">
@@ -725,6 +737,13 @@
     alt="広域波高マップ 拡大表示"
     style="width:95vw;height:auto;max-height:95vh;object-fit:contain;border-radius:8px;background:#000;"
   >
+</div>
+
+<div class="context-call">
+  <div class="head"><i class="fa-solid fa-circle-info"></i> ポイントの特徴</div>
+  <div class="body">
+    磯ノ浦は和歌山県和歌山市にある関西屈指のサーフポイントです。南西風による風波に反応しやすく、風が10m以上吹けばサーフィン可能なサイズまで上がることもあります。当ページでは磯ノ浦の波情報、ライブカメラ、風向き、波予想を毎日更新しており、最新コンディションをリアルタイムで確認できます。
+  </div>
 </div>
 
 <section class="section" style="background:var(--ink-deep);">
@@ -900,19 +919,18 @@ const SPOT_CONFIG = {
   LAT: 34.18, LNG: 135.05,
   OFFSHORE_START: 340, OFFSHORE_END: 60,
   SWELL_BEST_MIN: 150, SWELL_BEST_MAX: 240,
-  WAVE_FACTOR: 0.7,
   HIDE_WAVE_LABEL: true,
   ONSHORE_BOOST: true,
   WIND_TOLERANCE: 1.3,
   REFRESH_INTERVAL_MS: 10 * 60 * 1000,
-  TIP_FLAT: '<strong>紀伊水道内でうねり弱め</strong>（{wave}m）。今日はSUPやロングボードの練習日和。外海（白浜方面）への遠征も検討。',
+  TIP_FLAT: '<strong>{label}</strong>（推定{wave}m）。磯ノ浦に届くうねりは弱めです。',
   TIP_BLOWN: '<strong>{dir}の強風{ws}m/s</strong>。波面が乱れるおそれがあります。評価・風・現地情報を確認して判断してください。',
   TIP_PERFECT: '<strong>良いコンディション継続中</strong>。{dir}オフショア{ws}m/s、周期{p}秒。<strong>今が狙い目</strong>。',
   TIP_BIG: '<strong>サイズアップ中</strong>（{wave}m／{label}）。磯ノ浦でこのサイズは珍しい。中級以上向き、カレント注意。',
   TIP_NORMAL: '{label}。{condText}。磯ノ浦らしい波。ビギナー〜中級にちょうど良い。',
 };
 </script>
-<script src="nami_isonoura.js?v=20261124"></script>
+<script src="nami_isonoura.js?v=20261125-1"></script>
 <script>
 if (typeof loadWaveReports === "function") loadWaveReports("磯ノ浦");
 </script>
