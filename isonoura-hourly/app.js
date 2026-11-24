@@ -211,7 +211,15 @@ function renderCompactChart(slots,selected){
     add("text",{x:x(i),y:24,"text-anchor":"middle","font-size":16},compactWeather(slots[i]));
   }
   for(let j=1;j<=3;j++)add("line",{x1:label,x2:width,y1:top+usable*j/4,y2:top+usable*j/4,stroke:"#8fb5c4",opacity:".16","stroke-dasharray":"3 5"});
-  const maxWave=Math.max(.5,...waves.filter(Number.isFinite)),maxWind=Math.max(6,...winds.filter(Number.isFinite));
+  const days = new Set([0, 1, 2].map(day => dateKey(new Date(Date.now() + day * 86400000))));
+  const heights = getSlots().filter(slot => {
+    const time = slotDate(slot);
+    if (!time || !days.has(dateKey(time))) return false;
+    const hour = Number(getJst(time).hour);
+    return hour >= 4 && hour <= 20;
+  }).map(slot => numeric(slot.wave_height_m));
+  const maxWave = Math.max(1, ...heights.filter(Number.isFinite));
+  const maxWind = Math.max(6, ...winds.filter(Number.isFinite));
   waves.forEach((v,i)=>{
     if(!Number.isFinite(v))return;const barW=Math.min(col-6,29);
     const h=Math.max(v===0?0:2,Math.max(0,v)*usable/maxWave);
