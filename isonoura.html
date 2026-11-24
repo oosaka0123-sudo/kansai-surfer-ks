@@ -245,26 +245,7 @@
   </div>
 </section>
 
-<section class="section">
-  <h2 class="section-title">
-    <span class="no">02</span><i class="fa-solid fa-camera-retro ico"></i>現地波レポート
-  </h2>
-  <div class="wave-report-box" style="margin:0;">
-    <div class="wave-report-head" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:16px;">
-      <p style="margin:0;font-size:0.95rem;color:var(--cream-soft,#e2d9c8);">LINEで届いた現地の写真・動画から、管理者OK済みだけを掲載します。</p>
-      <a href="https://kansai.rss7.net/line/"
-         target="_blank" rel="noopener"
-         style="display:inline-flex;align-items:center;gap:8px;background:#00c300;color:#fff;padding:12px 20px;border-radius:999px;font-weight:900;font-size:0.9rem;text-decoration:none;white-space:nowrap;box-shadow:0 8px 22px rgba(0,0,0,0.18);">
-        <i class="fa-brands fa-line"></i> 現地投稿に参加する（β版）
-      </a>
-    </div>
-    <div class="wave-report-grid" id="ks-line-isonoura">
-      <div class="wave-report-empty" style="grid-column:1/-1;">
-        <i class="fa-solid fa-spinner fa-spin"></i> レポートを読み込み中...
-      </div>
-    </div>
-  </div>
-</section>
+
 
 <script>
 (function(){
@@ -672,16 +653,76 @@
     <i class="fa-solid fa-wind ico" aria-hidden="true"></i>Windy｜風・波マップ
   </h2>
   <p style="font-size:0.83rem;color:var(--cream-soft);line-height:1.7;margin:0 0 14px;">磯ノ浦周辺の風・波の予測マップです。地図上で日時や表示項目を切り替えられます。</p>
+  <div class="ks-windy-switch" role="group" aria-label="Windyの表示切り替え" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0 14px;">
+    <button type="button" id="ks-windy-wind" class="ks-windy-tab" aria-pressed="true" style="min-width:110px;">風</button>
+    <button type="button" id="ks-windy-wave" class="ks-windy-tab" aria-pressed="false" style="min-width:110px;">波</button>
+    <span id="ks-windy-state" role="status" aria-live="polite" style="font-size:12px;color:#a9cad7;">風予報を表示中</span>
+  </div>
+  <style>
+    #isonoura-windy .ks-windy-tab{appearance:none;border:1px solid rgba(148,189,202,.75);color:#e8f4f8;background:#123747;border-radius:999px;padding:11px 22px;min-height:44px;font:700 14px/1.3 sans-serif;cursor:pointer;transition:background .15s,color .15s,border-color .15s}
+    #isonoura-windy .ks-windy-tab[aria-pressed="true"]{background:#f5a23c;color:#082331;border-color:#f5a23c}
+    #isonoura-windy .ks-windy-tab:focus-visible{outline:3px solid #77dbea;outline-offset:3px}
+    @media(max-width:520px){#isonoura-windy .ks-windy-tab{min-width:92px;padding:11px 18px}}
+  </style>
   <div style="width:100%;overflow:hidden;border-radius:14px;border:1px solid var(--line);background:#0b2839;">
     <iframe title="Windy 磯ノ浦周辺の風・波予報マップ"
-      src="https://embed.windy.com/embed2.html?lat=34.18&amp;lon=135.05&amp;detailLat=34.18&amp;detailLon=135.05&amp;zoom=9&amp;level=surface&amp;overlay=waves&amp;product=ecmwf&amp;menu=&amp;message=&amp;marker=true&amp;calendar=now&amp;pressure=&amp;type=map&amp;location=coordinates&amp;detail=&amp;metricWind=m%2Fs&amp;metricTemp=%C2%B0C&amp;radarRange=-1"
+      src="https://embed.windy.com/embed2.html?lat=34.18&amp;lon=135.05&amp;detailLat=34.18&amp;detailLon=135.05&amp;zoom=9&amp;level=surface&amp;overlay=wind&amp;product=ecmwf&amp;menu=&amp;message=&amp;marker=true&amp;calendar=now&amp;pressure=&amp;type=map&amp;location=coordinates&amp;detail=&amp;metricWind=m%2Fs&amp;metricTemp=%C2%B0C&amp;radarRange=-1"
       loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen
       style="display:block;width:100%;height:clamp(370px,75vw,540px);border:0;background:#0b2839;"></iframe>
   </div>
   <p style="font-size:0.73rem;color:var(--teal-pale);line-height:1.65;margin:10px 0 0;">
     ※ Windyは外部のモデル予報で、現地の波高やサーフサイズの実測ではありません。
-    <a href="https://www.windy.com/?waves,34.18,135.05,9" target="_blank" rel="noopener noreferrer" style="color:var(--coral-soft);text-decoration:underline;">Windyで大きく見る</a>
+    <a href="https://www.windy.com/?wind,34.18,135.05,9" target="_blank" rel="noopener noreferrer" style="color:var(--coral-soft);text-decoration:underline;">Windyで大きく見る</a>
   </p>
+  <script>
+  (function(){
+    'use strict';
+    var frame=document.querySelector('#isonoura-windy iframe');
+    var wind=document.getElementById('ks-windy-wind'),wave=document.getElementById('ks-windy-wave');
+    var state=document.getElementById('ks-windy-state'),link=document.querySelector('#isonoura-windy a[href*="windy.com"]');
+    if(!frame||!wind||!wave||!state)return;
+    var sources={
+      wind:{src:"https://embed.windy.com/embed2.html?lat=34.18&lon=135.05&detailLat=34.18&detailLon=135.05&zoom=9&level=surface&overlay=wind&product=ecmwf&menu=&message=&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=m%2Fs&metricTemp=%C2%B0C&radarRange=-1",link:"https://www.windy.com/?wind,34.18,135.05,9",label:"風"},
+      waves:{src:"https://embed.windy.com/embed2.html?lat=34.18&lon=135.05&detailLat=34.18&detailLon=135.05&zoom=9&level=surface&overlay=waves&product=ecmwfWaves&menu=&message=&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=m%2Fs&metricTemp=%C2%B0C&radarRange=-1",link:"https://www.windy.com/?waves,34.18,135.05,9",label:"波"}
+    };
+    var current="wind";
+    function select(which){
+      if(which===current)return;
+      var item=sources[which];if(!item)return;
+      current=which;
+      wind.setAttribute("aria-pressed",String(which==="wind"));
+      wave.setAttribute("aria-pressed",String(which==="waves"));
+      state.textContent=item.label+"予報を読み込み中…";
+      frame.title="Windy 磯ノ浦周辺 "+item.label+"の予報マップ";
+      if(link)link.href=item.link;
+      frame.src=item.src;
+    }
+    frame.addEventListener("load",function(){state.textContent=sources[current].label+"予報を表示中";});
+    wind.addEventListener("click",function(){select("wind");});
+    wave.addEventListener("click",function(){select("waves");});
+  })();
+  </script>
+</section>
+
+<section class="section">
+  <h2 class="section-title">
+    <span class="no">02</span><i class="fa-solid fa-camera-retro ico"></i>現地波レポート
+  </h2>
+  <div class="wave-report-box" style="margin:0;">
+    <div class="wave-report-head" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:16px;">
+      <p style="margin:0;font-size:0.95rem;color:var(--cream-soft,#e2d9c8);">LINEで届いた現地の写真・動画から、管理者OK済みだけを掲載します。</p>
+      <a href="https://kansai.rss7.net/line/"
+         target="_blank" rel="noopener"
+         style="display:inline-flex;align-items:center;gap:8px;background:#00c300;color:#fff;padding:12px 20px;border-radius:999px;font-weight:900;font-size:0.9rem;text-decoration:none;white-space:nowrap;box-shadow:0 8px 22px rgba(0,0,0,0.18);">
+        <i class="fa-brands fa-line"></i> 現地投稿に参加する（β版）
+      </a>
+    </div>
+    <div class="wave-report-grid" id="ks-line-isonoura">
+      <div class="wave-report-empty" style="grid-column:1/-1;">
+        <i class="fa-solid fa-spinner fa-spin"></i> レポートを読み込み中...
+      </div>
+    </div>
+  </div>
 </section>
 <!-- ISONOURA WINDY END -->
 
