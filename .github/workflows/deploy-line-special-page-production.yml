@@ -1,17 +1,177 @@
-name: Isonoura deployment canary (MCP isolated)
+name: Guarded Isonoura two-file production deploy
+
 on:
-  workflow_dispatch:
+  workflow_dispatch: {}
+
 permissions:
   contents: read
+
 concurrency:
   group: kansai-surfer-production-deploy
   cancel-in-progress: false
+
 jobs:
-  canary:
+  guarded-release:
     if: github.ref == 'refs/heads/ops/isonoura-guarded-mcp-20261124' && github.actor == 'oosaka0123-sudo'
     runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      HOST: ftp.lolipop.jp
+      ROOT: /kansai
+      SITE: https://kansai.rss7.net
+      OLD_HTML_SHA: cbb6b25924c35f2b20e64cb4ac58214c736c80fa5d26bccb4e23bc4fcbf0d7c1
+      OLD_COMMON_SHA: 034ecc6cd950fbacf6b082336802f0d5fd9927bbd3bf962629e8fc56d44e09fd
+      NEW_HTML_SHA: 99f51f60a9406ae01d14bb0cdefb2d0958fec6f3b56a75934993f232ba8109d6
+      NEW_JS_SHA: fef5469241e0a37c20eb749487e4a227e93abd15dd7d16827851a4bce5af0507
     steps:
-      - name: Canary, no writes
+      - name: Checkout exact reviewed commit
+        uses: actions/checkout@v4
+        with:
+          ref: a40d861c26e4e6fac0cd777f8ae7ff9ee64b8c10
+          persist-credentials: false
+
+      - name: Source SHA guards and regression tests
+        shell: bash
         run: |
+          set -euo pipefail
           test "$GITHUB_REF" = 'refs/heads/ops/isonoura-guarded-mcp-20261124'
-          echo 'CANARY_MCP_NO_DEPLOY_20261124'
+          test "$HOST" = 'ftp.lolipop.jp'
+          test "$ROOT" = '/kansai'
+          test "$SITE" = 'https://kansai.rss7.net'
+          test "$(git rev-parse HEAD)" = 'a40d861c26e4e6fac0cd777f8ae7ff9ee64b8c10'
+          test "$(sha256sum isonoura.html | cut -d' ' -f1)" = "$NEW_HTML_SHA"
+          test "$(sha256sum nami_isonoura.js | cut -d' ' -f1)" = "$NEW_JS_SHA"
+          grep -Fq 'src="nami_isonoura.js?v=20261124"' isonoura.html
+          node --check nami_isonoura.js
+          node --test tests/isonoura-consistency.test.cjs
+
+      - name: Install explicit FTPS client
+        run: sudo apt-get update -qq && sudo apt-get install -y lftp
+
+      - name: Verify FTP versus public HTML, snapshot rollback source
+        shell: bash
+        env:
+          FTP_USER: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASS: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          test -n "$FTP_USER" && test -n "$FTP_PASS"
+          D="$RUNNER_TEMP/ks-isonoura-backup"
+          mkdir -p "$D"
+          curl -fsSL --retry 3 "$SITE/isonoura.html?preflight=$GITHUB_RUN_ID" -o "$D/http-original.html"
+          curl -fsSL --retry 3 "$SITE/nami_common.js?preflight=$GITHUB_RUN_ID" -o "$D/common-original.js"
+          test "$(sha256sum "$D/http-original.html" | cut -d' ' -f1)" = "$OLD_HTML_SHA" || { echo "::error::Public Isonoura changed"; exit 1; }
+          test "$(sha256sum "$D/common-original.js" | cut -d' ' -f1)" = "$OLD_COMMON_SHA" || { echo "::error::Common JS changed"; exit 1; }
+          lftp <<LFTP_GUARD
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 25
+          set net:max-retries 3
+          open -u "$FTP_USER","$FTP_PASS" "$HOST"
+          get "$ROOT/isonoura.html" -o "$D/ftp-original.html"
+          cls -1 "$ROOT" > "$D/files-before.txt"
+          bye
+          LFTP_GUARD
+          cmp "$D/http-original.html" "$D/ftp-original.html"
+          if grep -Eq '(^|/)nami_isonoura[.]js$' "$D/files-before.txt"; then
+            echo "::error::Target JS already exists; refusing overwrite"
+            exit 1
+          fi
+          echo 'GUARD_OK: original HTML byte-identical via FTPS and HTTPS, new JS absent'
+
+      - name: Preserve original files in private Actions artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ks-isonoura-original-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/ks-isonoura-backup/ftp-original.html
+            ${{ runner.temp }}/ks-isonoura-backup/common-original.js
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Upload only two files and automatically rollback on error
+        shell: bash
+        env:
+          FTP_USER: ${{ secrets.KS_NAMI_FTP_USER }}
+          FTP_PASS: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
+        run: |
+          set -Eeuo pipefail
+          set +x
+          D="$RUNNER_TEMP/ks-isonoura-backup"
+          JS_ATTEMPTED=0
+          HTML_ATTEMPTED=0
+          rollback() {
+            status=$?
+            trap - ERR
+            set +e
+            echo "::error::Verification or upload failed, restoring scoped files."
+            if [ "$HTML_ATTEMPTED" -eq 1 ]; then
+              lftp <<LFTP_RESTORE_HTML
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          open -u "$FTP_USER","$FTP_PASS" "$HOST"
+          put "$D/ftp-original.html" -o "$ROOT/isonoura.html"
+          bye
+          LFTP_RESTORE_HTML
+              test $? -eq 0 || echo '::error::HTML restore failed; backup artifact retained'
+            fi
+            if [ "$JS_ATTEMPTED" -eq 1 ]; then
+              lftp <<LFTP_REMOVE_JS
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          open -u "$FTP_USER","$FTP_PASS" "$HOST"
+          rm "$ROOT/nami_isonoura.js"
+          bye
+          LFTP_REMOVE_JS
+              test $? -eq 0 || echo '::error::New JS removal failed; manual cleanup needed'
+            fi
+            curl -fsSL --retry 3 "$SITE/isonoura.html?rollback=$GITHUB_RUN_ID" -o "$D/restored.html"
+            test "$(sha256sum "$D/restored.html" | cut -d' ' -f1)" = "$OLD_HTML_SHA" || echo '::error::Rollback web verification mismatch'
+            exit "$status"
+          }
+          trap rollback ERR
+          curl -fsSL --retry 3 "$SITE/isonoura.html?immediate=$GITHUB_RUN_ID" -o "$D/just-before.html"
+          cmp "$D/just-before.html" "$D/ftp-original.html"
+          curl -fsSL --retry 3 "$SITE/nami_common.js?immediate=$GITHUB_RUN_ID" -o "$D/just-before-common.js"
+          test "$(sha256sum "$D/just-before-common.js" | cut -d' ' -f1)" = "$OLD_COMMON_SHA"
+
+          # New JS first. The old HTML does not reference it.
+          JS_ATTEMPTED=1
+          lftp <<LFTP_UPLOAD_JS
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 25
+          set net:max-retries 3
+          open -u "$FTP_USER","$FTP_PASS" "$HOST"
+          put "nami_isonoura.js" -o "$ROOT/nami_isonoura.js"
+          bye
+          LFTP_UPLOAD_JS
+          curl -fsSL --retry 6 --retry-delay 2 "$SITE/nami_isonoura.js?check=$GITHUB_RUN_ID" -o "$D/new.js"
+          test "$(sha256sum "$D/new.js" | cut -d' ' -f1)" = "$NEW_JS_SHA"
+
+          HTML_ATTEMPTED=1
+          lftp <<LFTP_UPLOAD_HTML
+          set cmd:fail-exit true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:passive-mode true
+          set net:timeout 25
+          set net:max-retries 3
+          open -u "$FTP_USER","$FTP_PASS" "$HOST"
+          put "isonoura.html" -o "$ROOT/isonoura.html"
+          bye
+          LFTP_UPLOAD_HTML
+          curl -fsSL --retry 6 --retry-delay 2 "$SITE/isonoura.html?check=$GITHUB_RUN_ID" -o "$D/new.html"
+          test "$(sha256sum "$D/new.html" | cut -d' ' -f1)" = "$NEW_HTML_SHA"
+          curl -fsSL --retry 3 "$SITE/nami_common.js?check=$GITHUB_RUN_ID" -o "$D/shared-after.js"
+          test "$(sha256sum "$D/shared-after.js" | cut -d' ' -f1)" = "$OLD_COMMON_SHA"
+          trap - ERR
+          echo 'SUCCESS: only Isonoura HTML and dedicated JS uploaded'
