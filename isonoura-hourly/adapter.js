@@ -38,12 +38,12 @@
     const hourly = marine.hourly.time.map((time,mi) => {
       const key=timeKey(time), wi=wIndex.get(key),pi=pIndex.get(key);
       const dir=take(weather,"wind_direction_10m",wi), code=take(weather,"weather_code",wi);
+      const beach=window.ksIsonouraBeachWave.estimate(marine.hourly,mi);
       // Open-Meteo times are explicitly JST; do not interpret them as UTC.
       return {
         time:key+":00+09:00",
-        wave_height_m:take(marine,"wave_height",mi),
-        model_wave_height_m:take(marine,"wave_height",mi),
-        period_s:take(marine,"wave_period",mi),
+        wave_height_m:beach.height,
+        period_s:beach.period,
         wind_speed_ms:take(weather,"wind_speed_10m",wi),
         wind_direction_label:direction(dir),
         weather_label:weatherLabel(code),
@@ -55,8 +55,8 @@
     return {
       status:"model_only",
       spot:{name:"磯ノ浦",id:"isonoura"},
-      wave_metric_label:"モデル波高",
-      model_notice:"磯ノ浦のOpen-Meteoモデル波高。実際のブレイクサイズ・実測値ではありません。過去時刻も取得時点のモデル予報値です。",
+      wave_metric_label:"ビーチ波高・推定",
+      model_notice:"Open-Meteoの波向・うねりからビーチ波高を推定しています。波高の目盛りは今日・明日・明後日で共通です。",
       updated_at:source.updated_at || null,
       hourly,
       tide:{station:"和歌山",station_id:"WY",datum:"気象庁潮位表基準面",unit:"cm",days:[]}
@@ -109,7 +109,7 @@
     if(rainResult.status!=="fulfilled")console.warn("Rain model unavailable; missing values remain blank",rainResult.reason);
     window.KANTO_FORECAST_DATA=payload;
     const script=document.createElement("script");
-    script.src="./app.js?v=dfce290-isonoura";
+    script.src="./app.js?v=20261125-1";
     script.onerror=()=>{if(state)state.textContent="グラフ読み込みに失敗しました";};
     document.body.appendChild(script);
   } catch(error) {
