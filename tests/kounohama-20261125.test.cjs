@@ -49,3 +49,13 @@ test('no rating if wave direction unknown',()=>{
  const data=fixture();data.marine.hourly.wave_direction.fill(null);
  const rows=rowsOf(data.marine,data.weather);assert.equal(rows[0].judgment,null);
 });
+
+test('iframe height uses forecast component and shared refresh button reloads chart',()=>{
+ const inner=fs.readFileSync(path.join(dir,'index.html'),'utf8');
+ const app=fs.readFileSync(path.join(dir,'app.js'),'utf8');
+ assert(inner.includes("getBoundingClientRect().height"));
+ assert(!inner.includes('setInterval(send,2000)'));
+ assert(html.includes("frame.src=base+'&_refresh='+Date.now()"));
+ assert(html.includes('height>=320&&height<=2200'));
+ assert(app.includes('(root.dataset.defaultSpot||"kounohama")'));
+});

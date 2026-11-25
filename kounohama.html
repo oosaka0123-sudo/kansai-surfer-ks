@@ -339,7 +339,19 @@
           var data=event.data;
           if(!data||data.type!=='ks-kounohama-kanto-frame-height')return;
           var height=Number(data.height);
-          if(Number.isFinite(height)&&height>=600&&height<=1600)frame.style.height=Math.ceil(height)+'px';
+          if(Number.isFinite(height)&&height>=320&&height<=2200)frame.style.height=Math.ceil(height)+'px';
+        });
+      })();
+    </script>
+    <script>
+      (function(){
+        var refresh=document.getElementById('refreshBtn');
+        if(!refresh)return;
+        refresh.addEventListener('click',function(){
+          var frame=document.getElementById('ks-kounohama-hourly');
+          if(!frame)return;
+          var base=frame.src.split('&_refresh=')[0];
+          frame.src=base+'&_refresh='+Date.now();
         });
       })();
     </script>

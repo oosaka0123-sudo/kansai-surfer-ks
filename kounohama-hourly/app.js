@@ -52,7 +52,7 @@ function bindScrollSync(from,to){
 if(!compactTest){bindScrollSync(scroll,chartScroll);bindScrollSync(chartScroll,scroll);}
 function requestedSpot(){
   const requested=new URLSearchParams(location.search).get("spot");
-  return requested&&/^[a-z0-9_-]+$/.test(requested)?requested:(root.dataset.defaultSpot||"kugenuma");
+  return requested&&/^[a-z0-9_-]+$/.test(requested)?requested:(root.dataset.defaultSpot||"kounohama");
 }
 async function loadSource(){
   if(window.KANTO_FORECAST_DATA&&typeof window.KANTO_FORECAST_DATA==="object")return window.KANTO_FORECAST_DATA;
