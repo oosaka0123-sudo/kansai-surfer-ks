@@ -21,7 +21,7 @@ jobs:
       SITE: https://kansai.rss7.net
       OLD_HTML: f23f1fdf7c05e2ae709644139565ca6c07b3330f8abb5092dd4faa51215fe675
       OLD_COMMON: 034ecc6cd950fbacf6b082336802f0d5fd9927bbd3bf962629e8fc56d44e09fd
-      NEW_HTML: d0ce85b9cec884ba0b50b6078e58ee501e995e153f7cf009915d5eea1747d70b
+      NEW_HTML: 2ba792ce6b1311be3f428424053fefeec5f16ad1bced2269ca3fc92310fc1f0c
       SHA_INDEX: 8cdafb2c8b89c50df0e89830d333a40f818ca9ada6a1438b84148044768d17ff
       SHA_CSS: 0db55514fd86b56c7d40f6317d2efa6643e961e1c9cef73772140e3d50500e68
       SHA_ADAPTER: 47c8a5639cf2d5183bbb9cc80bd6ae1147b410e56f6d30c06c50d987817a72bd
@@ -33,17 +33,17 @@ jobs:
       - name: Checkout exact reviewed commit (never deploy main)
         uses: actions/checkout@v4
         with:
-          ref: 935c6f3973637da2c9d68cf398268e5361fb84ed
+          ref: ec654ffe66e976e5551b08ababe49e98255a7687
           persist-credentials: false
 
-      - name: Validate exactly seven deployment files and six tests
+      - name: Validate exactly seven deployment files and seven tests
         shell: bash
         run: |
           set -euo pipefail
           test "$GITHUB_REF" = 'refs/heads/ops/kounohama-full-release-20261125'
           test "$FTP_HOST" = 'ftp.lolipop.jp' && test "$FTP_ROOT" = '/kansai'
           test "$SITE" = 'https://kansai.rss7.net'
-          test "$(git rev-parse HEAD)" = '935c6f3973637da2c9d68cf398268e5361fb84ed'
+          test "$(git rev-parse HEAD)" = 'ec654ffe66e976e5551b08ababe49e98255a7687'
           test "$(sha256sum kounohama.html | cut -d' ' -f1)" = "$NEW_HTML"
           test "$(sha256sum kounohama-hourly/index.html | cut -d' ' -f1)" = "$SHA_INDEX"
           test "$(sha256sum kounohama-hourly/styles.css | cut -d' ' -f1)" = "$SHA_CSS"
