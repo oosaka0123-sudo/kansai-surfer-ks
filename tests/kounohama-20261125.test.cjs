@@ -59,3 +59,11 @@ test('iframe height uses forecast component and shared refresh button reloads ch
  assert(html.includes('height>=320&&height<=2200'));
  assert(app.includes('(root.dataset.defaultSpot||"kounohama")'));
 });
+test('10day starts after DOM parsing and falls back to fresh local site forecast without guessing',()=>{
+ assert(html.includes("document.addEventListener('DOMContentLoaded',load,{once:true})"));
+ assert(html.includes('configWaits++<12'));
+ assert(html.includes("data/spot_kounohama.json?ks10_cache="));
+ assert(html.includes("age<86400000"));
+ assert(html.includes("savedCache={marine:siteData.marine,weather:siteData.weather}"));
+ assert(html.includes("10日分取得不可：サイト保存分"));
+});

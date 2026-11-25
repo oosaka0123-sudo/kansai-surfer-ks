@@ -611,18 +611,38 @@
           '<span class="ks10-judgment-stars">'+r.judgment.stars+'</span></span>':'—')+'</td></tr>';
       }).join('');
     }
-    async function getJSON(url){var ctrl=new AbortController(),id=setTimeout(function(){ctrl.abort();},15000);try{var res=await fetch(url,{cache:'no-store',signal:ctrl.signal});if(!res.ok)throw new Error('HTTP '+res.status);return await res.json();}finally{clearTimeout(id);}}
-    var running=false;
+    async function getJSON(url,ms){var ctrl=new AbortController(),id=setTimeout(function(){ctrl.abort();},ms||15000);try{var res=await fetch(url,{cache:'no-store',signal:ctrl.signal});if(!res.ok)throw new Error('HTTP '+res.status);return await res.json();}finally{clearTimeout(id);}}
+    var running=false,configWaits=0;
     async function load(){
       if(running)return;running=true;
       var config=getSpotConfig();
       if(!config||!Number.isFinite(config.LAT)||!Number.isFinite(config.LNG)){
-        updated.textContent='予報地点を確認できません';running=false;return;
+        updated.textContent='地点設定を読み込み中…';running=false;
+        if(configWaits++<12)setTimeout(load,400);
+        else updated.textContent='予報地点を確認できません';
+        return;
       }
       var coords='latitude='+config.LAT+'&longitude='+config.LNG+'&timezone=Asia%2FTokyo&forecast_days=10';
       var marine='https://marine-api.open-meteo.com/v1/marine?'+coords+'&hourly=wave_height,wave_period,wave_direction';
       var weather='https://api.open-meteo.com/v1/forecast?'+coords+'&hourly=weather_code,wind_speed_10m,wind_direction_10m&wind_speed_unit=ms';
       try{
+        // Always show the site's own fresh seven-day model data first.
+        // Days 8-10 remain blank until the separate 10-day API succeeds.
+        var savedCache=null,cacheStamp='';
+        try{
+          var siteData=await getJSON('data/spot_kounohama.json?ks10_cache='+Date.now(),6500);
+          var sourceTime=siteData&&siteData.updated_at;
+          var savedAt=typeof sourceTime==='string'?Date.parse(sourceTime.replace(' ','T')+'+09:00'):NaN;
+          var age=Date.now()-savedAt;
+          if(siteData&&siteData.marine&&siteData.weather&&Number.isFinite(savedAt)&&age>=-300000&&age<86400000){
+            savedCache={marine:siteData.marine,weather:siteData.weather};
+            cacheStamp=sourceTime.slice(5,16).replace('-','/');
+            render(savedCache.marine,savedCache.weather);
+            updated.textContent='サイト保存予報（'+cacheStamp+' JST）を表示中／10日分を取得中…';
+          }
+        }catch(cacheError){
+          console.warn('Kounohama site forecast cache unavailable',cacheError);
+        }
         var results=await Promise.allSettled([getJSON(marine),getJSON(weather)]);
         if(results.some(function(x){return x.status!=='fulfilled';})){
           updated.textContent='予報を再取得中…';
@@ -634,14 +654,23 @@
         }
         var m=results[0].status==='fulfilled'?results[0].value:null;
         var w=results[1].status==='fulfilled'?results[1].value:null;
-        render(m,w);
         var stamp=new Date().toLocaleString('ja-JP',{timeZone:'Asia/Tokyo',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
-        updated.textContent=(m&&w?'データ取得：':'一部データ取得不可：')+stamp+' JST';
+        if(m&&w){
+          render(m,w);
+          updated.textContent='10日分取得：'+stamp+' JST';
+        }else if(savedCache){
+          updated.textContent='10日分取得不可：サイト保存分（'+cacheStamp+' JST、最大7日分）を表示';
+        }else{
+          render(m,w);
+          updated.textContent='一部データ取得不可：'+stamp+' JST';
+        }
       }catch(e){render(null,null);updated.textContent='データ取得不可';console.warn('Kounohama 10day forecast',e);}
       finally{running=false;}
     }
     render(null,null);
-    setTimeout(load,0); // 下部のSPOT_CONFIG宣言後に初回取得する
+    // DOMContentLoaded guarantees the below SPOT_CONFIG script has been parsed.
+    if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',load,{once:true});
+    else setTimeout(load,0);
     var refresh=document.getElementById('refreshBtn');if(refresh)refresh.addEventListener('click',load);
     setInterval(load,10*60*1000);
   })();
