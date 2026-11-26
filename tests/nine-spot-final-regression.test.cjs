@@ -3,7 +3,7 @@ const read=f=>fs.readFileSync(f,'utf8').replace(/\r\n/g,'\n');
 for(const s of ['kounohama','ikumi','komatsu','irago','shizunami','hamadutu','takahama','hakuto'])test(s+' rejects wrong-spot cached forecast',async()=>{
  const html=read(s+'.html'),start=html.indexOf('    var running=false,configWaits=0;'),end=html.indexOf('    render(null,null);\n    // DOMContentLoaded',start);
  assert(start>=0&&end>start);const src=html.slice(start,end);
- for(const valid of [false,true]){const renders=[],m={hourly:{time:['2026-11-26T12:00']}},w={hourly:{time:['2026-11-26T12:00']}},ctx={getSpotConfig:()=>({LAT:1,LNG:1}),getJSON:async url=>{if(!url.startsWith('data/'))throw Error('offline');return {spot:valid?s:'foreign',updated_at:'2026-11-26 12:00:00',marine:m,weather:w}},Date:class extends Date{static now(){return Date.parse('2026-11-26T12:01:00+09:00')}},render:(a,b)=>renders.push([a,b]),updated:{},console:{warn(){}},setTimeout:f=>f()};
+ for(const valid of [false,true]){const renders=[],m={hourly:{time:['2026-11-26T12:00'],wave_height:[1.2]}},w={hourly:{time:['2026-11-26T12:00'],wind_speed_10m:[2],wind_direction_10m:[0]}},ctx={getSpotConfig:()=>({LAT:1,LNG:1}),getJSON:async url=>{if(!url.startsWith('data/'))throw Error('offline');return {spot:valid?s:'foreign',updated_at:'2026-11-26 12:00:00',marine:m,weather:w}},Date:class extends Date{static now(){return Date.parse('2026-11-26T12:01:00+09:00')}},render:(a,b)=>renders.push([a,b]),updated:{},console:{warn(){}},setTimeout:f=>f()};
  await vm.runInNewContext(src+'\nload()',ctx);assert.equal(renders.some(x=>x[0]===m),valid);if(!valid)assert(renders.every(x=>x[0]===null&&x[1]===null));}
 });
 test('Isonoura iframe sends stable measured content height and can shrink',()=>{

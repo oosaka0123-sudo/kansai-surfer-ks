@@ -401,7 +401,7 @@
     if(!body||!updated)return;
     var days=['日','月','火','水','木','金','土'];
     var dirs=['北','北東','東','南東','南','南西','西','北西'];
-    var arrows=['↑','↗','→','↘','↓','↙','←','↖'];
+    var arrows=['↓','↙','←','↖','↑','↗','→','↘'];
     var latitude=35.665200,longitude=134.966082; // 浜詰の既存SPOT_CONFIGと一致
     // 判定は既存 nami_common.js の getVerdict/calcScore と同じ実装を、このセクション内で再利用。
     function getSpotConfig(){
@@ -567,6 +567,21 @@
     }
     async function getJSON(url,ms){var ctrl=new AbortController(),id=setTimeout(function(){ctrl.abort();},ms||15000);try{var res=await fetch(url,{cache:'no-store',signal:ctrl.signal});if(!res.ok)throw new Error('HTTP '+res.status);return await res.json();}finally{clearTimeout(id);}}
     var running=false,configWaits=0;
+    function usableForecast(data,fields){
+      var h=data?.hourly;
+      if(!Array.isArray(h?.time)||!fields.every(function(f){return Array.isArray(h[f]);}))return false;
+      var today=new Date(Date.now()+9*3600000).toISOString().slice(0,10);
+      var last=new Date(Date.now()+9*3600000+9*86400000).toISOString().slice(0,10);
+      return h.time.some(function(t,i){return typeof t==='string'&&/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(t)&&t.slice(0,10)>=today&&t.slice(0,10)<=last&&fields.every(function(f){return typeof h[f][i]==='number'&&Number.isFinite(h[f][i])&&h[f][i]>=0;});});
+    }
+    function waveUsable(m){return usableForecast(m,['wave_height']);}
+    function windUsable(w){return usableForecast(w,['wind_speed_10m','wind_direction_10m']);}
+    function completeForecast(m,w){
+      var md=new Set(m.hourly.time.filter(function(t,i){return typeof t==='string'&&Number.isFinite(m.hourly.wave_height[i])&&m.hourly.wave_height[i]>=0;}).map(function(t){return t.slice(0,10);}));
+      var wd=new Set(w.hourly.time.filter(function(t,i){return typeof t==='string'&&Number.isFinite(w.hourly.wind_speed_10m[i])&&Number.isFinite(w.hourly.wind_direction_10m[i]);}).map(function(t){return t.slice(0,10);}));
+      return Array.from({length:10},function(_,i){return new Date(Date.now()+9*3600000+i*86400000).toISOString().slice(0,10);}).every(function(d){return md.has(d)&&wd.has(d);});
+    }
+
     async function load(){
       if(running)return;running=true;
       var config=getSpotConfig();
@@ -588,7 +603,7 @@
           var sourceTime=siteData&&siteData.updated_at;
           var savedAt=typeof sourceTime==='string'?Date.parse(sourceTime.replace(' ','T')+'+09:00'):NaN;
           var age=Date.now()-savedAt;
-          if(siteData&&siteData.spot==='hamadutu'&&Array.isArray(siteData.marine?.hourly?.time)&&Array.isArray(siteData.weather?.hourly?.time)&&Number.isFinite(savedAt)&&age>=-300000&&age<86400000){
+          if(siteData&&siteData.spot==='hamadutu'&&waveUsable(siteData.marine)&&windUsable(siteData.weather)&&Number.isFinite(savedAt)&&age>=-300000&&age<86400000){
             savedCache={marine:siteData.marine,weather:siteData.weather};
             cacheStamp=sourceTime.slice(5,16).replace('-','/');
             render(savedCache.marine,savedCache.weather);
@@ -606,12 +621,12 @@
             results[1].status==='fulfilled'?Promise.resolve(results[1].value):getJSON(weather)
           ]);
         }
-        var m=results[0].status==='fulfilled'?results[0].value:null;
-        var w=results[1].status==='fulfilled'?results[1].value:null;
+        var m=results[0].status==='fulfilled'&&waveUsable(results[0].value)?results[0].value:null;
+        var w=results[1].status==='fulfilled'&&windUsable(results[1].value)?results[1].value:null;
         var stamp=new Date().toLocaleString('ja-JP',{timeZone:'Asia/Tokyo',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
         if(m&&w){
           render(m,w);
-          updated.textContent='10日分取得：'+stamp+' JST';
+          updated.textContent=(completeForecast(m,w)?'10日分取得：':'一部の予報のみ取得：')+stamp+' JST';
         }else if(savedCache){
           updated.textContent='10日分取得不可：サイト保存分（'+cacheStamp+' JST、最大7日分）を表示';
         }else{
