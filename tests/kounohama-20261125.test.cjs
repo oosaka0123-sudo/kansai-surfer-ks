@@ -7,7 +7,7 @@ test('only Kounohama coordinates and proper section sequence',()=>{
  for(const x of words)assert.equal(html.split(x).length-1,1,x);
  const positions=['id="kounohama-hourly-section"','id="ks10-forecast"','id="kounohama-windy"','class="wave-report-box"','<span class="no">06</span>','<span class="no">07</span>','class="context-call"','<span class="no">08</span>'].map(x=>html.indexOf(x));
  assert(positions.every(x=>x>0)&&positions.slice(1).every((x,i)=>x>positions[i]));
- assert(html.includes('lat=34.34&amp;lon=136.92')&&html.includes('zoom=11')&&html.includes('overlay=wind&amp;product=ecmwf'));
+ assert(html.includes('lat=34.33771&amp;lon=136.87966')&&html.includes('zoom=11')&&html.includes('overlay=wind&amp;product=ecmwf'));
  assert.equal((html.match(/sns-(?:ig|fb|tt|x|yt)'\)\?\.addEventListener/g)||[]).length,5);
  assert(!html.includes('id="hourlySvg"'));
 });
@@ -67,3 +67,4 @@ test('10day starts after DOM parsing and falls back to fresh local site forecast
  assert(html.includes("savedCache={marine:siteData.marine,weather:siteData.weather}"));
  assert(html.includes("10日分取得不可：サイト保存分"));
 });
+test('Windy links consistently use beach coordinates independent of API input',()=>{const links=[...html.matchAll(/https:\/\/(?:(?:embed|www)\.)?windy\.com\/[^"'\s<>]+/g)].map(x=>x[0]);assert(links.length>=7);assert(links.every(x=>x.includes('34.33771')&&x.includes('136.87966')));assert(adapter.includes('latitude: 34.34, longitude: 136.92'));});
