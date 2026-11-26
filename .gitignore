@@ -6,6 +6,7 @@ secret_data/
 .env.*
 config/secrets.php
 config.secret.php
+admin/config.php
 
 # Logs
 *.log
@@ -14,6 +15,10 @@ config.secret.php
 *.zip
 *.tar
 *.tar.gz
+
+# Runtime / generated data under review
+# Keep generated data out until each file is explicitly classified.
+data/line_posts_backup.json
 
 # Temporary / editor / OS files
 .DS_Store
