@@ -20,19 +20,41 @@
   function degToDirJp(deg) { if (deg == null || isNaN(deg)) return '--'; return DIRS_JP_COMMON[Math.round(deg / 22.5) % 16]; }
   function windArrowRotation(deg) { if (deg == null || isNaN(deg)) return 0; return (deg + 180) % 360; }
   function safeNum(v, fb = null) { return (v == null || isNaN(v)) ? fb : Number(v); }
-  function formatTime(d) { return d.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }); }
-  function findCurrentHourIdx(times) {
-    // Open-Meteo site payload uses Asia/Tokyo naive local time strings.
-    // Interpret those time strings in JST regardless of the reader's browser timezone.
-    const now=Date.now();let idx=0;
-    for(let i=0;i<times.length;i++){
-      const raw=times[i],withZone=/([zZ]|[+-][0-9]{2}:[0-9]{2})$/.test(raw)?raw:raw+'+09:00';
-      const timestamp=Date.parse(withZone);
-      if(!Number.isFinite(timestamp))continue;
-      if(timestamp<=now)idx=i;else break;
-    }
-    return idx;
+  const CURRENT_MAX_AGE_MS=2*60*60*1000;
+  const jstHour=d=>Number(new Date(d.getTime()+9*3600000).toISOString().slice(11,13));
+  function parseJst(raw){
+    if(typeof raw!=='string'||!/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}/.test(raw))return NaN;
+    const t=raw.replace(' ','T');return Date.parse(/(?:[zZ]|[+-]\d{2}:\d{2})$/.test(t)?t:t+'+09:00');
   }
+  function formatTime(d) { return new Intl.DateTimeFormat('ja-JP',{timeZone:'Asia/Tokyo',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(d); }
+  function findCurrentHourIdx(times) {
+    if(!Array.isArray(times))return -1;
+    let idx=-1,best=-Infinity;const now=Date.now();
+    for(let i=0;i<times.length;i++){const at=parseJst(times[i]);if(Number.isFinite(at)&&at<=now&&at>best){best=at;idx=i;}}
+    return idx>=0&&now-best<3600000?idx:-1;
+  }
+  function validNumber(v){return typeof v==='number'&&Number.isFinite(v);}
+  function validateCurrent(data,spot){
+    if(!data||data.spot!==spot)throw Error('invalid spot identity');
+    const stamp=parseJst(data.updated_at),age=Date.now()-stamp;
+    if(!Number.isFinite(age)||age< -300000||age>=CURRENT_MAX_AGE_MS)throw Error('stale model data');
+    const m=data.marine?.hourly,w=data.weather?.hourly,c=data.weather?.current;
+    const mi=findCurrentHourIdx(m?.time),wi=findCurrentHourIdx(w?.time);
+    if(mi<0||wi<0||parseJst(m.time[mi])!==parseJst(w.time[wi]))throw Error('missing current hour');
+    if(!validNumber(m.wave_height?.[mi])||m.wave_height[mi]<0||!Array.isArray(m.wave_period)||!Array.isArray(w.wind_speed_10m)||!Array.isArray(w.wind_direction_10m))throw Error('missing wave data');
+    const windAge=Date.now()-parseJst(c?.time);
+    if(!Number.isFinite(windAge)||windAge< -300000||windAge>=CURRENT_MAX_AGE_MS||!validNumber(c?.wind_speed_10m)||c.wind_speed_10m<0||!validNumber(c?.wind_direction_10m)||c.wind_direction_10m<0||c.wind_direction_10m>360)throw Error('missing current wind');
+    if(data.weather.current_units?.wind_speed_10m!=='m/s'||data.weather.hourly_units?.wind_speed_10m!=='m/s')throw Error('unexpected wind units');
+    return stamp;
+  }
+  function clearCurrent(){
+    lastValidUntil=0;
+    for(const id of ['waveVal','periodVal','windVal','swellVal','scoreNum','bestTime'])setText(id,'--');
+    setText('verdictStars','');setText('beachWaveSize','');
+    setText('verdictText','データ確認中');setText('lastUpdate','現在の予報を取得できません');
+    for(const id of ['todayTip','todayTip2'])setText(id,'現在の波・風の予報は確認できません。時間別予報と現地情報をご確認ください。');
+  }
+  let currentRequestRunning=false,lastValidUntil=0;
   function isOffshore(deg) {
     const cfg = getSpotConfig(); if (!cfg || deg == null || isNaN(deg)) return false;
     const start = cfg.OFFSHORE_START, end = cfg.OFFSHORE_END;
@@ -130,6 +152,7 @@
   async function fetchData() {
     const cfg = getSpotConfig(); if (!cfg) return;
     const spotKey = getSpotKeyFromConfig(); if (!spotKey) return;
+    if(currentRequestRunning)return;currentRequestRunning=true;
     const updateEl = byId('updateInfo'); if (updateEl) updateEl.classList.add('syncing');
     setHTML('lastUpdate', '<i class="fa-solid fa-spinner fa-spin"></i>');
     commonLastFetchTime = Date.now();
@@ -141,14 +164,14 @@
         if(!res.ok)throw new Error('JSON HTTP '+res.status);
         data=await res.json();
       }finally{clearTimeout(timeout);}
-      if (!data || !data.marine || !data.weather) throw new Error('invalid spot json');
+      const stamp=validateCurrent(data,spotKey);
       renderEverything(data.marine, data.weather);
-      if (data.updated_at) setText('lastUpdate', formatTime(new Date(data.updated_at.replace(' ', 'T'))));
-      else setText('lastUpdate', formatTime(new Date()));
+      lastValidUntil=Math.min(stamp+CURRENT_MAX_AGE_MS,parseJst(data.weather.current.time)+CURRENT_MAX_AGE_MS);
+      setText('lastUpdate',formatTime(new Date(stamp))+' JST');
     } catch (err) {
       console.error('Fetch error:', err);
-      setText('lastUpdate','更新失敗・再読込してください');setHTML('verdictText','⚠️ データ取得失敗');setText('bestTime','--');setText('scoreNum','--');
-    } finally { if (updateEl) setTimeout(() => updateEl.classList.remove('syncing'), 600); }
+      clearCurrent();
+    } finally { currentRequestRunning=false; if (updateEl) setTimeout(() => updateEl.classList.remove('syncing'), 600); }
   }
 
   function renderEverything(marine, weather) {
@@ -158,6 +181,7 @@
     const { height: waveH, period: waveP, direction: waveDir } = beachWaves[mIdx];
     const swellH = safeNum(marine.hourly.swell_wave_height?.[mIdx]);
     const swellD = safeNum(marine.hourly.swell_wave_direction?.[mIdx]);
+    if(!Number.isFinite(waveH)||waveH<0)throw Error("missing current wave");
     const w = weather.current || {};
     const windSpeed = safeNum(w.wind_speed_10m); const windDir = safeNum(w.wind_direction_10m);
     setHTML('waveVal', waveH != null ? `${waveH.toFixed(1)}<span class="unit">m</span>` : '--');
@@ -177,9 +201,10 @@
       const slot=marine.hourly.time[i];if(slot.slice(0,10)!==todayKey)break;
       const hour=Number(slot.slice(11,13));if(hour<5)continue;if(hour>17)break;
       const beach = beachWaves[i];
-      if (beach.height === null) continue;
+      const wi=weather.hourly.time.indexOf(slot);
+      if (!validNumber(beach.height)||wi<0||!validNumber(weather.hourly.wind_speed_10m[wi])||!validNumber(weather.hourly.wind_direction_10m[wi])) continue;
       const s=calcScore(beach.height,beach.period,
-        safeNum(weather.hourly.wind_speed_10m[i]),safeNum(weather.hourly.wind_direction_10m[i]),
+        safeNum(weather.hourly.wind_speed_10m[wi]),safeNum(weather.hourly.wind_direction_10m[wi]),
         beach.direction);
       if(bestIdx<0||s>bestScore){bestScore=s;bestIdx=i;}
     }
@@ -398,8 +423,9 @@
       const hamburger=byId('hamburger'), mobileMenu=byId('mobileMenu');
       if(hamburger && mobileMenu){ hamburger.addEventListener('click',()=>{ hamburger.classList.toggle('active'); mobileMenu.classList.toggle('open'); }); window.__namiHamburgerBound=true; }
     }
-    function updateClock(){ const now=new Date(); const h=String(now.getHours()).padStart(2,'0'); const m=String(now.getMinutes()).padStart(2,'0'); const el=byId('clockTag'); if(el) el.innerHTML=`<span class="dot"></span>LIVE ${h}:${m} JST`; }
+    function updateClock(){ const now=new Date(Date.now()+9*3600000); const h=String(now.getUTCHours()).padStart(2,'0'); const m=String(now.getUTCMinutes()).padStart(2,'0'); const el=byId('clockTag'); if(el) el.innerHTML=`<span class="dot"></span>LIVE ${h}:${m} JST`; }
     updateClock(); setInterval(updateClock, 30000);
+    setInterval(()=>{if(lastValidUntil&&Date.now()>=lastValidUntil)clearCurrent();},30000);
   }
   setupCommonUI();
   window.NAMI_REPORT_FORM_URL = REPORT_FORM_URL;

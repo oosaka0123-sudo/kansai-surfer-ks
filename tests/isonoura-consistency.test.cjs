@@ -3,7 +3,7 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const root=path.resolve(__dirname,'..'),html=fs.readFileSync(path.join(root,'isonoura.html'),'utf8'),js=fs.readFileSync(path.join(root,'nami_isonoura.js'),'utf8');
 function codePart(s,a,b){const i=s.indexOf(a),j=s.indexOf(b,i+1);assert(i>=0&&j>i);return s.slice(i,j);}
 test('JST hourly selection is timezone independent',()=>{
- const source=codePart(js,'  function findCurrentHourIdx(times) {','  function isOffshore(deg) {');
+ const source=codePart(js,'  const CURRENT_MAX_AGE_MS=','  function isOffshore(deg) {');
  const times=Array.from({length:24},(_,h)=>'2026-11-24T'+String(h).padStart(2,'0')+':00');
  const FakeDate=class extends Date{static now(){return Date.parse('2026-11-24T10:15:00+09:00')}};
  const fn=vm.runInNewContext(source+';findCurrentHourIdx',{Date:FakeDate});
@@ -34,7 +34,7 @@ test('Incomplete wave directions show no invented rating',()=>{
  assert.equal(rowsOf(m,w)[0].judgment,null);
 });
 test('Only Isonoura dedicated JS, null guards and fallback link',()=>{
- assert.match(html,/src="nami_isonoura\.js\?v=20261125-1"/);
+ assert.match(html,/src="nami_isonoura\.js\?v=20261126-5"/);
  assert.match(js,/AbortController/);
  assert.match(html,/isonoura-hourly\/index\.html/);
  assert.match(html,/id="ks10-updated" role="status"/);
