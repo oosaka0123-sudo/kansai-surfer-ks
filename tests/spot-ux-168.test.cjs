@@ -1,0 +1,11 @@
+const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('fs'),vm=require('vm');
+const spots=['isonoura','kounohama','ikumi','komatsu','irago','shizunami','hamadutu','takahama','hakuto'];
+for(const s of spots)test(s+' accessible map, lazy loading, and accurate metadata',()=>{
+ const h=fs.readFileSync(s+'.html','utf8'),title=h.match(/<title>(.*?)<\/title>/)[1],og=h.match(/<meta property="og:title" content="([^"]+)"/)[1];assert.equal(title,og);assert.equal(title.includes('ライブカメラ'),['isonoura','kounohama','shizunami'].includes(s));assert(h.includes('href="https://kansai.rss7.net/'+s+'.html"'));
+ for(const m of h.matchAll(/<iframe\b[^>]*>/g))assert(/\btitle="/.test(m[0]),m[0]);
+ const trigger=h.match(/<img\b[^>]*id="ks-wave-map-trigger"[^>]*>/)[0];assert(trigger.includes('tabindex="0"')&&trigger.includes('role="button"')&&trigger.includes('loading="lazy"'));assert(!/\ssrc=/.test(trigger));
+ assert(/<dialog id="waveBig" aria-label="/.test(h));const dlg=h.match(/<dialog id="waveBig"[\s\S]*?<\/dialog>/)[0];assert(!/\ssrc=/.test(dlg));assert(dlg.includes('id="ks-wave-map-close"'));
+ const code=h.match(/\(function waveMapRefresh\(\)\{[\s\S]*?\}\)\(\);/)[0];const events={},large={},close={focus:()=>events.closeFocused=true,addEventListener:(k,v)=>events['close'+k]=v},dialog={open:false,querySelector:()=>large,addEventListener:(k,v)=>events['dialog'+k]=v,showModal(){this.open=true},close(){this.open=false;events.dialogclose()}},thumb={dataset:{ksWaveSrc:'https://www.imocwx.com/cwm/cwm_jp.gif'},focus:()=>events.triggerFocused=true,addEventListener:(k,v)=>events[k]=v};
+ vm.runInNewContext(code,{document:{getElementById:id=>({'ks-wave-map-trigger':thumb,waveBig:dialog,'ks-wave-map-close':close}[id])},Date:{now:()=>123}});assert.equal(thumb.src,'https://www.imocwx.com/cwm/cwm_jp.gif?_=123');assert.equal(large.src,undefined);events.keydown({key:'Enter',preventDefault(){}});assert(dialog.open&&events.closeFocused);assert.equal(large.src,thumb.src);events.closeclick();assert(!dialog.open&&events.triggerFocused);events.keydown({key:' ',preventDefault(){}});assert(dialog.open);events.dialogclick({target:dialog});assert(!dialog.open);
+ if(s==='irago'){assert(!/<img[^>]*src="http:\/\//.test(h));assert(h.includes('href="http://tahara-bousai.jp/images/akabanekou.jpg"'));}
+});
