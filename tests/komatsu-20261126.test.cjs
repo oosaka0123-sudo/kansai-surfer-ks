@@ -7,3 +7,13 @@ test('JMA 2026 and 2027 complete and station verified',()=>{for(const y of [2026
 test('script syntax and fallback',()=>{for(const m of h.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g))if(!/application\/ld\+json|src=/.test(m[1]))new vm.Script(m[2]);new vm.Script(a);assert(h.includes('data/spot_komatsu.json?ks10_cache=')&&h.includes('age<86400000'));});
 
 test('tide link retained',()=>{assert(h.includes('https://www.umitenki.jp/tenki/6591/tide'));assert(!h.includes('https://www.umitenki.jp/tenki/2461/tide'));});
+
+// Execute the production 10-day aggregation in a deterministic, offline VM.
+const start=h.indexOf('function rowsOf(marine,weather){'),end=h.indexOf('function track(kind,value,max,text){',start);
+assert(start>=0&&end>start);
+const date='2026-11-26',plusDate=(d,n)=>new Date(Date.parse(d+'T00:00:00Z')+n*86400000).toISOString().slice(0,10);
+const rowsOf=vm.runInNewContext(h.slice(start,end)+';rowsOf', {dateJST:()=>date,plusDate,hourlyMap:x=>new Map((x?.hourly?.time||[]).map((t,i)=>[t,i])),finite:v=>typeof v==='number'&&Number.isFinite(v)?v:null,calcScore:(wave,period,wind,windDir,waveDir)=>wave+wind/10,getVerdict:()=>({text:'mock'}),scoreToStars:()=>'*'});
+function fixture(){const m={time:[],wave_height:[],wave_period:[],wave_direction:[]},w={time:[],wind_speed_10m:[],wind_direction_10m:[],weather_code:[]};for(let d=0;d<10;d++)for(const hr of [2,5,6,7,8,9,10,11,12,13,14,15,16,17]){const t=plusDate(date,d)+'T'+String(hr).padStart(2,'0')+':00';m.time.push(t);m.wave_height.push(hr===2?50:1.4);m.wave_period.push(8);m.wave_direction.push(100);w.time.push(t);w.wind_speed_10m.push(hr===2?99:5);w.wind_direction_10m.push(290);w.weather_code.push(0);}return [{hourly:m},{hourly:w}];}
+test('ten-day aggregation excludes nighttime outliers and matches same-hour data',()=>{const r=rowsOf(...fixture());assert.equal(r.length,10);for(const d of r){assert.equal(d.max,1.4);assert.equal(d.min,1.4);assert.equal(d.speed,5);assert(Math.abs(d.judgment.score-1.9)<1e-8);}});
+test('ten-day missing directions or fewer than seven synchronized observations produce no rating',()=>{let [m,w]=fixture();m.hourly.wave_direction.fill(null);assert(rowsOf(m,w).every(r=>r.judgment===null));[m,w]=fixture();w.hourly.time=w.hourly.time.map(t=>t.replace(/T(\d\d):00$/,'T$1:30'));assert(rowsOf(m,w).every(r=>r.judgment===null));});
+test('ten-day absent data remains blank without invented wave or wind',()=>{const r=rowsOf(null,null);assert.equal(r.length,10);assert(r.every(d=>d.min===null&&d.max===null&&d.speed===null&&d.judgment===null));});
