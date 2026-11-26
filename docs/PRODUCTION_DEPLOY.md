@@ -119,3 +119,7 @@ Protect the spot-specific forecast coordinates, wind/swell rules, JMA station me
 ### Issue #168 current-condition safety isolation
 
 The manifest v3 adds one dedicated asset (nami_spot_current.js), used by the eight non-Isonoura pages. Isonoura continues its dedicated script and beach estimator. The legacy shared nami_common.js is not modified. The audit counts 66 spot assets plus the unchanged legacy shared file. Validate the 16 existing/new regression files (116 cases at this release). New assets must be verified before replacing the HTML that references them. Keep a previous HTML and script backup.
+
+### Issue #168 forecast resilience and spot UX
+
+The follow-up release updates the existing nine spot pages without changing forecast coordinates, scoring, tide tables, ranking, home, or legacy shared JS. Use all 20 regression files introduced by the nine-spot integration and #168 fixes (150 tests at this baseline). Hourly data re-fetches at JST rollover and every 15 minutes, rejects empty responses, and re-reads the applicable tide year. The map enlargement is keyboard accessible; only the preview is lazy-loaded until expansion. The Isonoura, Kounohama, Shizunami camera title convention is retained. Irago external HTTP camera embedding is replaced by a labeled link because a valid HTTPS certificate was not verified. Do not bypass TLS verification. Performance gains have not been quantified; independent provider outages can still delay initial chart rendering.

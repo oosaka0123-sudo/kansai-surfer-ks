@@ -228,7 +228,7 @@
       <div class="head-row"><div class="ico-box"><i class="fa-brands fa-youtube"></i></div><span class="badge" style="background:rgba(255,0,0,0.15);color:#ff4444;">最新動画</span></div>
       <div class="name">伊良湖 最新動画<span class="en">@きのこP 自動更新</span></div>
       <div style="margin-top:14px;position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:6px;">
-        <iframe src="https://www.youtube.com/embed/videoseries?list=UUUPgtYsqQpYSP7nY19LaKYA" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;" allowfullscreen loading="lazy"></iframe>
+        <iframe title="伊良湖の現地波動画" src="https://www.youtube.com/embed/videoseries?list=UUUPgtYsqQpYSP7nY19LaKYA" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;" allowfullscreen loading="lazy"></iframe>
       </div>
       <div class="meta" style="margin-top:10px;"><span>チャンネル最新動画を自動表示</span><a href="https://www.youtube.com/@%E3%81%8D%E3%81%AE%E3%81%93P-m1e/videos" target="_blank" rel="noopener" style="color:var(--coral);">チャンネルへ →</a></div>
     </div>
@@ -237,7 +237,7 @@
       <div class="name">BCM 伊良湖<span class="en">BCM 波情報</span></div>
       <div class="meta"><span>BCM公式</span><span class="badge paid">一部有料</span></div>
     </a>
-<img src="http://tahara-bousai.jp/images/akabanekou.jpg" alt="赤羽根港" style="width:100%;margin-top:10px;border:1px solid var(--line);max-height:600px;object-fit:contain;" loading="lazy" onerror="this.style.display='none'">
+<p style="font-size:.8rem;margin:10px 0;color:var(--teal-pale);">赤羽根港の外部カメラ画像はHTTPSでの接続を確認できないため、埋め込み表示を停止しています。<a href="http://tahara-bousai.jp/images/akabanekou.jpg" target="_blank" rel="noopener noreferrer" style="color:var(--coral-soft);text-decoration:underline;">外部画像を開く（HTTP）</a></p>
     </div>
   </div>
 </section>
@@ -754,13 +754,16 @@
   <p style="color:var(--cream-soft); font-size:0.95rem; line-height:1.9; margin-bottom:20px; max-width:680px;">
     タップで拡大表示。<strong style="color:var(--coral-soft);">国際気象海洋</strong>提供の現在の波高マップです。
   </p>
-  <img src="https://www.imocwx.com/cwm/cwm_jp.gif" alt="広域波高マップ" onclick="document.getElementById('waveBig').style.display='flex'" style="width:100%;max-width:720px;border-radius:8px;cursor:pointer;border:1px solid var(--line);">
+  <img data-ks-wave-src="https://www.imocwx.com/cwm/cwm_jp.gif" alt="広域波高マップ" id="ks-wave-map-trigger" role="button" tabindex="0" aria-label="広域波高マップを拡大" aria-haspopup="dialog" aria-controls="waveBig" loading="lazy" decoding="async" style="width:100%;max-width:720px;border-radius:8px;cursor:pointer;border:1px solid var(--line);">
   <p style="font-size:0.72rem;color:var(--teal-pale);margin-top:10px;">出典：<a href="https://www.imocwx.com/cwm.php?Area=0&Time=2" target="_blank" rel="noopener" style="color:var(--coral-soft);text-decoration:none;">国際気象海洋株式会社</a> / 気象庁提供</p>
 </section>
 
-<div id="waveBig" onclick="this.style.display='none'" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:99999;align-items:center;justify-content:center;padding:10px;cursor:pointer;">
-  <img src="https://www.imocwx.com/cwm/cwm_jp.gif" alt="拡大表示" style="width:95vw;height:auto;max-height:95vh;object-fit:contain;border-radius:8px;background:#000;">
-</div>
+<dialog id="waveBig" aria-label="広域波高マップ 拡大表示" style="position:fixed;inset:0;margin:0;width:100%;height:100%;max-width:none;max-height:none;box-sizing:border-box;border:0;background:rgba(0,0,0,.92);padding:10px;overflow:auto;color:white;">
+  <button type="button" id="ks-wave-map-close" aria-label="拡大表示を閉じる" style="position:absolute;right:16px;top:16px;min-width:44px;min-height:44px;z-index:1;border:1px solid #fff;background:#132936;color:white;border-radius:8px;font-size:24px;cursor:pointer;">×</button>
+  <div style="display:flex;min-height:100%;align-items:center;justify-content:center;">
+    <img alt="広域波高マップ 拡大表示" decoding="async" style="width:95vw;height:auto;max-height:95vh;object-fit:contain;border-radius:8px;background:#000;">
+  </div>
+</dialog>
 
 <div class="context-call">
   <div class="head"><i class="fa-solid fa-circle-info"></i> ポイントの特徴</div>
@@ -973,9 +976,16 @@ if (typeof loadWaveReports === "function") loadWaveReports("伊良湖");
 <script>
 // 波高マップのキャッシュバスト
 (function waveMapRefresh(){
-  document.querySelectorAll('img[src*="cwm_jp.gif"]').forEach(function(img){
-    img.src = img.src.split('?')[0] + '?_=' + Date.now();
-  });
+  var trigger=document.getElementById('ks-wave-map-trigger'),dialog=document.getElementById('waveBig'),close=document.getElementById('ks-wave-map-close');
+  if(!trigger||!dialog||!close)return;
+  var large=dialog.querySelector('img');
+  trigger.src=trigger.dataset.ksWaveSrc+'?_='+Date.now();
+  function openMap(){if(dialog.open)return;large.src=trigger.currentSrc||trigger.src;dialog.showModal();close.focus();}
+  trigger.addEventListener('click',openMap);
+  trigger.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();openMap();}});
+  close.addEventListener('click',function(){dialog.close();});
+  dialog.addEventListener('close',function(){trigger.focus();});
+  dialog.addEventListener('click',function(e){if(e.target===dialog)dialog.close();});
 })();
 </script>
 <script>
