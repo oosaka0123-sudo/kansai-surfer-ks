@@ -33,7 +33,7 @@ jobs:
       - name: Checkout exact reviewed commit (never deploy main)
         uses: actions/checkout@v4
         with:
-          ref: a7dcf73994eba6b309f18de523a7cf1c30b45a49
+          ref: f259167b06afbe851304c225dfe485dd30f90561
           fetch-depth: 0
           persist-credentials: false
 
@@ -44,7 +44,7 @@ jobs:
           test "$GITHUB_REF" = 'refs/heads/ops/hakuto-full-release-20261126'
           test "$FTP_HOST" = 'ftp.lolipop.jp' && test "$FTP_ROOT" = '/kansai'
           test "$SITE" = 'https://kansai.rss7.net'
-          test "$(git rev-parse HEAD)" = 'a7dcf73994eba6b309f18de523a7cf1c30b45a49'
+          test "$(git rev-parse HEAD)" = 'f259167b06afbe851304c225dfe485dd30f90561'
           test "$(sha256sum hakuto.html | cut -d' ' -f1)" = "$NEW_HTML"
           test "$(sha256sum hakuto-hourly/index.html | cut -d' ' -f1)" = "$SHA_INDEX"
           test "$(sha256sum hakuto-hourly/styles.css | cut -d' ' -f1)" = "$SHA_CSS"
