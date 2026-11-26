@@ -254,7 +254,7 @@
       <div class="name">BCM 生見<span class="en">BCM Wave Patrol</span></div>
       <div class="meta"><span>有料アプリ</span><span class="badge paid">一部有料</span></div>
     </a>
-    <a href="https://www.windy.com/?wind,33.52,134.28,11" target="_blank" rel="noopener" class="cam-link">
+    <a href="https://www.windy.com/?wind,33.52425,134.28453,11" target="_blank" rel="noopener" class="cam-link">
       <div class="head-row"><div class="ico-box"><i class="fa-solid fa-wind"></i></div><span class="go-arr">→</span></div>
       <div class="name">Windy 風向マップ<span class="en">リアルタイム風</span></div>
       <div class="meta"><span>ビジュアル</span><span class="badge">無料</span></div>
@@ -303,7 +303,7 @@
         });
       })();
     </script>
-    <a href="https://www.umitenki.jp/tenki/2461/tide" target="_blank" rel="noopener" class="umitenki-card">
+    <a href="https://www.umitenki.jp/tenki/4241/tide" target="_blank" rel="noopener" class="umitenki-card">
   <div class="umi-left">
     <div class="umi-icon">🌊</div>
     <div class="umi-info">
@@ -589,7 +589,7 @@
             updated.textContent='サイト保存予報（'+cacheStamp+' JST）を表示中／10日分を取得中…';
           }
         }catch(cacheError){
-          console.warn('Kounohama site forecast cache unavailable',cacheError);
+          console.warn('Ikumi site forecast cache unavailable',cacheError);
         }
         var results=await Promise.allSettled([getJSON(marine),getJSON(weather)]);
         if(results.some(function(x){return x.status!=='fulfilled';})){
@@ -612,7 +612,7 @@
           render(m,w);
           updated.textContent='一部データ取得不可：'+stamp+' JST';
         }
-      }catch(e){render(null,null);updated.textContent='データ取得不可';console.warn('Kounohama 10day forecast',e);}
+      }catch(e){render(null,null);updated.textContent='データ取得不可';console.warn('Ikumi 10day forecast',e);}
       finally{running=false;}
     }
     render(null,null);
