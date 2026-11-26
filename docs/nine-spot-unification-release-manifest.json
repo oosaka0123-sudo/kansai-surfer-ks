@@ -1,13 +1,13 @@
 {
-  "version": 2,
+  "version": 3,
   "shared": {
     "nami_common.js": "034ecc6cd950fbacf6b082336802f0d5fd9927bbd3bf962629e8fc56d44e09fd"
   },
   "spots": {
     "isonoura": {
       "isonoura.html": [
-        "d75166c3bcafaced3dd9c74e6a52b010f51464753e4d0602ab7de4fc7d301305",
-        "676c500645f123b91f89f6554780116f751a4f4198fcd835a6e6c417db0f1fa2"
+        "676c500645f123b91f89f6554780116f751a4f4198fcd835a6e6c417db0f1fa2",
+        "b8bc478a9fa96d3247d681919315558f15d46b16a2161423980a11e776ed073a"
       ],
       "isonoura-hourly/index.html": [
         "7bea0adc5de5ae470be7a7b56c9ecaa11a8ce1b250db16e43acc2f98c4e934bb",
@@ -35,7 +35,7 @@
       ],
       "nami_isonoura.js": [
         "0974d36653095953d641003868bccc3afeb6dcfa1eea3cc8a602de53fe8690b2",
-        "0974d36653095953d641003868bccc3afeb6dcfa1eea3cc8a602de53fe8690b2"
+        "6452bfa4b08431ca60abd87e5a3a006e1db45dce1ee04a2984a72f1fc199bf71"
       ],
       "isonoura-beach-wave.js": [
         "df3b15ab5d45fd412bc1fa9adf561456007d1bd7b8ef373428cb8cf583e84c5f",
@@ -45,7 +45,7 @@
     "kounohama": {
       "kounohama.html": [
         "ff0ed7981883283236d4105d5f8a568e0b9c4922f54f86a267b09ab8171f5330",
-        "ff0ed7981883283236d4105d5f8a568e0b9c4922f54f86a267b09ab8171f5330"
+        "d4e57e6bbef3bfd0377bac5b09e20462ddf7c201fa5c663e2ccaad4b03650ea4"
       ],
       "kounohama-hourly/index.html": [
         "7f86a61d6e5080dba499eb76953a9464e3fb879d5fc90203178cd602d2c2b55b",
@@ -75,7 +75,7 @@
     "ikumi": {
       "ikumi.html": [
         "a028389d983d43424b869e3a76c02ed36685c56a07e68797d197e2a5b24d3984",
-        "a028389d983d43424b869e3a76c02ed36685c56a07e68797d197e2a5b24d3984"
+        "404ff1f8bab0dc55f25b006b4b8e37ca31d669e8ea5f7d49a4b2e0ec198e2ea5"
       ],
       "ikumi-hourly/index.html": [
         "ab5c3e9328c9ff6779ebc24daf0101a02d83ff79952c18018ec32c1ac72fcfeb",
@@ -105,7 +105,7 @@
     "komatsu": {
       "komatsu.html": [
         "eb944df25be409dac00122b9a1c9a3e81c1cec6fafaa87a03e7b9f7897dad62e",
-        "eb944df25be409dac00122b9a1c9a3e81c1cec6fafaa87a03e7b9f7897dad62e"
+        "c2f7fc5945faacb7cbc05bd5b37b7e561dd7c8067e08eaf0639dc764705a0df5"
       ],
       "komatsu-hourly/index.html": [
         "6c6db1567358c4aba708d7bdc6fa387833c93a27a71f76676f0d8921070466f9",
@@ -135,7 +135,7 @@
     "irago": {
       "irago.html": [
         "157a964796061b4052b582aff35aa1865544a79bd8e1783f4d6487a1c060b61b",
-        "157a964796061b4052b582aff35aa1865544a79bd8e1783f4d6487a1c060b61b"
+        "b8a0da4bafc8b73593b01a757f5b5af37253a00cb9fbce9b1b5d4a11c7281581"
       ],
       "irago-hourly/index.html": [
         "a1c22a416d88866a3b5e91e60706a72bf86605c2c34c491fc1c7c45f56e82e97",
@@ -165,7 +165,7 @@
     "shizunami": {
       "shizunami.html": [
         "e21bab81d2bc217a4e755ae1fccacac3d1034b482c3d1b877a812a6225505802",
-        "e21bab81d2bc217a4e755ae1fccacac3d1034b482c3d1b877a812a6225505802"
+        "753ec61a4c6ad2facee875f7cab2bf39692735cbf8520341d70fd847ba5f09f1"
       ],
       "shizunami-hourly/index.html": [
         "6368c6fe7574412a681892731f7ccbafe7c178ce2762224e753ecf876b4abdbb",
@@ -195,7 +195,7 @@
     "hamadutu": {
       "hamadutu.html": [
         "d7cf5106c29ba74c49315b453b51b75b8acfb296f3add0463799a49bcd0a369e",
-        "d7cf5106c29ba74c49315b453b51b75b8acfb296f3add0463799a49bcd0a369e"
+        "87a7b5004612944eed6c235102222a70f8b44c6be806568e3621f4426b593b72"
       ],
       "hamadutu-hourly/index.html": [
         "cc08c9d7ce0bbf82a0aeb5ce07793da3454efe825fb8a64f2ecd66e1dc74499e",
@@ -225,7 +225,7 @@
     "takahama": {
       "takahama.html": [
         "9b5e610eec9c07f1b5868d42c14ab7aa9ecc8028d98211d0bf350392885fb814",
-        "9b5e610eec9c07f1b5868d42c14ab7aa9ecc8028d98211d0bf350392885fb814"
+        "266fbbeaa7253fc4ad9f7ef639b56dcf39a434c120499da22d3cf1db36194c5f"
       ],
       "takahama-hourly/index.html": [
         "396e88f8feba9dd6d0786cd7d9fb2f8847be41b51e1ba42c39e06b2fc84be528",
@@ -255,7 +255,7 @@
     "hakuto": {
       "hakuto.html": [
         "55b6860fff059317d5eb00e8cfd384f988cc45243b5f83e46aa8d256c0a1ae23",
-        "55b6860fff059317d5eb00e8cfd384f988cc45243b5f83e46aa8d256c0a1ae23"
+        "18be248adbf0400e1589e337e756b3530913857826c1989b3977f094c6202c0d"
       ],
       "hakuto-hourly/index.html": [
         "0f8d1d1a3dc3cbb67f85a8dd24b6ad5873798f4c5ab797e7e95008985ad06c55",
@@ -282,5 +282,11 @@
         "70bac12d9eb8a5f50b1e01954aff619ac2944e5ad9143fda5ee3ff7324b6a396"
       ]
     }
+  },
+  "dedicated": {
+    "nami_spot_current.js": [
+      null,
+      "fcbfacb7cb0d46bf9481f5accdf9d7e3422edbffe7fbe85d30da5cb093578dac"
+    ]
   }
 }

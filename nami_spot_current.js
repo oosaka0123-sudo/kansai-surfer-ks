@@ -20,12 +20,41 @@
   function degToDirJp(deg) { if (deg == null || isNaN(deg)) return '--'; return DIRS_JP_COMMON[Math.round(deg / 22.5) % 16]; }
   function windArrowRotation(deg) { if (deg == null || isNaN(deg)) return 0; return (deg + 180) % 360; }
   function safeNum(v, fb = null) { return (v == null || isNaN(v)) ? fb : Number(v); }
-  function formatTime(d) { return d.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }); }
-  function findCurrentHourIdx(times) {
-    const now = new Date(); let idx = 0;
-    for (let i = 0; i < times.length; i++) { if (new Date(times[i]) <= now) idx = i; else break; }
-    return idx;
+  const CURRENT_MAX_AGE_MS=2*60*60*1000;
+  const jstHour=d=>Number(new Date(d.getTime()+9*3600000).toISOString().slice(11,13));
+  function parseJst(raw){
+    if(typeof raw!=='string'||!/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}/.test(raw))return NaN;
+    const t=raw.replace(' ','T');return Date.parse(/(?:[zZ]|[+-]\d{2}:\d{2})$/.test(t)?t:t+'+09:00');
   }
+  function formatTime(d) { return new Intl.DateTimeFormat('ja-JP',{timeZone:'Asia/Tokyo',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(d); }
+  function findCurrentHourIdx(times) {
+    if(!Array.isArray(times))return -1;
+    let idx=-1,best=-Infinity;const now=Date.now();
+    for(let i=0;i<times.length;i++){const at=parseJst(times[i]);if(Number.isFinite(at)&&at<=now&&at>best){best=at;idx=i;}}
+    return idx>=0&&now-best<3600000?idx:-1;
+  }
+  function validNumber(v){return typeof v==='number'&&Number.isFinite(v);}
+  function validateCurrent(data,spot){
+    if(!data||data.spot!==spot)throw Error('invalid spot identity');
+    const stamp=parseJst(data.updated_at),age=Date.now()-stamp;
+    if(!Number.isFinite(age)||age< -300000||age>=CURRENT_MAX_AGE_MS)throw Error('stale model data');
+    const m=data.marine?.hourly,w=data.weather?.hourly,c=data.weather?.current;
+    const mi=findCurrentHourIdx(m?.time),wi=findCurrentHourIdx(w?.time);
+    if(mi<0||wi<0||parseJst(m.time[mi])!==parseJst(w.time[wi]))throw Error('missing current hour');
+    if(!validNumber(m.wave_height?.[mi])||m.wave_height[mi]<0||!Array.isArray(m.wave_period)||!Array.isArray(w.wind_speed_10m)||!Array.isArray(w.wind_direction_10m))throw Error('missing wave data');
+    const windAge=Date.now()-parseJst(c?.time);
+    if(!Number.isFinite(windAge)||windAge< -300000||windAge>=CURRENT_MAX_AGE_MS||!validNumber(c?.wind_speed_10m)||c.wind_speed_10m<0||!validNumber(c?.wind_direction_10m)||c.wind_direction_10m<0||c.wind_direction_10m>360)throw Error('missing current wind');
+    if(data.weather.current_units?.wind_speed_10m!=='m/s'||data.weather.hourly_units?.wind_speed_10m!=='m/s')throw Error('unexpected wind units');
+    return stamp;
+  }
+  function clearCurrent(){
+    lastValidUntil=0;
+    for(const id of ['waveVal','periodVal','windVal','swellVal','scoreNum','bestTime'])setText(id,'--');
+    setText('verdictStars','');setText('beachWaveSize','');
+    setText('verdictText','データ確認中');setText('lastUpdate','現在の予報を取得できません');
+    for(const id of ['todayTip','todayTip2'])setText(id,'現在の波・風の予報は確認できません。時間別予報と現地情報をご確認ください。');
+  }
+  let currentRequestRunning=false,lastValidUntil=0;
   function isOffshore(deg) {
     const cfg = getSpotConfig(); if (!cfg || deg == null || isNaN(deg)) return false;
     const start = cfg.OFFSHORE_START, end = cfg.OFFSHORE_END;
@@ -123,21 +152,21 @@
   async function fetchData() {
     const cfg = getSpotConfig(); if (!cfg) return;
     const spotKey = getSpotKeyFromConfig(); if (!spotKey) return;
+    if(currentRequestRunning)return;currentRequestRunning=true;
     const updateEl = byId('updateInfo'); if (updateEl) updateEl.classList.add('syncing');
     setHTML('lastUpdate', '<i class="fa-solid fa-spinner fa-spin"></i>');
     commonLastFetchTime = Date.now();
     try {
-      const res = await fetch(`data/spot_${spotKey}.json?_=${Date.now()}`, { cache: 'no-store' });
-      if (!res.ok) throw new Error('JSON HTTP ' + res.status);
-      const data = await res.json();
-      if (!data || !data.marine || !data.weather) throw new Error('invalid spot json');
+      const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),15000);let data;
+      try{const res=await fetch('data/spot_'+spotKey+'.json?_='+Date.now(),{cache:'no-store',signal:controller.signal});if(!res.ok)throw Error('JSON HTTP '+res.status);data=await res.json();}finally{clearTimeout(timeout);}
+      const stamp=validateCurrent(data,spotKey);
       renderEverything(data.marine, data.weather);
-      if (data.updated_at) setText('lastUpdate', formatTime(new Date(data.updated_at.replace(' ', 'T'))));
-      else setText('lastUpdate', formatTime(new Date()));
+      lastValidUntil=Math.min(stamp+CURRENT_MAX_AGE_MS,parseJst(data.weather.current.time)+CURRENT_MAX_AGE_MS);
+      setText('lastUpdate',formatTime(new Date(stamp))+' JST');
     } catch (err) {
       console.error('Fetch error:', err);
-      setText('lastUpdate', '前回データなし'); setHTML('verdictText', '⚠️ データ取得失敗');
-    } finally { if (updateEl) setTimeout(() => updateEl.classList.remove('syncing'), 600); }
+      clearCurrent();
+    } finally { currentRequestRunning=false; if (updateEl) setTimeout(() => updateEl.classList.remove('syncing'), 600); }
   }
 
   function renderEverything(marine, weather) {
@@ -151,6 +180,7 @@
     if (waveH != null) waveH = waveH * WAVE_FACTOR;
     const correctedHourlyWave = (marine.hourly.wave_height || []).map(v => v != null ? v * WAVE_FACTOR : v);
     marine._correctedWaveHeight = correctedHourlyWave;
+    if(!Number.isFinite(waveH)||waveH<0)throw Error("missing current wave");
     const w = weather.current || {};
     const windSpeed = safeNum(w.wind_speed_10m); const windDir = safeNum(w.wind_direction_10m);
     setHTML('waveVal', waveH != null ? `${waveH.toFixed(1)}<span class="unit">m</span>` : '--');
@@ -163,12 +193,14 @@
     const score = calcScore(waveH, waveP, windSpeed, windDir, swellD);
     const verdict = getVerdict(score, waveH); const stars = scoreToStars(score);
     setText('scoreNum', score.toFixed(1)); setHTML('verdictText', `<span class="emoji">${verdict.emoji}</span>${verdict.text}`); setText('verdictStars', stars);
-    let bestScore = 0, bestIdx = mIdx; const corrWave = marine._correctedWaveHeight || marine.hourly.wave_height;
+    let bestScore = 0, bestIdx = -1; const corrWave = marine._correctedWaveHeight || marine.hourly.wave_height;
     for (let i = mIdx; i < Math.min(mIdx + 24, marine.hourly.time.length); i++) {
-      const s = calcScore(safeNum(corrWave[i]), safeNum(marine.hourly.wave_period[i]), safeNum(weather.hourly.wind_speed_10m[i]), safeNum(weather.hourly.wind_direction_10m[i]), safeNum(marine.hourly.swell_wave_direction?.[i]));
-      if (s > bestScore) { bestScore = s; bestIdx = i; }
+      const wi=weather.hourly.time.indexOf(marine.hourly.time[i]);
+      if(wi<0||!validNumber(corrWave[i])||!validNumber(weather.hourly.wind_speed_10m[wi])||!validNumber(weather.hourly.wind_direction_10m[wi]))continue;
+      const s = calcScore(safeNum(corrWave[i]), safeNum(marine.hourly.wave_period[i]), safeNum(weather.hourly.wind_speed_10m[wi]), safeNum(weather.hourly.wind_direction_10m[wi]), safeNum(marine.hourly.swell_wave_direction?.[i]));
+      if (bestIdx<0||s > bestScore) { bestScore = s; bestIdx = i; }
     }
-    const bestTime = new Date(marine.hourly.time[bestIdx]); setText('bestTime', `${bestTime.getHours()}時 (${bestScore.toFixed(1)}点)`);
+    const bestTime = bestIdx>=0?new Date(parseJst(marine.hourly.time[bestIdx])):null; setText('bestTime',bestTime?jstHour(bestTime)+'時 ('+bestScore.toFixed(1)+'点)':'--');
     renderHourly(marine, weather, mIdx, bestIdx); renderWeekly(marine, weather); renderTodayTip(waveH, waveP, windSpeed, windDir, bestTime, bestScore);
   }
 
@@ -239,7 +271,7 @@
       else if((ws_<2||offshore)&&waveH>=0.5&&waveP!=null&&waveP>=8) tip=fmt(cfg?.TIP_PERFECT)||`<strong>良いコンディション</strong>。今が狙い目。`;
       else if(waveH>=1.5) tip=fmt(cfg?.TIP_BIG)||`<strong>サイズアップ中</strong>（${waveH.toFixed(1)}m／${waveJpLabel(waveH)}）。`;
       else tip=fmt(cfg?.TIP_NORMAL)||`${waveJpLabel(waveH)}サイズ。普通のコンディション。`;
-      if(bestTime&&bestScore>=4){ const nowHr=new Date().getHours(), bestHr=bestTime.getHours(); if(Math.abs(bestHr-nowHr)>=2) tip += `<br><br>⏰ <strong>今日のベスト時間は${bestHr}時</strong>（${bestScore.toFixed(1)}点）。`; }
+      if(bestTime&&bestScore>=4){ const nowHr=jstHour(new Date()), bestHr=jstHour(bestTime); if(Math.abs(bestHr-nowHr)>=2) tip += `<br><br>⏰ <strong>今日のベスト時間は${bestHr}時</strong>（${bestScore.toFixed(1)}点）。`; }
       tipEl.innerHTML=tip; const tipEl2=byId('todayTip2'); if(tipEl2) tipEl2.innerHTML=tip;
     }catch(err){ console.error('renderTodayTip error:',err); tipEl.innerHTML='<strong>表示エラー</strong>: ブラウザコンソールを確認してください。'; }
   }
@@ -378,8 +410,9 @@
       const hamburger=byId('hamburger'), mobileMenu=byId('mobileMenu');
       if(hamburger && mobileMenu){ hamburger.addEventListener('click',()=>{ hamburger.classList.toggle('active'); mobileMenu.classList.toggle('open'); }); window.__namiHamburgerBound=true; }
     }
-    function updateClock(){ const now=new Date(); const h=String(now.getHours()).padStart(2,'0'); const m=String(now.getMinutes()).padStart(2,'0'); const el=byId('clockTag'); if(el) el.innerHTML=`<span class="dot"></span>LIVE ${h}:${m} JST`; }
+    function updateClock(){ const now=new Date(Date.now()+9*3600000); const h=String(now.getUTCHours()).padStart(2,'0'); const m=String(now.getUTCMinutes()).padStart(2,'0'); const el=byId('clockTag'); if(el) el.innerHTML=`<span class="dot"></span>LIVE ${h}:${m} JST`; }
     updateClock(); setInterval(updateClock, 30000);
+    setInterval(()=>{if(lastValidUntil&&Date.now()>=lastValidUntil)clearCurrent();},30000);
   }
   setupCommonUI();
   window.NAMI_REPORT_FORM_URL = REPORT_FORM_URL;
