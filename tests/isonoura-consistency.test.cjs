@@ -21,7 +21,7 @@ function fixture(){
  w.hourly.time.push(t);w.hourly.wind_speed_10m.push(4);w.hourly.wind_direction_10m.push(240);w.hourly.weather_code.push(0);
  }}return {m,w};
 }
-const helpers={getSpotConfig:()=>({WAVE_FACTOR:.7}),dateJST:()=> '2026-11-24',plusDate:(d,n)=>new Date(Date.parse(d+'T00:00:00Z')+n*86400000).toISOString().slice(0,10),
+const beachContext={};vm.runInNewContext(fs.readFileSync(path.join(root,'isonoura-beach-wave.js'),'utf8'),beachContext);const helpers={window:beachContext,getSpotConfig:()=>({WAVE_FACTOR:.7}),dateJST:()=> '2026-11-24',plusDate:(d,n)=>new Date(Date.parse(d+'T00:00:00Z')+n*86400000).toISOString().slice(0,10),
  hourlyMap:x=>new Map((x?.hourly?.time||[]).map((t,i)=>[t,i])),finite:x=>typeof x==='number'&&Number.isFinite(x)?x:null,
  calcScore:h=>h,getVerdict:()=>({text:'test',action:'action-ok'}),scoreToStars:()=> '★★☆☆☆'};
 const rowsOf=vm.runInNewContext(codePart(html,'    function rowsOf(marine,weather){','    function track(kind,value,max,text){')+';rowsOf',helpers);
@@ -34,7 +34,7 @@ test('Incomplete wave directions show no invented rating',()=>{
  assert.equal(rowsOf(m,w)[0].judgment,null);
 });
 test('Only Isonoura dedicated JS, null guards and fallback link',()=>{
- assert.match(html,/src="nami_isonoura\.js\?v=20261124"/);
+ assert.match(html,/src="nami_isonoura\.js\?v=20261125-1"/);
  assert.match(js,/AbortController/);
  assert.match(html,/isonoura-hourly\/index\.html/);
  assert.match(html,/id="ks10-updated" role="status"/);
