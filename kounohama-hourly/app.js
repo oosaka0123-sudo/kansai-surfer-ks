@@ -545,14 +545,30 @@ loadSource().then(data=>{
   panel.setAttribute("aria-busy","false");
   selectMode();renderDaily();
   // Keep the pulsing current-time marker aligned to the clock without a page reload.
+  let lastReload=Date.now(),reloading=false;
+  async function refreshData(){
+    if(reloading||typeof window.ksRefreshHourlyForecast!=="function")return;
+    reloading=true;
+    try{
+      const next=await window.ksRefreshHourlyForecast();
+      if(next&&typeof next==="object"){
+        source=next;lastReload=Date.now();
+        compactPreserveScroll=true;
+        try{renderObservation();renderGrid();renderDaily();}finally{compactPreserveScroll=false;}
+      }
+    }catch(e){console.warn("Hourly refresh failed",e);}
+    finally{reloading=false;}
+  }
   if(compactTest)compactClockDate=dateKey(new Date());setInterval(()=>{
     const nowDate=dateKey(new Date());
     const changed=compactClockDate!==null&&compactClockDate!==nowDate;
     compactClockDate=nowDate;
     if(changed)compactSelected=null;
+    if(changed||Date.now()-lastReload>=15*60000)void refreshData();
     if(compactDay!==0&&!changed)return;
     compactPreserveScroll=!changed;
     try{renderGrid();}finally{compactPreserveScroll=false;}
   },60000);
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden&&(dateKey(new Date())!==compactClockDate||Date.now()-lastReload>=15*60000))void refreshData();});
 });
 })();

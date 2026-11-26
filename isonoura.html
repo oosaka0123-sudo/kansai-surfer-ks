@@ -332,9 +332,9 @@
     <span class="no">04</span><i class="fa-solid fa-chart-line ico"></i>波・風
   </h2>
   <div class="ks-hourly4">
-    <p style="font-size:11px;text-align:right;margin:0 0 7px;color:#b4d5e4">グラフが読み込まれない場合は <a href="isonoura-hourly/index.html?v=20261126-4" target="_blank" rel="noopener" style="color:#7de2f5;text-decoration:underline">別画面で開く</a></p>
+    <p style="font-size:11px;text-align:right;margin:0 0 7px;color:#b4d5e4">グラフが読み込まれない場合は <a href="isonoura-hourly/index.html?v=20261126-6" target="_blank" rel="noopener" style="color:#7de2f5;text-decoration:underline">別画面で開く</a></p>
     <iframe id="ks-isonoura-kanto-hourly" class="ks-isonoura-kanto-frame"
-      src="isonoura-hourly/index.html?v=20261126-4"
+      src="isonoura-hourly/index.html?v=20261126-6"
       title="磯ノ浦の波・風・潮位・降水量 1時間別グラフ"
       loading="eager" scrolling="no"></iframe>
     <style id="ks-isonoura-kanto-frame-layout">
@@ -474,7 +474,7 @@
     if(!body||!updated)return;
     var days=['日','月','火','水','木','金','土'];
     var dirs=['北','北東','東','南東','南','南西','西','北西'];
-    var arrows=['↑','↗','→','↘','↓','↙','←','↖'];
+    var arrows=['↓','↙','←','↖','↑','↗','→','↘'];
     var latitude=34.18,longitude=135.05; // 磯ノ浦の既存SPOT_CONFIGと一致
     // 判定は既存 nami_common.js の getVerdict/calcScore と同じ実装を、このセクション内で再利用。
     function getSpotConfig(){
@@ -640,6 +640,22 @@
     }
     async function getJSON(url){var c=new AbortController(),timeout=setTimeout(function(){c.abort();},15000);try{var res=await fetch(url,{cache:'no-store',signal:c.signal});if(!res.ok)throw new Error('HTTP '+res.status);return await res.json();}finally{clearTimeout(timeout);}}
     var running=false;
+    var previousMarine=null,previousWeather=null,previousAt=0;
+    function usableForecast(data,fields){
+      var h=data?.hourly;
+      if(!Array.isArray(h?.time)||!fields.every(function(f){return Array.isArray(h[f]);}))return false;
+      var today=new Date(Date.now()+9*3600000).toISOString().slice(0,10);
+      var last=new Date(Date.now()+9*3600000+9*86400000).toISOString().slice(0,10);
+      return h.time.some(function(t,i){return typeof t==='string'&&/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(t)&&t.slice(0,10)>=today&&t.slice(0,10)<=last&&fields.every(function(f){return typeof h[f][i]==='number'&&Number.isFinite(h[f][i])&&h[f][i]>=0;});});
+    }
+    function waveUsable(m){return usableForecast(m,['wave_height']);}
+    function windUsable(w){return usableForecast(w,['wind_speed_10m','wind_direction_10m']);}
+    function completeForecast(m,w){
+      var md=new Set(m.hourly.time.filter(function(t,i){return typeof t==='string'&&Number.isFinite(m.hourly.wave_height[i])&&m.hourly.wave_height[i]>=0;}).map(function(t){return t.slice(0,10);}));
+      var wd=new Set(w.hourly.time.filter(function(t,i){return typeof t==='string'&&Number.isFinite(w.hourly.wind_speed_10m[i])&&Number.isFinite(w.hourly.wind_direction_10m[i]);}).map(function(t){return t.slice(0,10);}));
+      return Array.from({length:10},function(_,i){return new Date(Date.now()+9*3600000+i*86400000).toISOString().slice(0,10);}).every(function(d){return md.has(d)&&wd.has(d);});
+    }
+
     async function load(){
       if(running)return;running=true;
       var coords='latitude='+latitude+'&longitude='+longitude+'&timezone=Asia%2FTokyo&forecast_days=10';
@@ -647,11 +663,16 @@
       var weather='https://api.open-meteo.com/v1/forecast?'+coords+'&hourly=weather_code,wind_speed_10m,wind_direction_10m&wind_speed_unit=ms';
       try{
         var results=await Promise.allSettled([getJSON(marine),getJSON(weather)]);
-        var m=results[0].status==='fulfilled'?results[0].value:null;
-        var w=results[1].status==='fulfilled'?results[1].value:null;
+        var m=results[0].status==='fulfilled'&&waveUsable(results[0].value)?results[0].value:null;
+        var w=results[1].status==='fulfilled'&&windUsable(results[1].value)?results[1].value:null;
+        var complete=m&&w&&completeForecast(m,w),retained=false;
+        if(m&&w){previousMarine=m;previousWeather=w;previousAt=Date.now();}
+        if(!m||!w){
+          if(Date.now()-previousAt<86400000&&waveUsable(previousMarine)&&windUsable(previousWeather)){m=previousMarine;w=previousWeather;retained=true;}
+        }
         render(m,w);
         var stamp=new Date().toLocaleString('ja-JP',{timeZone:'Asia/Tokyo',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
-        updated.textContent=(m&&w?'データ取得：':'一部データ取得不可：')+stamp+' JST';
+        updated.textContent=retained?'予報再取得失敗・前回取得分を表示：'+new Date(previousAt).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})+' JST':(complete?'10日間の予報を取得：':'予報の一部未取得：')+stamp+' JST';
       }catch(e){render(null,null);updated.textContent='データ取得不可';console.warn('Isonoura 10day forecast',e);}
       finally{running=false;}
     }
@@ -874,10 +895,18 @@
 (function loadIsonouraBlogs(){
   var grid = document.getElementById('isonouraBlogGrid');
   if (!grid) return;
+  function safeBlogThumb(value){
+    if(typeof value!=='string'||!/^img\/[A-Za-z0-9_./-]+$/.test(value)||value.split('/').some(p=>!p||p==='.'||p==='..'))return 'blog/img/noimage.jpg';
+    return 'blog/'+value.split('/').map(encodeURIComponent).join('/');
+  }
+  function safeBlogArticle(a){
+    return a&&typeof a.slug==='string'&&/^[A-Za-z0-9_-]+$/.test(a.slug)&&typeof a.title==='string'&&(!a.excerpt||typeof a.excerpt==='string');
+  }
+  function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
   fetch('blog/articles.json?_=' + Date.now())
     .then(function(res){ return res.json(); })
     .then(function(articles){
-      var list = articles
+      var list = (Array.isArray(articles)?articles:[]).filter(safeBlogArticle)
         .filter(function(a){
           return (a.status || 'published') === 'published' &&
             a.category !== '波予報' &&
@@ -891,14 +920,14 @@
         return;
       }
       grid.innerHTML = list.map(function(a){
-        var thumb = a.thumb ? 'blog/' + a.thumb : 'blog/img/noimage.jpg';
-        var url = 'blog/posts/' + a.slug + '.php';
+        var thumb=safeBlogThumb(a.thumb);
+        var url='blog/posts/'+encodeURIComponent(a.slug)+'.php';
         return '<a href="' + url + '" class="spot-card" style="text-decoration:none;color:inherit;">'
           + '<div style="height:150px;overflow:hidden;background:#111;">'
-          + '<img src="' + thumb + '" alt="' + (a.title || '') + '" style="width:100%;height:100%;object-fit:cover;">'
+          + '<img src="' + thumb + '" alt="' + escapeHtml(a.title) + '" style="width:100%;height:100%;object-fit:cover;">'
           + '</div>'
           + '<div style="padding:14px;">'
-          + '<h3 style="font-family:Shippori Mincho B1,serif;font-size:0.95rem;margin:0;color:var(--cream);line-height:1.6;">' + (a.title || '') + '</h3>'
+          + '<h3 style="font-family:Shippori Mincho B1,serif;font-size:0.95rem;margin:0;color:var(--cream);line-height:1.6;">' + escapeHtml(a.title) + '</h3>'
           + '</div></a>';
       }).join('');
     })

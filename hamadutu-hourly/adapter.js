@@ -4,7 +4,7 @@
   const root = document.querySelector("[data-forecast]");
   const state = root?.querySelector("[data-state]");
   if (!root) return;
-  const modelURL = "../data/spot_hamadutu.json?hourly_view=" + Date.now();
+  const modelURL = () => "../data/spot_hamadutu.json?hourly_view=" + Date.now();
   const forecastCoords = Object.freeze({latitude: 35.665200, longitude: 134.966082});
   const nullNum = v => typeof v === "number" && Number.isFinite(v) ? v : null;
   const timeKey = value => typeof value === "string" ? value.slice(0,16) : "";
@@ -95,26 +95,33 @@
     }));
     return results.flatMap(result=>result.status==="fulfilled"?result.value:[]);
   }
-  try {
-    if(state)state.textContent="予報読み込み中";
+  function usable(obj,field){const h=obj?.hourly;return Array.isArray(h?.time)&&Array.isArray(h[field])&&h.time.some((t,i)=>typeof t==="string"&&t.slice(0,10)>=dateJst()&&t.slice(0,10)<=dateJst(2)&&nullNum(h[field][i])!==null&&h[field][i]>=0);}
+  async function refreshForecast() {
+    if(!window.KANTO_FORECAST_DATA&&state)state.textContent="予報読み込み中";
     const [modelResult,rainResult,tideResult]=await Promise.allSettled([
-      fetchJSON(modelURL),
+      fetchJSON(modelURL()),
       rainData(),
       loadLocalTide()
     ]);
     const candidate=modelResult.status==="fulfilled"?modelResult.value:null;
     const stamp=candidate?.updated_at;
-    const at=typeof stamp==="string"?Date.parse(stamp.replace(" ","T")+"+09:00"):NaN;
+    const t=typeof stamp==="string"?stamp.replace(" ","T"):"";
+    const at=Date.parse(/(?:Z|[+-]\d{2}:\d{2})$/i.test(t)?t:t+"+09:00");
     const age=Date.now()-at;
-    const fresh=candidate?.spot==="hamadutu" && Array.isArray(candidate?.marine?.hourly?.time) && Array.isArray(candidate?.weather?.hourly?.time) && Number.isFinite(age) && age>=-300000 && age<86400000;
+    const fresh=candidate?.spot==="hamadutu" && usable(candidate?.marine,"wave_height") && usable(candidate?.weather,"wind_speed_10m") && Number.isFinite(age) && age>=-300000 && age<86400000;
     const payload=fromSource(fresh?candidate:null,rainResult.status==="fulfilled"?rainResult.value:null);
     if(!fresh)console.warn("Hourly wave/wind unavailable or stale; independent tide/rain retained");
     if(tideResult.status==="fulfilled")payload.tide.days=tideResult.value;
     else console.warn("JMA LocalTide tide unavailable; showing missing markers",tideResult.reason);
     if(rainResult.status!=="fulfilled")console.warn("Rain model unavailable; missing values remain blank",rainResult.reason);
     window.KANTO_FORECAST_DATA=payload;
+    return payload;
+  }
+  window.ksRefreshHourlyForecast=refreshForecast;
+  try {
+    await refreshForecast();
     const script=document.createElement("script");
-    script.src="./app.js?v=20261126-3";
+    script.src="./app.js?v=20261126-6";
     script.onerror=()=>{if(state)state.textContent="グラフ読み込みに失敗しました";};
     document.body.appendChild(script);
   } catch(error) {
