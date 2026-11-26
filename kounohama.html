@@ -306,7 +306,7 @@
       <div class="name">BCM 国府の浜<span class="en">BCM Wave Patrol</span></div>
       <div class="meta"><span>有料アプリ</span><span class="badge paid">一部有料</span></div>
     </a>
-    <a href="https://www.windy.com/?wind,34.33,136.92,11" target="_blank" rel="noopener" class="cam-link">
+    <a href="https://www.windy.com/?wind,34.33771,136.87966,11" target="_blank" rel="noopener" class="cam-link">
       <div class="head-row"><div class="ico-box"><i class="fa-solid fa-wind"></i></div><span class="go-arr">→</span></div>
       <div class="name">Windy 風向マップ<span class="en">リアルタイム風</span></div>
       <div class="meta"><span>ビジュアル</span><span class="badge">無料</span></div>
@@ -695,13 +695,13 @@
   </style>
   <div style="width:100%;overflow:hidden;border-radius:14px;border:1px solid var(--line);background:#0b2839;">
     <iframe title="Windy 国府の浜周辺の風・波予報マップ"
-      src="https://embed.windy.com/embed2.html?lat=34.34&amp;lon=136.92&amp;detailLat=34.34&amp;detailLon=136.92&amp;zoom=11&amp;level=surface&amp;overlay=wind&amp;product=ecmwf&amp;menu=&amp;message=&amp;marker=true&amp;calendar=now&amp;pressure=&amp;type=map&amp;location=coordinates&amp;detail=&amp;metricWind=m%2Fs&amp;metricTemp=%C2%B0C&amp;radarRange=-1"
+      src="https://embed.windy.com/embed2.html?lat=34.33771&amp;lon=136.87966&amp;detailLat=34.33771&amp;detailLon=136.87966&amp;zoom=11&amp;level=surface&amp;overlay=wind&amp;product=ecmwf&amp;menu=&amp;message=&amp;marker=true&amp;calendar=now&amp;pressure=&amp;type=map&amp;location=coordinates&amp;detail=&amp;metricWind=m%2Fs&amp;metricTemp=%C2%B0C&amp;radarRange=-1"
       loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen
       style="display:block;width:100%;height:clamp(370px,75vw,540px);border:0;background:#0b2839;"></iframe>
   </div>
   <p style="font-size:0.73rem;color:var(--teal-pale);line-height:1.65;margin:10px 0 0;">
     ※ Windyは外部のモデル予報で、現地の波高やサーフサイズの実測ではありません。
-    <a href="https://www.windy.com/?wind,34.34,136.92,11" target="_blank" rel="noopener noreferrer" style="color:var(--coral-soft);text-decoration:underline;">Windyで大きく見る</a>
+    <a href="https://www.windy.com/?wind,34.33771,136.87966,11" target="_blank" rel="noopener noreferrer" style="color:var(--coral-soft);text-decoration:underline;">Windyで大きく見る</a>
   </p>
   <script>
   (function(){
@@ -711,8 +711,8 @@
     var state=document.getElementById('ks-windy-state'),link=document.querySelector('#kounohama-windy a[href*="windy.com"]');
     if(!frame||!wind||!wave||!state)return;
     var sources={
-      wind:{src:"https://embed.windy.com/embed2.html?lat=34.34&lon=136.92&detailLat=34.34&detailLon=136.92&zoom=11&level=surface&overlay=wind&product=ecmwf&menu=&message=&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=m%2Fs&metricTemp=%C2%B0C&radarRange=-1",link:"https://www.windy.com/?wind,34.34,136.92,11",label:"風"},
-      waves:{src:"https://embed.windy.com/embed2.html?lat=34.34&lon=136.92&detailLat=34.34&detailLon=136.92&zoom=11&level=surface&overlay=waves&product=ecmwfWaves&menu=&message=&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=m%2Fs&metricTemp=%C2%B0C&radarRange=-1",link:"https://www.windy.com/?waves,34.34,136.92,11",label:"波"}
+      wind:{src:"https://embed.windy.com/embed2.html?lat=34.33771&lon=136.87966&detailLat=34.33771&detailLon=136.87966&zoom=11&level=surface&overlay=wind&product=ecmwf&menu=&message=&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=m%2Fs&metricTemp=%C2%B0C&radarRange=-1",link:"https://www.windy.com/?wind,34.33771,136.87966,11",label:"風"},
+      waves:{src:"https://embed.windy.com/embed2.html?lat=34.33771&lon=136.87966&detailLat=34.33771&detailLon=136.87966&zoom=11&level=surface&overlay=waves&product=ecmwfWaves&menu=&message=&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=m%2Fs&metricTemp=%C2%B0C&radarRange=-1",link:"https://www.windy.com/?waves,34.33771,136.87966,11",label:"波"}
     };
     var current="wind";
     function select(which){
