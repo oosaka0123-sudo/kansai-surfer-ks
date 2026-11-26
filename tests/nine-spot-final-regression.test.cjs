@@ -15,3 +15,5 @@ test('Isonoura iframe sends stable measured content height and can shrink',()=>{
 test('Isonoura refresh reloads only its hourly iframe',()=>{
  const h=read('isonoura.html'),script=[...h.matchAll(/<script>\s*([\s\S]*?)<\/script>/g)].map(m=>m[1]).find(s=>s.includes("url.searchParams.set('_refresh'"));assert(script);let click;const frame={src:'https://example.invalid/isonoura-hourly/index.html?v=20261126-4'},refresh={addEventListener:(_,f)=>click=f};vm.runInNewContext(script,{URL,location:{href:'https://example.invalid/isonoura.html'},document:{getElementById:id=>id==='refreshBtn'?refresh:frame},Date:{now:()=>123}});click();click();const u=new URL(frame.src);assert.equal(u.searchParams.get('v'),'20261126-4');assert.deepEqual(u.searchParams.getAll('_refresh'),['123']);
 });
+
+test('Isonoura iframe and standalone link use latest resize version',()=>{const h=read('isonoura.html');assert(h.includes('src='+String.fromCharCode(34)+'isonoura-hourly/index.html?v=20261126-4'+String.fromCharCode(34)));assert(h.includes('href='+String.fromCharCode(34)+'isonoura-hourly/index.html?v=20261126-4'+String.fromCharCode(34)));});
