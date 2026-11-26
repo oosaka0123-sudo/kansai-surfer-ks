@@ -113,7 +113,7 @@
   }
   function waveJpLabel(h) {
     if (h == null) return '--';
-    if (h < 0.3) return 'フラット'; if (h < 0.8) return '膝サイズ'; if (h < 1.1) return '腰サイズ'; if (h < 1.4) return '腹サイズ'; if (h < 1.7) return '胸サイズ'; if (h < 2.1) return '肩サイズ'; return '頭サイズ';
+    if (h < 0.15) return 'フラット'; if (h < 0.3) return 'スネ〜ヒザ'; if (h < 0.8) return '膝サイズ'; if (h < 1.1) return '腰サイズ'; if (h < 1.4) return '腹サイズ'; if (h < 1.7) return '胸サイズ'; if (h < 2.1) return '肩サイズ'; return '頭サイズ';
   }
 
   function getSpotKeyFromConfig(){
@@ -153,47 +153,46 @@
 
   function renderEverything(marine, weather) {
     if (!marine || !weather || !marine.hourly || !weather.hourly) throw new Error('invalid API data');
-    const cfg = getSpotConfig(); const mIdx = findCurrentHourIdx(marine.hourly.time);
-    let waveH = safeNum(marine.hourly.wave_height[mIdx]);
-    const waveP = safeNum(marine.hourly.wave_period[mIdx]);
+    const mIdx = findCurrentHourIdx(marine.hourly.time);
+    const beachWaves = marine.hourly.time.map((_, index) => window.ksIsonouraBeachWave.estimate(marine.hourly, index));
+    const { height: waveH, period: waveP, direction: waveDir } = beachWaves[mIdx];
     const swellH = safeNum(marine.hourly.swell_wave_height?.[mIdx]);
     const swellD = safeNum(marine.hourly.swell_wave_direction?.[mIdx]);
-    const WAVE_FACTOR = cfg && cfg.WAVE_FACTOR ? cfg.WAVE_FACTOR : 1.0;
-    if (waveH != null) waveH = waveH * WAVE_FACTOR;
-    const correctedHourlyWave = (marine.hourly.wave_height || []).map(v => v != null ? v * WAVE_FACTOR : v);
-    marine._correctedWaveHeight = correctedHourlyWave;
     const w = weather.current || {};
     const windSpeed = safeNum(w.wind_speed_10m); const windDir = safeNum(w.wind_direction_10m);
     setHTML('waveVal', waveH != null ? `${waveH.toFixed(1)}<span class="unit">m</span>` : '--');
+    setText('beachWaveSize', waveH == null ? '' : waveJpLabel(waveH));
     setHTML('periodVal', waveP != null ? `${waveP.toFixed(0)}<span class="unit">秒</span>` : '--');
     if (windDir != null && windSpeed != null) {
       const rot = windArrowRotation(windDir);
       setHTML('windVal', `<i class="fa-solid fa-location-arrow wind-arrow" style="transform: rotate(${rot - 45}deg);"></i>${degToDirJp(windDir)}<span class="unit"> ${windSpeed.toFixed(1)}m/s</span>`);
     } else setText('windVal', '--');
     if (swellH != null && swellD != null) setHTML('swellVal', `${degToDirJp(swellD)}<span class="unit"> ${swellH.toFixed(1)}m</span>`); else setText('swellVal', '--');
-    const score = calcScore(waveH, waveP, windSpeed, windDir, safeNum(marine.hourly.wave_direction?.[mIdx]));
+    const score = calcScore(waveH, waveP, windSpeed, windDir, waveDir);
     const verdict = getVerdict(score, waveH); const stars = scoreToStars(score);
     setText('scoreNum', score.toFixed(1)); setHTML('verdictText', `<span class="emoji">${verdict.emoji}</span>${verdict.text}`); setText('verdictStars', stars);
-    let bestScore=0,bestIdx=-1;const corrWave=marine._correctedWaveHeight||marine.hourly.wave_height;
+    let bestScore=0,bestIdx=-1;
     const todayKey=marine.hourly.time[mIdx].slice(0,10);
     for(let i=mIdx;i<marine.hourly.time.length;i++){
       const slot=marine.hourly.time[i];if(slot.slice(0,10)!==todayKey)break;
       const hour=Number(slot.slice(11,13));if(hour<5)continue;if(hour>17)break;
-      const s=calcScore(safeNum(corrWave[i]),safeNum(marine.hourly.wave_period[i]),
+      const beach = beachWaves[i];
+      if (beach.height === null) continue;
+      const s=calcScore(beach.height,beach.period,
         safeNum(weather.hourly.wind_speed_10m[i]),safeNum(weather.hourly.wind_direction_10m[i]),
-        safeNum(marine.hourly.wave_direction?.[i]));
+        beach.direction);
       if(bestIdx<0||s>bestScore){bestScore=s;bestIdx=i;}
     }
     const bestTime=bestIdx>=0?new Date(marine.hourly.time[bestIdx]+'+09:00'):null;
     setText('bestTime',bestTime?Number(marine.hourly.time[bestIdx].slice(11,13))+'時 ('+bestScore.toFixed(1)+'点)':'本日の予報時間終了');
-    renderHourly(marine, weather, mIdx, bestIdx); renderWeekly(marine, weather); renderTodayTip(waveH, waveP, windSpeed, windDir, bestTime, bestScore);
+    renderHourly(marine, weather, beachWaves, mIdx, bestIdx); renderWeekly(marine, weather, beachWaves); renderTodayTip(waveH, waveP, windSpeed, windDir, bestTime, bestScore);
   }
 
-  function renderHourly(marine, weather, mIdx, bestIdx) {
+  function renderHourly(marine, weather, beachWaves, mIdx, bestIdx) {
     const svg = byId('hourlySvg'); const rowsEl = byId('hourlyRows'); if (!svg || !rowsEl) return;
     svg.setAttribute('viewBox', '0 0 1200 280');
     svg.style.height = '280px';
-    const times = marine.hourly.time, waveH = marine._correctedWaveHeight || marine.hourly.wave_height, waveP = marine.hourly.wave_period, windS = weather.hourly.wind_speed_10m, windD = weather.hourly.wind_direction_10m, swellD = marine.hourly.swell_wave_direction || [], weatherCode = weather.hourly.weather_code || [];
+    const times = marine.hourly.time, waveH = beachWaves.map(wave => wave.height), waveP = beachWaves.map(wave => wave.period), windS = weather.hourly.wind_speed_10m, windD = weather.hourly.wind_direction_10m, swellD = marine.hourly.swell_wave_direction || [], weatherCode = weather.hourly.weather_code || [];
     function wmoIcon(code){ if(code==null)return''; if(code===0)return'☀️'; if(code<=3)return'⛅'; if(code<=48)return'🌫️'; if(code<=57)return'🌦️'; if(code<=67)return'🌧️'; if(code<=77)return'❄️'; if(code<=82)return'🌧️'; if(code<=86)return'❄️'; if(code>=95)return'⛈️'; return'☁️'; }
     const indices=[]; for(let i=0;i<12;i++){ const idx=mIdx+i*2; if(idx<times.length) indices.push(idx); }
     const validHeights = indices.map(i => safeNum(waveH[i], 0)); const maxH = Math.max(...validHeights, 0.5) * 1.2;
@@ -226,11 +225,11 @@
     html += '<div class="hrow-label"><i class="fa-solid fa-water"></i>波の高さ</div>'; indices.forEach((idx,i)=>{ const v=safeNum(waveH[idx]); html += `<div class="hrow-cell ${i===0?'now':''}">${v!=null?v.toFixed(1):'--'}<span class="sub">m</span></div>`; });
     html += '<div class="hrow-label"><i class="fa-solid fa-stopwatch"></i>周期</div>'; indices.forEach((idx,i)=>{ const v=safeNum(waveP[idx]); html += `<div class="hrow-cell ${i===0?'now':''}">${v!=null?v.toFixed(0):'--'}<span class="sub">秒</span></div>`; });
     html += '<div class="hrow-label"><i class="fa-solid fa-wind"></i>風</div>'; indices.forEach((idx,i)=>{ const d=safeNum(windD[idx]), s=safeNum(windS[idx]); if(d==null||s==null) html += `<div class="hrow-cell ${i===0?'now':''}">--</div>`; else { const rot=windArrowRotation(d); html += `<div class="hrow-cell ${i===0?'now':''}"><i class="fa-solid fa-location-arrow arr" style="transform:rotate(${rot-45}deg);"></i><span class="sub">${degToDirJp(d)} ${s.toFixed(0)}</span></div>`; }});
-    html += '<div class="hrow-label"><i class="fa-solid fa-star"></i>評価</div>'; indices.forEach((idx,i)=>{ const sc=calcScore(safeNum(waveH[idx]),safeNum(waveP[idx]),safeNum(windS[idx]),safeNum(windD[idx]),safeNum(marine.hourly.wave_direction?.[idx])); const cls=i===0?'now':(idx===bestIdx||idx+1===bestIdx)?'best':''; let stars=1; if(sc>=2.5)stars=2; if(sc>=4.0)stars=3; html += `<div class="hrow-cell ${cls}" style="font-family:'Fraunces',serif;color:var(--coral);letter-spacing:1px;">${'★'.repeat(stars)}<span style="color:rgba(136,177,182,0.4);">${'☆'.repeat(3-stars)}</span></div>`; });
+    html += '<div class="hrow-label"><i class="fa-solid fa-star"></i>評価</div>'; indices.forEach((idx,i)=>{ const sc=calcScore(safeNum(waveH[idx]),safeNum(waveP[idx]),safeNum(windS[idx]),safeNum(windD[idx]),beachWaves[idx].direction); const cls=i===0?'now':(idx===bestIdx||idx+1===bestIdx)?'best':''; let stars=1; if(sc>=2.5)stars=2; if(sc>=4.0)stars=3; html += `<div class="hrow-cell ${cls}" style="font-family:'Fraunces',serif;color:var(--coral);letter-spacing:1px;">${'★'.repeat(stars)}<span style="color:rgba(136,177,182,0.4);">${'☆'.repeat(3-stars)}</span></div>`; });
     rowsEl.innerHTML = html;
   }
   function wmoIcon(code){ if(code==null)return''; if(code===0)return'☀️'; if(code<=3)return'⛅'; if(code<=48)return'🌫️'; if(code<=57)return'🌦️'; if(code<=67)return'🌧️'; if(code<=77)return'❄️'; if(code<=82)return'🌧️'; if(code<=86)return'❄️'; if(code>=95)return'⛈️'; return'☁️'; }
-  function renderWeekly(marine, weather) {
+  function renderWeekly(marine, weather, beachWaves) {
     const tbody = byId('weeklyBody'); if(!tbody) return; const dm=marine.daily||{}, dw=weather.daily||{};
     if(!dm.time||!dw.time){ tbody.innerHTML='<tr><td colspan="6" style="text-align:center;">データ取得エラー</td></tr>'; return; }
     const cfg = getSpotConfig();
@@ -238,7 +237,11 @@
     const hideLabel = cfg && cfg.HIDE_WAVE_LABEL;
     for(let i=0;i<dm.time.length;i++){
       const date=new Date(dm.time[i]); const dayJp=JP_DAYS_COMMON[date.getDay()]; const ds=`${String(date.getMonth()+1).padStart(2,'0')}/${String(date.getDate()).padStart(2,'0')}`;
-      const rawWaveMax=safeNum(dm.wave_height_max?.[i]); const waveMax=rawWaveMax==null?null:rawWaveMax*((cfg&&cfg.WAVE_FACTOR)||1); const periodMax=safeNum(dm.wave_period_max?.[i]); const waveDirDom=safeNum(dm.wave_direction_dominant?.[i]); const tempMax=safeNum(dw.temperature_2m_max?.[i]); const tempMin=safeNum(dw.temperature_2m_min?.[i]); const windMax=safeNum(dw.wind_speed_10m_max?.[i]); const windDir=safeNum(dw.wind_direction_10m_dominant?.[i]); const wxCode=dw.weather_code?.[i]??null;
+      const peak = beachWaves.reduce((best, wave, index) => {
+        if (marine.hourly.time[index].slice(0,10) !== dm.time[i] || wave.height === null) return best;
+        return best === null || wave.height > best.height ? wave : best;
+      }, null);
+      const waveMax=peak?.height??null, periodMax=peak?.period??null, waveDirDom=peak?.direction??null; const tempMax=safeNum(dw.temperature_2m_max?.[i]); const tempMin=safeNum(dw.temperature_2m_min?.[i]); const windMax=safeNum(dw.wind_speed_10m_max?.[i]); const windDir=safeNum(dw.wind_direction_10m_dominant?.[i]); const wxCode=dw.weather_code?.[i]??null;
       const score=calcScore(waveMax, periodMax, windMax!=null?windMax*0.6:null, windDir, waveDirDom); const verdict=getVerdict(score,waveMax); const stars=scoreToStars(score); const windRot=windDir!=null?windArrowRotation(windDir):0;
       html += `<tr><td class="day">${dayJp} <span class="num">${ds}</span></td><td style="font-size:1.3rem;">${wmoIcon(wxCode)}</td><td>${waveMax!=null?waveMax.toFixed(1)+' m':'--'}${!hideLabel&&waveMax!=null?' <span style="color:var(--teal-pale);font-size:0.75rem;">（'+waveJpLabel(waveMax)+'）</span>':''}</td><td>${periodMax!=null?periodMax.toFixed(0)+' 秒':'--'}</td><td>${windDir!=null&&windMax!=null?`<i class="fa-solid fa-location-arrow wind-arrow" style="transform:rotate(${windRot-45}deg);font-size:0.75rem;"></i> ${degToDirJp(windDir)} ${windMax.toFixed(0)}m/s`:'--'}</td><td>${tempMin!=null&&tempMax!=null?`${tempMin.toFixed(0)}–${tempMax.toFixed(0)}°`:'--'}</td><td class="action-cell ${verdict.action}">${verdict.emoji} ${verdict.text}<span class="stars-mini">${stars}</span></td></tr>`;
     }
@@ -247,12 +250,12 @@
   function renderTodayTip(waveH, waveP, windSpeed, windDir, bestTime, bestScore) {
     const tipEl=byId('todayTip'); if(!tipEl) return; const cfg=getSpotConfig();
     try{
-      const offshore=isOffshore(windDir), onshore=isOnshore(windDir), ws_=windSpeed!=null?windSpeed:0;
+      const offshore=isOffshore(windDir), ws_=windSpeed!=null?windSpeed:0;
       const fmt=s=>!s?'':s.replace('{wave}',waveH!=null?waveH.toFixed(1):'--').replace('{p}',waveP!=null?waveP.toFixed(0):'--').replace('{ws}',windSpeed!=null?windSpeed.toFixed(1):'--').replace('{dir}',degToDirJp(windDir)).replace('{label}',waveJpLabel(waveH)).replace('{condText}',ws_<2?'無風で面ツル':offshore?'オフショアで面良好':'やや海面あり');
       let tip='';
       if(waveH==null||windDir==null) tip='<strong>データ取得中</strong>。少し時間をおいて更新ボタンを押してください。';
-      else if(waveH<0.3) tip=fmt(cfg?.TIP_FLAT)||`<strong>うねり弱め</strong>（${waveH.toFixed(1)}m）。今日は静かな海。`;
-      else if(ws_>7&&onshore) tip=fmt(cfg?.TIP_BLOWN)||`<strong>${degToDirJp(windDir)}のオンショア${ws_.toFixed(1)}m/s</strong>。海面ガタガタ。`;
+      else if(ws_>7) tip=fmt(cfg?.TIP_BLOWN)||`<strong>${degToDirJp(windDir)}の強風${ws_.toFixed(1)}m/s</strong>。`;
+      else if(waveH<0.3) tip=fmt(cfg?.TIP_FLAT)||`<strong>${waveJpLabel(waveH)}</strong>（${waveH.toFixed(1)}m）。`;
       else if((ws_<2||offshore)&&waveH>=0.5&&waveP!=null&&waveP>=8) tip=fmt(cfg?.TIP_PERFECT)||`<strong>良いコンディション</strong>。今が狙い目。`;
       else if(waveH>=1.5) tip=fmt(cfg?.TIP_BIG)||`<strong>サイズアップ中</strong>（${waveH.toFixed(1)}m／${waveJpLabel(waveH)}）。`;
       else tip=fmt(cfg?.TIP_NORMAL)||`${waveJpLabel(waveH)}サイズ。普通のコンディション。`;
