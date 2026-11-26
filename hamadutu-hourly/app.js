@@ -100,6 +100,7 @@ function addCell(fragment,className,html,current=false,ariaCurrent=false){
 function connectionLabel(){
   if(source.status==="model_plus_verified_observation")return"モデル＋検証済み実波";
   if(source.status==="model_only")return"モデル予報";
+  if(source.status==="model_unavailable")return"波・風データ取得不可（潮位・降水量は取得分を表示）";
   return getSlots().some(s=>!s.placeholder)?"公開データ接続":"データ未接続";
 }
 
@@ -114,7 +115,6 @@ function compactSlots(){
     const hour=Number(getJst(d).hour);
     return hour>=4&&hour<=20;
   });
-  if(compactDay!==0)return available;
   const byHour=new Map(available.map(s=>[Number(getJst(slotDate(s)).hour),s]));
   return Array.from({length:17},(_,i)=>{
     const hour=i+4;
