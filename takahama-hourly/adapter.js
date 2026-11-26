@@ -114,7 +114,7 @@
     if(rainResult.status!=="fulfilled")console.warn("Rain model unavailable; missing values remain blank",rainResult.reason);
     window.KANTO_FORECAST_DATA=payload;
     const script=document.createElement("script");
-    script.src="./app.js?v=20261126-2";
+    script.src="./app.js?v=20261126-3";
     script.onerror=()=>{if(state)state.textContent="グラフ読み込みに失敗しました";};
     document.body.appendChild(script);
   } catch(error) {
