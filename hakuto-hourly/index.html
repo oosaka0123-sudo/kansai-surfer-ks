@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="./styles.css?v=dfce290-hakuto">
 <style>
 /* Render Kanto's original compact component without its redundant global site chrome. */
-html,body{margin:0;padding:0;min-width:0;width:100%;overflow:hidden;background:#082331;color:#f4efe6}
+html,body{margin:0;padding:0;min-width:0;width:100%;overflow-x:hidden;overflow-y:auto;background:#082331;color:#f4efe6}
 body{font-family:"Yu Gothic","Noto Sans JP",sans-serif}
 .forecast-section{width:100%;max-width:none;margin:0;padding:0}
 .forecast-shell[data-compact-test]{width:100%;margin:0;padding:0;box-shadow:none}
@@ -25,7 +25,7 @@ body{font-family:"Yu Gothic","Noto Sans JP",sans-serif}
 .forecast-note{padding:0 2px;margin:6px 0;font-size:10px;line-height:1.55}
 @media(max-width:520px){.forecast-shell[data-compact-test] .compact-extras{padding-top:7px}.forecast-shell[data-compact-test] .compact-extra-panel{padding-top:8px}}
 </style>
-<script defer src="./adapter.js?v=20261126-2"></script>
+<script defer src="./adapter.js?v=20261126-3"></script>
 </head>
 <body>
 <section class="forecast-section" aria-labelledby="forecast-title">
@@ -43,7 +43,7 @@ body{font-family:"Yu Gothic","Noto Sans JP",sans-serif}
       <span class="data-state" data-state>読み込み中</span>
     </div>
     <div class="chart-wrap" aria-label="白兎の沖合モデル波高の推定と風速の推移">
-      <div class="chart-scroll" data-chart-scroll tabindex="0" aria-label="波・風グラフ。左右へスクロールできます">
+      <div class="chart-scroll" data-chart-scroll tabindex="0" aria-keyshortcuts="ArrowLeft ArrowRight Home End" aria-label="左右矢印キーで時刻選択。波・風グラフ。左右へスクロールできます">
         <div class="chart-inner" data-chart-inner>
           <svg class="forecast-chart" viewBox="0 0 800 190" preserveAspectRatio="none" data-chart role="img" aria-label="水色の棒が沖合モデル波高の推定、オレンジ色の線が風速"></svg>
         </div>
@@ -51,7 +51,7 @@ body{font-family:"Yu Gothic","Noto Sans JP",sans-serif}
       <p class="chart-empty" data-chart-empty>予報データ未接続</p>
     </div>
     <div class="scroll-hint" aria-hidden="true">← 横にスワイプ →</div>
-    <div class="forecast-scroll" tabindex="0" aria-label="波高、周期、風速、風向の時間別表。横にスクロールできます" data-scroll>
+    <div class="forecast-scroll" tabindex="0" aria-keyshortcuts="ArrowLeft ArrowRight Home End" aria-label="左右矢印キーで時刻選択。波高、周期、風速、風向の時間別表。横にスクロールできます" data-scroll>
       <div class="forecast-grid" data-grid></div>
     </div>
     <div class="compact-extras" data-compact-extras>
@@ -60,7 +60,7 @@ body{font-family:"Yu Gothic","Noto Sans JP",sans-serif}
           <h3 id="hakuto-tide-rain-title" class="compact-tide-rain-title"><span>潮位</span><i class="tide-line-chip" aria-hidden="true"></i><span class="compact-title-divider">−</span><span>降水量</span><i class="rain-bar-chip" aria-hidden="true"></i></h3>
           <p class="compact-extra-meta" data-rain-info aria-live="polite">予報データ読み込み中</p>
         </div>
-        <div class="compact-rain-scroll" data-rain-scroll tabindex="0" aria-label="田後の天文潮位・降水量・降水確率・気温。横にスクロールできます">
+        <div class="compact-rain-scroll" data-rain-scroll tabindex="0" aria-keyshortcuts="ArrowLeft ArrowRight Home End" aria-label="左右矢印キーで時刻選択。田後の天文潮位・降水量・降水確率・気温。横にスクロールできます">
           <div data-rain-inner>
             <svg data-rain-chart role="img" aria-label="水色の曲線が気象庁田後の天文潮位、青い棒がOpen-Meteoの降水量"></svg>
             <div class="compact-tide-rain-grid" data-tide-rain-grid></div>
