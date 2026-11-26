@@ -83,12 +83,14 @@ body{font-family:"Yu Gothic","Noto Sans JP",sans-serif}
 (function(){
   const send=()=>{
     if(window.parent===window)return;
-    const h=Math.ceil(document.documentElement.scrollHeight)+5;
+    const section=document.querySelector(".forecast-section");
+    if(!section)return;
+    const h=Math.ceil(section.getBoundingClientRect().height)+5;
     window.parent.postMessage({type:'ks-isonoura-kanto-frame-height',height:h},window.location.origin);
   };
   addEventListener('load',send);
   if('ResizeObserver' in window)new ResizeObserver(send).observe(document.querySelector('.forecast-section'));
-  setInterval(send,2000);
+  // ResizeObserver tracks actual content height, without viewport feedback.
 })();
 </script>
 </body>

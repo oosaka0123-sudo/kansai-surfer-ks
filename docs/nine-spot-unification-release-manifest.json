@@ -1,24 +1,24 @@
 {
-  "version": 1,
+  "version": 2,
   "shared": {
     "nami_common.js": "034ecc6cd950fbacf6b082336802f0d5fd9927bbd3bf962629e8fc56d44e09fd"
   },
   "spots": {
     "isonoura": {
       "isonoura.html": [
-        "928f067b0b85f259dc1ecb6c85464e108ca34a7dc10a45ba8d0f33ef7bf260fb",
-        "d58ed0c075f3e5a1d1a511cc2404c4c6d53e3434bab29017cbfa6ce1bf604229"
+        "d58ed0c075f3e5a1d1a511cc2404c4c6d53e3434bab29017cbfa6ce1bf604229",
+        "d75166c3bcafaced3dd9c74e6a52b010f51464753e4d0602ab7de4fc7d301305"
       ],
       "isonoura-hourly/index.html": [
-        "5e891e9f6dbeec5c7820843c0a5bdef1e831dc4074681d8fe933119fe28c173a",
-        "76a72235d9d86ceb70f712079ce2318a615664998821ac7a2acad9d08328ee57"
+        "76a72235d9d86ceb70f712079ce2318a615664998821ac7a2acad9d08328ee57",
+        "7bea0adc5de5ae470be7a7b56c9ecaa11a8ce1b250db16e43acc2f98c4e934bb"
       ],
       "isonoura-hourly/adapter.js": [
-        "ceb6fb498545c1ba9336a5c48f615f7234e8b98bd5a23c90233fa818731af963",
+        "b2f976b96def568ecd335de1e42c804af51969cce8de391b7da03260ee7c4f22",
         "b2f976b96def568ecd335de1e42c804af51969cce8de391b7da03260ee7c4f22"
       ],
       "isonoura-hourly/app.js": [
-        "790d4d95af48327c54ab1f472fb8f68b9d04f14f1e49edcf7145a48e034816e5",
+        "ac7a8e98197ff23ec0e1a93ecd553db107811afff675f771f48edd382650fd05",
         "ac7a8e98197ff23ec0e1a93ecd553db107811afff675f771f48edd382650fd05"
       ],
       "isonoura-hourly/styles.css": [
@@ -44,19 +44,19 @@
     },
     "kounohama": {
       "kounohama.html": [
-        "a2e4813edd7fdcd5a76c0ad136954934200538e9850276182a06c6ce8f2feb5c",
-        "ec75469a5e24cca1a86ff382aebf557bec692d19b581b4c0343f73e7ccc859c7"
+        "ec75469a5e24cca1a86ff382aebf557bec692d19b581b4c0343f73e7ccc859c7",
+        "ff0ed7981883283236d4105d5f8a568e0b9c4922f54f86a267b09ab8171f5330"
       ],
       "kounohama-hourly/index.html": [
-        "8cdafb2c8b89c50df0e89830d333a40f818ca9ada6a1438b84148044768d17ff",
+        "7f86a61d6e5080dba499eb76953a9464e3fb879d5fc90203178cd602d2c2b55b",
         "7f86a61d6e5080dba499eb76953a9464e3fb879d5fc90203178cd602d2c2b55b"
       ],
       "kounohama-hourly/adapter.js": [
-        "47c8a5639cf2d5183bbb9cc80bd6ae1147b410e56f6d30c06c50d987817a72bd",
+        "a0cc36fe8f35a8d5c47f30f019d33953983bbbe488363f5da3185cc67c3a30cd",
         "a0cc36fe8f35a8d5c47f30f019d33953983bbbe488363f5da3185cc67c3a30cd"
       ],
       "kounohama-hourly/app.js": [
-        "a4507a4ed4b29f39f3472d232194f289340ef21af05e8f4f22c24f7d895936c6",
+        "a88fe4e4131ddc504827d0cb523d68b657870deb401711ccce17999f1dee6c8c",
         "a88fe4e4131ddc504827d0cb523d68b657870deb401711ccce17999f1dee6c8c"
       ],
       "kounohama-hourly/styles.css": [
@@ -74,19 +74,19 @@
     },
     "ikumi": {
       "ikumi.html": [
-        "194a07b184f98e9b2b2148b436cc8d8e5d53b1889ad9ff6ffd8305c3bb4a8d81",
-        "00914f684a384cfcd92f129916bde0bdab969bd88ab9611801216020c289b8ad"
+        "00914f684a384cfcd92f129916bde0bdab969bd88ab9611801216020c289b8ad",
+        "a028389d983d43424b869e3a76c02ed36685c56a07e68797d197e2a5b24d3984"
       ],
       "ikumi-hourly/index.html": [
-        "557dd44040562fc7d44dec3f7f5bc508386c3926d03b06e0634784dd22d697c3",
+        "ab5c3e9328c9ff6779ebc24daf0101a02d83ff79952c18018ec32c1ac72fcfeb",
         "ab5c3e9328c9ff6779ebc24daf0101a02d83ff79952c18018ec32c1ac72fcfeb"
       ],
       "ikumi-hourly/adapter.js": [
-        "423af9651f1475e0316ba6acbada5751ade0201a86cc17a809f2115129a43245",
+        "db0b0b08454a984cd6b1c412b537ad0452e57f241180ebed69a9082721fb25d5",
         "db0b0b08454a984cd6b1c412b537ad0452e57f241180ebed69a9082721fb25d5"
       ],
       "ikumi-hourly/app.js": [
-        "373bc02de9142358867fe97e54f6829f69425e419e9ed801891b0c15d612c084",
+        "b6d1efcf938c87e06b5e7fbf6072fd8c21c332fa9539c7287afdaecfbbef4ace",
         "b6d1efcf938c87e06b5e7fbf6072fd8c21c332fa9539c7287afdaecfbbef4ace"
       ],
       "ikumi-hourly/styles.css": [
@@ -104,19 +104,19 @@
     },
     "komatsu": {
       "komatsu.html": [
-        "5744864be4fbd11d1b9c58901abaa6d54b0deafca819542b170efc9577c59cca",
-        "90d92a6d1ba051e8a95a3621610d7fd3eb5977de82d3a85bc5967465a6b08518"
+        "90d92a6d1ba051e8a95a3621610d7fd3eb5977de82d3a85bc5967465a6b08518",
+        "eb944df25be409dac00122b9a1c9a3e81c1cec6fafaa87a03e7b9f7897dad62e"
       ],
       "komatsu-hourly/index.html": [
-        "a2a42f650b54951824ebac47230e8c07235c56e44b085d4a694616da68c39ce3",
+        "6c6db1567358c4aba708d7bdc6fa387833c93a27a71f76676f0d8921070466f9",
         "6c6db1567358c4aba708d7bdc6fa387833c93a27a71f76676f0d8921070466f9"
       ],
       "komatsu-hourly/adapter.js": [
-        "eb7446e0363083dc20f6e3e331297b5c59d8c366215a17ed32a4f9474dabcf31",
+        "d11ec82cd1cdf7ab13217d7e072b7c6437b19eb8358b266fc9b507ecf99f9602",
         "d11ec82cd1cdf7ab13217d7e072b7c6437b19eb8358b266fc9b507ecf99f9602"
       ],
       "komatsu-hourly/app.js": [
-        "4ce29663499cad94a768e09f19647941f2e52593f4e2cfa6db9718e92607cad6",
+        "d441c05268d2e57f99c0b214d33f76af2f03da92f6f554ffe31dfed50375fcb4",
         "d441c05268d2e57f99c0b214d33f76af2f03da92f6f554ffe31dfed50375fcb4"
       ],
       "komatsu-hourly/styles.css": [
@@ -134,19 +134,19 @@
     },
     "irago": {
       "irago.html": [
-        "074f96143a1745d693c234ad5de53f236ac19f6ee420d5c901cc65e77aea5159",
-        "3894b0d98f84bf61a9d2d184b48b191f2a3a63e1f3fd7a3d0fd62e7bd364710f"
+        "3894b0d98f84bf61a9d2d184b48b191f2a3a63e1f3fd7a3d0fd62e7bd364710f",
+        "157a964796061b4052b582aff35aa1865544a79bd8e1783f4d6487a1c060b61b"
       ],
       "irago-hourly/index.html": [
-        "dddd557990aea456fade7e62e398450e4bb21d91c013a0065934bd1812ff5786",
+        "a1c22a416d88866a3b5e91e60706a72bf86605c2c34c491fc1c7c45f56e82e97",
         "a1c22a416d88866a3b5e91e60706a72bf86605c2c34c491fc1c7c45f56e82e97"
       ],
       "irago-hourly/adapter.js": [
-        "2fd9ac41df3444e368880bad918045821d5eb736e6883f288dbd7a38c3993795",
+        "fa3b4efcefdbd53d6f1b333db04b85b22628c8e8ab978b4f6a82a9223ccde806",
         "fa3b4efcefdbd53d6f1b333db04b85b22628c8e8ab978b4f6a82a9223ccde806"
       ],
       "irago-hourly/app.js": [
-        "73638a80ec9ac0bea7c88cd361fb9df9e39c662785bc08ae98eaee67edf4a7b9",
+        "e7cbea9df814386b7ddcb2eb53ce808bd1cc1135e8d2aea1fea30890ada1adcb",
         "e7cbea9df814386b7ddcb2eb53ce808bd1cc1135e8d2aea1fea30890ada1adcb"
       ],
       "irago-hourly/styles.css": [
@@ -160,6 +160,126 @@
       "irago-hourly/data/I4-2027.json": [
         "2cb40d0cbe9d7b1f62baa2fee114df1a4ef7c1794d6a5ef2d9842dab489eecc1",
         "2cb40d0cbe9d7b1f62baa2fee114df1a4ef7c1794d6a5ef2d9842dab489eecc1"
+      ]
+    },
+    "shizunami": {
+      "shizunami.html": [
+        "029945d5616217692b9c70909949144a97ba1c24624e09c0b70094b1961dd5c4",
+        "e21bab81d2bc217a4e755ae1fccacac3d1034b482c3d1b877a812a6225505802"
+      ],
+      "shizunami-hourly/index.html": [
+        "6368c6fe7574412a681892731f7ccbafe7c178ce2762224e753ecf876b4abdbb",
+        "6368c6fe7574412a681892731f7ccbafe7c178ce2762224e753ecf876b4abdbb"
+      ],
+      "shizunami-hourly/adapter.js": [
+        "5eb178d76944bc3ed5add3fdb25f3bbe1591e7a61b86ecfdc95db44829630ebc",
+        "5eb178d76944bc3ed5add3fdb25f3bbe1591e7a61b86ecfdc95db44829630ebc"
+      ],
+      "shizunami-hourly/app.js": [
+        "f659f57cc4efab2482a0a523748dcaa81130c64a677674b7417bad542e1ab525",
+        "f659f57cc4efab2482a0a523748dcaa81130c64a677674b7417bad542e1ab525"
+      ],
+      "shizunami-hourly/styles.css": [
+        "531331bdd5fb8c86e482a08366a7234426979d30f92a1076d52ed219043a8d5d",
+        "531331bdd5fb8c86e482a08366a7234426979d30f92a1076d52ed219043a8d5d"
+      ],
+      "shizunami-hourly/data/OM-2026.json": [
+        "6d5f5492e965ce811304c2bda5ddfe9e907a32c086d21a72114e98fae8d3570d",
+        "6d5f5492e965ce811304c2bda5ddfe9e907a32c086d21a72114e98fae8d3570d"
+      ],
+      "shizunami-hourly/data/OM-2027.json": [
+        "369e1c20520db711a93bd7d99db0a595e93e856429ab17a4692b0ba59a6f7474",
+        "369e1c20520db711a93bd7d99db0a595e93e856429ab17a4692b0ba59a6f7474"
+      ]
+    },
+    "hamadutu": {
+      "hamadutu.html": [
+        "644fbc761b1e811e1e08758fd6f238caf539370f405753826aaab6747c751894",
+        "d7cf5106c29ba74c49315b453b51b75b8acfb296f3add0463799a49bcd0a369e"
+      ],
+      "hamadutu-hourly/index.html": [
+        "cc08c9d7ce0bbf82a0aeb5ce07793da3454efe825fb8a64f2ecd66e1dc74499e",
+        "cc08c9d7ce0bbf82a0aeb5ce07793da3454efe825fb8a64f2ecd66e1dc74499e"
+      ],
+      "hamadutu-hourly/adapter.js": [
+        "2ac2f1fabd35cb2da56b81a268aea12281c0c088144bbed337c1ae8c5d9d5392",
+        "2ac2f1fabd35cb2da56b81a268aea12281c0c088144bbed337c1ae8c5d9d5392"
+      ],
+      "hamadutu-hourly/app.js": [
+        "e9477298fc82c837a4c18d526d5e2ee58ea5dcc66571ef7323db849a47bec33f",
+        "e9477298fc82c837a4c18d526d5e2ee58ea5dcc66571ef7323db849a47bec33f"
+      ],
+      "hamadutu-hourly/styles.css": [
+        "531331bdd5fb8c86e482a08366a7234426979d30f92a1076d52ed219043a8d5d",
+        "531331bdd5fb8c86e482a08366a7234426979d30f92a1076d52ed219043a8d5d"
+      ],
+      "hamadutu-hourly/data/T6-2026.json": [
+        "5e3d03ef30e5baae0ae62bf27ae5f390c0367fc47d73bf9983abec8a9d2b74c4",
+        "5e3d03ef30e5baae0ae62bf27ae5f390c0367fc47d73bf9983abec8a9d2b74c4"
+      ],
+      "hamadutu-hourly/data/T6-2027.json": [
+        "fa60069042a17f7ef1efe0141cf4273cec5ba58aa2b6bed9645ebe39914fdc69",
+        "fa60069042a17f7ef1efe0141cf4273cec5ba58aa2b6bed9645ebe39914fdc69"
+      ]
+    },
+    "takahama": {
+      "takahama.html": [
+        "e478ac4d827a9cdba6d1ba715a8a95cfaf6df8927a2f88f2ac5b25692e38fcfb",
+        "9b5e610eec9c07f1b5868d42c14ab7aa9ecc8028d98211d0bf350392885fb814"
+      ],
+      "takahama-hourly/index.html": [
+        "396e88f8feba9dd6d0786cd7d9fb2f8847be41b51e1ba42c39e06b2fc84be528",
+        "396e88f8feba9dd6d0786cd7d9fb2f8847be41b51e1ba42c39e06b2fc84be528"
+      ],
+      "takahama-hourly/adapter.js": [
+        "0977e6a01a97fdb1864016179f417b7d1d9ce2704485eacb183804938f4c325c",
+        "0977e6a01a97fdb1864016179f417b7d1d9ce2704485eacb183804938f4c325c"
+      ],
+      "takahama-hourly/app.js": [
+        "f7a92f29c9a2b338271527eb99ac1209b36690ff720b2de27acc30a8ffdee201",
+        "f7a92f29c9a2b338271527eb99ac1209b36690ff720b2de27acc30a8ffdee201"
+      ],
+      "takahama-hourly/styles.css": [
+        "531331bdd5fb8c86e482a08366a7234426979d30f92a1076d52ed219043a8d5d",
+        "531331bdd5fb8c86e482a08366a7234426979d30f92a1076d52ed219043a8d5d"
+      ],
+      "takahama-hourly/data/MZ-2026.json": [
+        "d49d34b2f8439f23612e9d0ed58ce532532a11f212e1c1caad19ce0715eac55d",
+        "d49d34b2f8439f23612e9d0ed58ce532532a11f212e1c1caad19ce0715eac55d"
+      ],
+      "takahama-hourly/data/MZ-2027.json": [
+        "59f4b0add0e505409cda0e89e4c7ff804ed24f3080f8c755c8782a0def54c0bd",
+        "59f4b0add0e505409cda0e89e4c7ff804ed24f3080f8c755c8782a0def54c0bd"
+      ]
+    },
+    "hakuto": {
+      "hakuto.html": [
+        "382a9d62444e4f270e33642f02e6c69770d61bed1fb3005f80c2135e0bb97372",
+        "55b6860fff059317d5eb00e8cfd384f988cc45243b5f83e46aa8d256c0a1ae23"
+      ],
+      "hakuto-hourly/index.html": [
+        "0f8d1d1a3dc3cbb67f85a8dd24b6ad5873798f4c5ab797e7e95008985ad06c55",
+        "0f8d1d1a3dc3cbb67f85a8dd24b6ad5873798f4c5ab797e7e95008985ad06c55"
+      ],
+      "hakuto-hourly/adapter.js": [
+        "1f4f18b125aae6d0301e63bbb6e6f4cb9bffbd1935d2ebb577f1d4b3146c24d9",
+        "1f4f18b125aae6d0301e63bbb6e6f4cb9bffbd1935d2ebb577f1d4b3146c24d9"
+      ],
+      "hakuto-hourly/app.js": [
+        "cdba3963847cb550b93945fbb56dc012c62e6ec15909bfd9225e7bc11726281b",
+        "cdba3963847cb550b93945fbb56dc012c62e6ec15909bfd9225e7bc11726281b"
+      ],
+      "hakuto-hourly/styles.css": [
+        "531331bdd5fb8c86e482a08366a7234426979d30f92a1076d52ed219043a8d5d",
+        "531331bdd5fb8c86e482a08366a7234426979d30f92a1076d52ed219043a8d5d"
+      ],
+      "hakuto-hourly/data/ZE-2026.json": [
+        "3656d3dcf21f5d538c6266a6c704af3bb8cff2f9e283721290bedd35bd160696",
+        "3656d3dcf21f5d538c6266a6c704af3bb8cff2f9e283721290bedd35bd160696"
+      ],
+      "hakuto-hourly/data/ZE-2027.json": [
+        "70bac12d9eb8a5f50b1e01954aff619ac2944e5ad9143fda5ee3ff7324b6a396",
+        "70bac12d9eb8a5f50b1e01954aff619ac2944e5ad9143fda5ee3ff7324b6a396"
       ]
     }
   }

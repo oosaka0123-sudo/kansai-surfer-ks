@@ -585,7 +585,7 @@
           var sourceTime=siteData&&siteData.updated_at;
           var savedAt=typeof sourceTime==='string'?Date.parse(sourceTime.replace(' ','T')+'+09:00'):NaN;
           var age=Date.now()-savedAt;
-          if(siteData&&siteData.marine&&siteData.weather&&Number.isFinite(savedAt)&&age>=-300000&&age<86400000){
+          if(siteData&&siteData.spot==='ikumi'&&Array.isArray(siteData.marine?.hourly?.time)&&Array.isArray(siteData.weather?.hourly?.time)&&Number.isFinite(savedAt)&&age>=-300000&&age<86400000){
             savedCache={marine:siteData.marine,weather:siteData.weather};
             cacheStamp=sourceTime.slice(5,16).replace('-','/');
             render(savedCache.marine,savedCache.weather);

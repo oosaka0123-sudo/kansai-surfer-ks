@@ -332,7 +332,7 @@
     <span class="no">04</span><i class="fa-solid fa-chart-line ico"></i>波・風
   </h2>
   <div class="ks-hourly4">
-    <p style="font-size:11px;text-align:right;margin:0 0 7px;color:#b4d5e4">グラフが読み込まれない場合は <a href="isonoura-hourly/index.html?v=20261126-3" target="_blank" rel="noopener" style="color:#7de2f5;text-decoration:underline">別画面で開く</a></p>
+    <p style="font-size:11px;text-align:right;margin:0 0 7px;color:#b4d5e4">グラフが読み込まれない場合は <a href="isonoura-hourly/index.html?v=20261126-4" target="_blank" rel="noopener" style="color:#7de2f5;text-decoration:underline">別画面で開く</a></p>
     <iframe id="ks-isonoura-kanto-hourly" class="ks-isonoura-kanto-frame"
       src="isonoura-hourly/index.html?v=20261126-3"
       title="磯ノ浦の波・風・潮位・降水量 1時間別グラフ"
@@ -349,15 +349,28 @@
         a.floating-line .fl-text,a.floating-line .fl-arrow{display:none}
       }
     </style>
+    <script>
+      (function(){
+        var refresh=document.getElementById('refreshBtn');
+        if(!refresh)return;
+        refresh.addEventListener('click',function(){
+          var frame=document.getElementById('ks-isonoura-kanto-hourly');
+          if(!frame)return;
+          var url=new URL(frame.src,location.href);
+          url.searchParams.set('_refresh',String(Date.now()));
+          frame.src=url.href;
+        });
+      })();
+    </script>
     <script id="ks-isonoura-kanto-frame-resize">
       (function(){
         var frame=document.getElementById('ks-isonoura-kanto-hourly');
         window.addEventListener('message',function(event){
-          if(event.origin!==window.location.origin || event.source!==frame.contentWindow)return;
+          if(!frame || event.origin!==window.location.origin || event.source!==frame.contentWindow)return;
           var detail=event.data;
           if(!detail||detail.type!=='ks-isonoura-kanto-frame-height')return;
           var height=Number(detail.height);
-          if(Number.isFinite(height)&&height>=600&&height<=1600)frame.style.height=Math.ceil(height)+'px';
+          if(Number.isFinite(height)&&height>=320&&height<=2200)frame.style.height=Math.ceil(height)+'px';
         });
       })();
     </script>
