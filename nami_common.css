@@ -1,0 +1,1178 @@
+/* ==========================================================
+   波報 NAMI REPORT - nami_common.css v7 (clean rewrite)
+   ========================================================== */
+
+/* ── CSS Variables ── */
+:root {
+  --ink: #0b1d2a;
+  --ink-deep: #061220;
+  --cream: #f2ead9;
+  --cream-soft: #e8dcc4;
+  --coral: #e55234;
+  --coral-soft: #f28060;
+  --teal: #2d6470;
+  --teal-pale: #88b1b6;
+  --sand: #c9b892;
+  --line: rgba(242, 234, 217, 0.14);
+  --ok: #6bc178;
+  --warn: #e5b234;
+  --line-green: #06c755;
+}
+
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+/* ── Body ── */
+body {
+  font-family: "Noto Sans JP", "Shippori Mincho B1", serif;
+  background: var(--ink);
+  color: var(--cream);
+  line-height: 1.6;
+  overflow-x: hidden;
+  padding-bottom: 100px;
+}
+body::before {
+  content: "";
+  position: fixed; inset: 0;
+  pointer-events: none; z-index: 1000;
+  opacity: 0.06; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+/* ==========================================================
+   HEADER
+   ========================================================== */
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 36px;
+  border-bottom: 1px solid var(--line);
+  position: sticky; top: 0;
+  background: rgba(11, 29, 42, 0.95);
+  backdrop-filter: blur(12px);
+  z-index: 100;
+}
+.logo {
+  font-family: "Shippori Mincho B1", serif;
+  font-weight: 800; font-size: 1.4rem;
+  letter-spacing: 0.05em;
+  display: flex; align-items: center; gap: 8px;
+  color: #ffffff; text-decoration: none;
+}
+.logo img {
+  height: 36px; width: auto;
+  display: inline-block; vertical-align: middle;
+  flex-shrink: 0;
+}
+.logo .ja { color: #ffffff; }
+.logo .en {
+  font-family: "Fraunces", serif;
+  font-style: italic; font-weight: 300;
+  font-size: 0.85rem; color: #ffffff;
+  letter-spacing: 0.2em;
+}
+
+/* PC Nav */
+.nav-pc {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  font-size: 0.88rem;
+}
+.nav-pc a {
+  color: var(--cream); text-decoration: none;
+  opacity: 0.8; transition: all 0.2s;
+  display: flex; align-items: center; gap: 6px;
+  font-family: "Shippori Mincho B1", serif;
+  font-weight: 500;
+}
+.nav-pc a i { font-size: 0.78rem; color: var(--coral-soft); }
+.nav-pc a:hover { opacity: 1; color: var(--coral-soft); }
+.nav-pc a.active { color: var(--coral); opacity: 1; }
+
+/* LIVE clock */
+.tag-live {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.7rem; letter-spacing: 0.18em;
+  color: var(--coral);
+}
+.tag-live .dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--coral); animation: blink 1.6s infinite;
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.3; transform: scale(1.3); }
+}
+
+/* ==========================================================
+   HAMBURGER (mobile only - shown via media query)
+   ========================================================== */
+.hamburger {
+  display: none; /* PCでは非表示 */
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  width: 40px; height: 40px;
+  background: transparent;
+  border: 1px solid var(--line);
+  cursor: pointer; padding: 0 8px;
+  transition: border-color 0.2s;
+}
+.hamburger:hover { border-color: var(--coral); }
+.hamburger span {
+  display: block;
+  width: 22px; height: 2px;
+  background: var(--cream);
+  transition: all 0.3s;
+}
+.hamburger.active span:nth-child(1) {
+  transform: translateY(8px) rotate(45deg);
+  background: var(--coral);
+}
+.hamburger.active span:nth-child(2) { opacity: 0; }
+.hamburger.active span:nth-child(3) {
+  transform: translateY(-8px) rotate(-45deg);
+  background: var(--coral);
+}
+
+/* Mobile Menu (hidden by default, .open to show) */
+.mobile-menu {
+  display: none; /* デフォルトは非表示 */
+  position: fixed;
+  top: 73px; left: 0; right: 0; bottom: 0;
+  background: rgba(6, 18, 32, 0.98);
+  backdrop-filter: blur(20px);
+  z-index: 99;
+  padding: 24px 20px;
+  overflow-y: auto;
+}
+.mobile-menu.open { display: block; }
+.mobile-menu a {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  padding: 16px 14px; margin-bottom: 6px;
+  border: 1px solid var(--line);
+  text-decoration: none; color: var(--cream);
+  font-family: "Shippori Mincho B1", serif; font-size: 1rem;
+  transition: all 0.2s;
+}
+.mm-left { display:flex; align-items:center; gap:14px; flex:1; min-width:0; }
+.mm-guide-badge {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  color: var(--coral);
+  border: 1px solid var(--coral);
+  padding: 4px 10px;
+  border-radius: 4px;
+  margin-left: auto;
+  flex-shrink: 0;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+.mobile-menu a:hover .mm-guide-badge,
+.mobile-menu a.active .mm-guide-badge {
+  background: var(--coral);
+  color: var(--cream);
+}
+.mobile-menu a i { color: var(--coral); font-size: 1rem; width: 20px; text-align: center; }
+.mobile-menu a:hover,
+.mobile-menu a.active { background: rgba(229, 82, 52, 0.1); border-color: var(--coral); }
+.mobile-menu a.active { color: var(--coral); }
+.mobile-menu .mm-section {
+  margin: 24px 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed var(--line);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.7rem; letter-spacing: 0.2em; color: var(--teal-pale);
+}
+
+/* ==========================================================
+   TOP STRIP
+   ========================================================== */
+.top-strip {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 36px; border-bottom: 1px solid var(--line);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.7rem; letter-spacing: 0.15em;
+}
+.crumbs { color: var(--teal-pale); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.crumbs a { color: var(--teal-pale); text-decoration: none; }
+.crumbs a:hover { color: var(--coral); }
+.crumbs .sep { opacity: 0.4; }
+.crumbs .now { color: var(--coral); }
+.update-info { display: flex; gap: 12px; align-items: center; color: var(--teal-pale); flex-wrap: wrap; }
+.update-info .sync-ico { color: var(--teal-pale); transition: color 0.3s; }
+.update-info.syncing .sync-ico { color: var(--coral); }
+.update-info.syncing .sync-ico i { animation: spin 1s linear infinite; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.refresh-btn {
+  background: transparent; border: 1px solid var(--line);
+  color: var(--cream); font-family: "JetBrains Mono", monospace;
+  font-size: 0.65rem; letter-spacing: 0.15em;
+  padding: 6px 12px; cursor: pointer; transition: all 0.2s;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.refresh-btn:hover { border-color: var(--coral); color: var(--coral); }
+
+/* ==========================================================
+   VERDICT BANNER (spot pages)
+   ========================================================== */
+.verdict-banner {
+  padding: 40px 36px; text-align: center;
+  background: linear-gradient(180deg, rgba(229, 82, 52, 0.08), transparent);
+  border-bottom: 1px solid var(--line);
+  position: relative; overflow: hidden;
+}
+.verdict-banner::before {
+  content: ""; position: absolute; top: -50%; left: -10%;
+  width: 120%; height: 200%;
+  background: radial-gradient(ellipse, rgba(229, 82, 52, 0.12) 0%, transparent 60%);
+  pointer-events: none;
+}
+.verdict-text {
+  font-family: "Noto Sans JP", sans-serif; font-weight: 900;
+  font-size: clamp(2.4rem, 6vw, 4.4rem);
+  letter-spacing: -0.02em; line-height: 1.15; position: relative; z-index: 1;
+}
+.verdict-text .emoji {
+  margin-right: 12px; display: inline-block;
+  animation: wobble 3s ease-in-out infinite;
+}
+@keyframes wobble {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50%       { transform: translateY(-8px) rotate(-5deg); }
+}
+.verdict-stars {
+  margin-top: 16px; font-size: 1.6rem; color: var(--coral); letter-spacing: 4px;
+  font-family: "Fraunces", serif;
+}
+.verdict-score-row {
+  margin-top: 20px; display: inline-flex; align-items: baseline;
+  gap: 20px; position: relative; z-index: 1;
+}
+.verdict-score {
+  font-family: "Fraunces", serif; font-weight: 300;
+  font-size: clamp(4rem, 9vw, 6.5rem); color: var(--coral); line-height: 1;
+}
+.verdict-score .denom {
+  font-family: "JetBrains Mono", monospace; font-size: 0.22em;
+  color: var(--teal-pale); letter-spacing: 0.15em; margin-left: 4px;
+}
+.verdict-best-time {
+  font-family: "JetBrains Mono", monospace; font-size: 0.85rem;
+  letter-spacing: 0.15em; color: var(--cream-soft);
+}
+.verdict-best-time strong {
+  color: var(--coral-soft); font-family: "Fraunces", serif;
+  font-size: 1.4rem; font-style: italic; font-weight: 500; margin: 0 6px;
+}
+
+/* ==========================================================
+   SPOT HERO
+   ========================================================== */
+.spot-hero {
+  padding: 50px 36px 60px;
+  border-bottom: 1px solid var(--line);
+}
+.spot-hero-grid {
+  display: grid; grid-template-columns: 1.3fr 1fr;
+  gap: 60px; align-items: end;
+}
+.spot-meta {
+  font-family: "JetBrains Mono", monospace; font-size: 0.7rem;
+  letter-spacing: 0.22em; color: var(--teal-pale);
+  margin-bottom: 24px; display: flex; gap: 18px; flex-wrap: wrap;
+}
+.spot-meta span { display: inline-flex; align-items: center; gap: 6px; }
+.spot-meta span i { color: var(--coral); font-size: 0.65rem; }
+.spot-title {
+  font-family: "Shippori Mincho B1", serif; font-weight: 800;
+  font-size: clamp(3rem, 8vw, 6.8rem); line-height: 0.92; letter-spacing: -0.02em;
+}
+.spot-title-en {
+  font-family: "Fraunces", serif; font-style: italic; font-weight: 300;
+  font-size: 1.1rem; color: var(--coral-soft);
+  letter-spacing: 0.2em; text-transform: uppercase;
+  margin-top: 14px; display: block;
+}
+.spot-intro { font-size: 0.98rem; line-height: 1.9; color: var(--cream-soft); margin-top: 22px; max-width: 480px; }
+
+/* Stats Card */
+.stats-card {
+  border: 1px solid var(--line); padding: 26px;
+  background: linear-gradient(135deg, rgba(229, 82, 52, 0.06), rgba(45, 100, 112, 0.08));
+  position: relative;
+}
+.stats-card::before {
+  content: "現在のコンディション";
+  position: absolute; top: -9px; left: 20px;
+  background: var(--ink); padding: 0 10px;
+  font-family: "Shippori Mincho B1", serif; font-size: 0.7rem; letter-spacing: 0.15em; color: var(--coral);
+}
+.stats-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: 2px; background: var(--line); border: 1px solid var(--line);
+}
+.stat-cell { background: var(--ink); padding: 18px 14px; text-align: center; }
+.stat-ico { font-size: 0.9rem; color: var(--teal-pale); margin-bottom: 6px; display: block; }
+.stat-label { font-family: "Shippori Mincho B1", serif; font-size: 0.78rem; color: var(--teal-pale); margin-bottom: 6px; }
+.stat-val { font-family: "Fraunces", serif; font-weight: 300; font-size: 1.7rem; color: var(--cream); }
+.stat-val .unit { font-size: 0.75rem; color: var(--teal-pale); margin-left: 3px; }
+.stat-val .wind-arrow { color: var(--coral); margin-right: 6px; display: inline-block; }
+
+/* ==========================================================
+   SECTIONS
+   ========================================================== */
+.section { padding: 70px 36px; border-bottom: 1px solid var(--line); }
+.section-title {
+  font-family: "Shippori Mincho B1", serif; font-weight: 600; font-size: 1.8rem;
+  margin-bottom: 32px; padding-bottom: 18px; border-bottom: 1px solid var(--line);
+  display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+}
+.section-title .no { font-family: "Fraunces", serif; font-style: italic; font-weight: 300; font-size: 0.7em; color: var(--coral); }
+.section-title .ico { color: var(--coral); font-size: 0.7em; margin-right: 4px; }
+
+/* Context */
+.context-call {
+  padding: 28px 36px;
+  background: linear-gradient(90deg, rgba(229, 82, 52, 0.06), transparent);
+  border-bottom: 1px solid var(--line);
+  display: grid; grid-template-columns: 160px 1fr; gap: 36px; align-items: center;
+}
+.context-call .head {
+  font-family: "Shippori Mincho B1", serif; font-size: 1rem; color: var(--coral);
+  display: flex; align-items: center; gap: 10px;
+}
+.context-call .body { font-size: 0.92rem; line-height: 1.9; color: var(--cream-soft); }
+.context-call .body strong { color: var(--coral-soft); font-weight: 500; }
+
+/* ==========================================================
+   CAMERA LINKS
+   ========================================================== */
+.cam-section { background: var(--ink-deep); }
+.cam-intro { font-size: 0.92rem; color: var(--cream-soft); line-height: 1.9; margin-bottom: 30px; max-width: 680px; }
+.cam-intro strong { color: var(--coral-soft); }
+.cam-link-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+.cam-link {
+  display: block; padding: 22px; background: rgba(11, 29, 42, 0.6);
+  border: 1px solid var(--line); text-decoration: none; color: var(--cream);
+  transition: all 0.25s; position: relative; overflow: hidden;
+}
+.cam-link::before {
+  content: ""; position: absolute; top: 0; left: -100%;
+  width: 100%; height: 2px; background: var(--coral); transition: left 0.4s;
+}
+.cam-link:hover { background: rgba(229, 82, 52, 0.08); border-color: var(--coral); transform: translateY(-3px); }
+.cam-link:hover::before { left: 0; }
+.cam-link.featured { background: linear-gradient(135deg, rgba(229, 82, 52, 0.15), rgba(45, 100, 112, 0.08)); border-color: var(--coral); }
+.cam-link.featured::before { left: 0; height: 3px; }
+.cam-link .head-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.cam-link .ico-box {
+  width: 38px; height: 38px; display: flex; align-items: center; justify-content: center;
+  background: rgba(229, 82, 52, 0.15); color: var(--coral); font-size: 1.1rem;
+}
+.cam-link.featured .ico-box { background: var(--coral); color: var(--cream); }
+.cam-link .go-arr { font-family: "Fraunces", serif; font-size: 1.3rem; color: var(--teal-pale); transition: all 0.25s; }
+.cam-link:hover .go-arr { color: var(--coral); transform: translateX(6px); }
+.cam-link .name { font-family: "Shippori Mincho B1", serif; font-weight: 600; font-size: 1.1rem; margin-bottom: 4px; }
+.cam-link .name .en { display: block; font-size: 0.78rem; color: var(--teal-pale); margin-top: 2px; }
+.cam-link .meta {
+  margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line);
+  display: flex; justify-content: space-between; align-items: center;
+  font-family: "Shippori Mincho B1", serif; font-size: 0.75rem; color: var(--teal-pale);
+}
+.badge { padding: 3px 8px; background: rgba(107, 193, 120, 0.1); color: var(--ok); border: 1px solid rgba(107, 193, 120, 0.3); }
+.badge.paid { background: rgba(229, 178, 52, 0.1); color: var(--warn); border-color: rgba(229, 178, 52, 0.3); }
+.badge.official { background: rgba(229, 82, 52, 0.2); color: var(--cream); border-color: var(--coral); }
+
+/* ==========================================================
+   HOURLY CHART
+   ========================================================== */
+.hourly-chart { border: 1px solid var(--line); padding: 24px; background: linear-gradient(180deg, rgba(45, 100, 112, 0.04), transparent); }
+.hourly-chart-inner { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.hourly-svg { width: 100%; min-width: 600px; height: 280px; display: block; }
+.hourly-rows {
+  margin-top: 20px;
+  display: grid; grid-template-columns: 90px repeat(12, minmax(52px, 1fr));
+  gap: 1px; background: var(--line); border: 1px solid var(--line);
+  min-width: 600px;
+}
+.hrow-label {
+  background: var(--ink); padding: 10px;
+  font-family: "Shippori Mincho B1", serif; font-size: 0.78rem; color: var(--coral);
+  display: flex; align-items: center; gap: 6px;
+}
+.hrow-cell {
+  background: var(--ink); padding: 10px 4px; text-align: center;
+  font-family: "Fraunces", serif; font-weight: 300; font-size: 0.82rem;
+  color: var(--cream); min-width: 0;
+}
+.hrow-cell.now { background: rgba(229, 82, 52, 0.18); color: var(--coral-soft); }
+.hrow-cell.best { background: rgba(107, 193, 120, 0.15); color: var(--ok); }
+.hrow-cell .sub { display: block; font-size: 0.6rem; color: var(--teal-pale); margin-top: 2px; }
+.hrow-cell .arr { display: inline-block; font-size: 0.75rem; color: var(--coral-soft); }
+.data-src {
+  margin-top: 18px; padding: 14px 0;
+  font-family: "JetBrains Mono", monospace; font-size: 0.68rem; color: var(--teal-pale);
+  letter-spacing: 0.1em; text-align: right;
+}
+.data-src a { color: var(--coral-soft); text-decoration: none; }
+
+/* ==========================================================
+   WEEKLY TABLE
+   ========================================================== */
+.weekly-table { width: 100%; border-collapse: collapse; border: 1px solid var(--line); }
+.weekly-table th,
+.weekly-table td { padding: 14px 16px; border-bottom: 1px solid var(--line); text-align: left; font-size: 0.9rem; }
+.weekly-table th {
+  font-family: "Shippori Mincho B1", serif; font-size: 0.85rem; color: var(--coral);
+  background: rgba(45, 100, 112, 0.06); font-weight: 600;
+}
+.weekly-table td { font-family: "Fraunces", serif; font-weight: 300; }
+.weekly-table .day { font-family: "Shippori Mincho B1", serif; font-weight: 600; font-size: 1rem; }
+.weekly-table .day .num { font-family: "JetBrains Mono", monospace; font-size: 0.72rem; color: var(--teal-pale); margin-left: 8px; }
+.weekly-table tr:hover { background: rgba(229, 82, 52, 0.04); }
+.weekly-table .action-cell { font-family: "Noto Sans JP", sans-serif; font-weight: 700; font-size: 0.85rem; }
+.weekly-table .stars-mini { display: block; color: var(--coral); letter-spacing: 1px; font-size: 0.78rem; margin-top: 3px; }
+.weekly-table .wind-arrow { color: var(--coral); margin-right: 4px; display: inline-block; }
+.action-go  { color: var(--coral); }
+.action-ok  { color: var(--sand); }
+.action-meh { color: var(--teal-pale); }
+.action-no  { color: var(--teal-pale); opacity: 0.6; }
+
+/* ==========================================================
+   SPOT PROFILE
+   ========================================================== */
+.profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
+.profile-list { list-style: none; }
+.profile-list li {
+  display: grid; grid-template-columns: 160px 1fr; gap: 20px;
+  padding: 14px 0; border-bottom: 1px dashed var(--line); align-items: baseline;
+}
+.profile-list li:first-child { padding-top: 0; }
+.profile-list .label {
+  font-family: "Shippori Mincho B1", serif; font-size: 0.9rem; color: var(--teal-pale);
+  display: flex; align-items: center; gap: 8px;
+}
+.profile-list .label i { color: var(--coral); font-size: 0.75rem; width: 14px; text-align: center; }
+.profile-list .val { font-size: 0.92rem; color: var(--cream); line-height: 1.7; }
+.profile-list .val strong { font-family: "Shippori Mincho B1", serif; font-weight: 600; color: var(--coral-soft); }
+
+.local-tips {
+  border: 1px solid var(--line); padding: 28px;
+  background: linear-gradient(135deg, rgba(45, 100, 112, 0.08), transparent);
+  position: relative;
+}
+.local-tips::before {
+  content: "今日のアドバイス";
+  position: absolute; top: -9px; left: 20px;
+  background: var(--ink); padding: 0 10px;
+  font-family: "Shippori Mincho B1", serif; font-size: 0.78rem; letter-spacing: 0.1em; color: var(--coral);
+}
+.local-tips h3 { font-family: "Shippori Mincho B1", serif; font-size: 1.2rem; margin-bottom: 14px; display: flex; align-items: center; gap: 10px; }
+.local-tips h3 i { color: var(--coral); }
+.local-tips p { font-size: 0.92rem; line-height: 1.9; color: var(--cream-soft); margin-bottom: 12px; }
+.local-tips p strong { color: var(--coral-soft); }
+
+/* Condition Tags */
+.sc-tag {
+  font-family: "Shippori Mincho B1", serif; font-size: 0.72rem;
+  padding: 3px 10px; border: 1px solid var(--line); color: var(--cream-soft);
+}
+.sc-tag.warn { border-color: var(--coral); color: var(--coral); }
+.sc-tag.good { border-color: var(--ok); color: var(--ok); }
+
+/* ==========================================================
+   FLOATING LINE BUTTON
+   ========================================================== */
+.floating-line {
+  position: fixed; bottom: 16px; right: 16px; z-index: 200;
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px; background: var(--line-green); color: white;
+  text-decoration: none; border-radius: 50px;
+  box-shadow: 0 6px 18px rgba(6, 199, 85, 0.35);
+  transition: all 0.3s; animation: float 3s ease-in-out infinite;
+  max-width: 200px;
+}
+.floating-line:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(6, 199, 85, 0.5); background: #05a847; animation: none; }
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+.fl-icon { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: white; color: var(--line-green); border-radius: 50%; font-size: 1.1rem; flex-shrink: 0; }
+.fl-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.fl-label { font-family: "Shippori Mincho B1", serif; font-weight: 700; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: 0.03em; }
+.fl-sub { font-size: 0.62rem; opacity: 0.85; }
+.fl-arrow { font-family: "Fraunces", serif; font-size: 1rem; flex-shrink: 0; }
+
+/* ==========================================================
+   LINE BANNER
+   ========================================================== */
+.line-banner {
+  margin: 0 36px; padding: 36px 40px;
+  background: linear-gradient(135deg, var(--line-green) 0%, #05a847 100%);
+  border-radius: 16px; position: relative; overflow: hidden;
+  box-shadow: 0 12px 32px rgba(6, 199, 85, 0.25);
+}
+.line-banner::before { content: ""; position: absolute; top: -100px; right: -100px; width: 400px; height: 400px; background: radial-gradient(circle, rgba(255,255,255,0.18), transparent 60%); }
+.line-banner .content { position: relative; z-index: 1; display: grid; grid-template-columns: 1fr auto; gap: 30px; align-items: center; }
+.line-banner h2 { font-family: "Shippori Mincho B1", serif; font-weight: 800; font-size: 1.8rem; color: white; margin-bottom: 8px; display: flex; align-items: center; gap: 14px; }
+.line-banner h2 i { font-size: 2rem; background: white; color: var(--line-green); width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+.line-banner .lead { font-size: 0.95rem; color: rgba(255,255,255,0.95); line-height: 1.8; max-width: 540px; }
+.line-banner .lead strong { color: white; background: rgba(0,0,0,0.15); padding: 2px 8px; border-radius: 4px; }
+.join-btn {
+  display: inline-flex; align-items: center; gap: 12px;
+  padding: 16px 28px; background: white; color: var(--line-green);
+  text-decoration: none; border-radius: 50px;
+  font-family: "Shippori Mincho B1", serif; font-weight: 700; font-size: 1rem;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.18); transition: all 0.25s; white-space: nowrap;
+}
+.join-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(0,0,0,0.25); }
+.join-btn i { font-size: 1.4rem; }
+
+/* ==========================================================
+   CONTACT CTA
+   ========================================================== */
+.contact-cta {
+  margin: 50px 36px 0; padding: 40px;
+  background: rgba(45, 100, 112, 0.08);
+  border: 1px solid var(--line); text-align: center; border-radius: 12px;
+}
+.contact-cta h2 { font-family: "Shippori Mincho B1", serif; font-weight: 700; font-size: 1.5rem; margin-bottom: 14px; color: var(--coral-soft); }
+.contact-cta p { font-size: 0.95rem; color: var(--cream-soft); line-height: 1.9; margin-bottom: 22px; max-width: 580px; margin-left: auto; margin-right: auto; }
+.contact-buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.contact-btn {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 14px 26px; font-family: "Shippori Mincho B1", serif; font-weight: 600;
+  font-size: 0.95rem; text-decoration: none; transition: all 0.25s;
+  border: 1px solid var(--coral); color: var(--coral); background: transparent;
+}
+.contact-btn:hover { background: var(--coral); color: var(--cream); transform: translateY(-2px); }
+.contact-btn.primary { background: var(--coral); color: var(--cream); }
+.contact-btn.primary:hover { background: var(--coral-soft); }
+
+/* ==========================================================
+   SEO INTRO
+   ========================================================== */
+.seo-intro { padding: 70px 36px; border-bottom: 1px solid var(--line); }
+.seo-intro h2 { font-family: "Shippori Mincho B1", serif; font-size: 1.6rem; margin-bottom: 24px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.seo-intro h3 { font-family: "Shippori Mincho B1", serif; font-size: 1.15rem; margin: 28px 0 12px; color: var(--coral-soft); }
+.seo-intro p { font-size: 0.95rem; line-height: 2; margin-bottom: 14px; color: var(--cream-soft); }
+.seo-intro p strong { color: var(--coral-soft); }
+
+/* ==========================================================
+   TOP PAGE HERO
+   ========================================================== */
+.top-hero {
+  padding: 80px 36px 60px; text-align: center; border-bottom: 1px solid var(--line);
+}
+.top-hero h1 { font-family: "Shippori Mincho B1", serif; font-weight: 800; font-size: clamp(3rem, 7vw, 5.6rem); line-height: 1; letter-spacing: -0.02em; margin-bottom: 16px; }
+.top-hero h1 .accent { color: var(--coral); }
+.top-hero .subtitle { font-family: "Shippori Mincho B1", serif; font-size: 1.05rem; color: var(--coral-soft); margin-bottom: 24px; }
+.top-hero .lead { font-size: 1rem; line-height: 1.9; color: var(--cream-soft); max-width: 640px; margin: 0 auto; }
+
+/* ==========================================================
+   TODAY'S BEST
+   ========================================================== */
+.best-spot-section {
+  padding: 60px 36px;
+  border-bottom: 1px solid var(--line);
+  background: radial-gradient(ellipse at top, rgba(229, 82, 52, 0.12) 0%, transparent 60%), var(--ink);
+}
+.best-spot-label {
+  font-family: "Shippori Mincho B1", serif; font-size: 0.85rem;
+  letter-spacing: 0.15em; color: var(--coral);
+  margin-bottom: 14px; display: flex; align-items: center; gap: 10px; justify-content: center;
+}
+.badge-best { background: var(--coral); color: var(--cream); padding: 4px 14px; letter-spacing: 0.12em; font-weight: 700; }
+.best-spot-card {
+  max-width: 720px; margin: 0 auto;
+  background: linear-gradient(135deg, rgba(229, 82, 52, 0.1), rgba(11, 29, 42, 0.5));
+  border: 2px solid var(--coral); padding: 40px 36px; text-align: center;
+  text-decoration: none; color: var(--cream); display: block; position: relative; transition: all 0.3s;
+}
+.best-spot-card:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(229, 82, 52, 0.25); }
+.best-spot-card .name { font-family: "Shippori Mincho B1", serif; font-weight: 800; font-size: clamp(2.4rem, 5vw, 3.4rem); margin-bottom: 6px; }
+.best-spot-card .name .region { display: block; font-family: "Shippori Mincho B1", serif; font-weight: 400; font-size: 0.95rem; color: var(--coral-soft); margin-top: 4px; }
+.best-spot-card .stars { font-family: "Fraunces", serif; font-size: 2rem; color: var(--coral); letter-spacing: 6px; margin: 14px 0 8px; }
+.best-spot-card .verdict-row { display: flex; align-items: baseline; justify-content: center; gap: 24px; margin: 14px 0 22px; flex-wrap: wrap; }
+.best-spot-card .verdict { font-family: "Noto Sans JP", sans-serif; font-weight: 900; font-size: clamp(1.6rem, 3.5vw, 2.4rem); }
+.best-spot-card .score { font-family: "Fraunces", serif; font-weight: 300; font-size: clamp(2.6rem, 5vw, 3.6rem); color: var(--coral); line-height: 1; }
+.best-spot-card .score .denom { font-family: "JetBrains Mono", monospace; font-size: 0.3em; color: var(--teal-pale); letter-spacing: 0.15em; }
+.best-spot-card .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 24px 0 18px; padding: 18px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.best-spot-card .bs-stat-label { font-family: "Shippori Mincho B1", serif; font-size: 0.78rem; color: var(--teal-pale); margin-bottom: 4px; }
+.best-spot-card .bs-stat-val { font-family: "Fraunces", serif; font-weight: 300; font-size: 1.4rem; color: var(--cream); }
+.best-spot-card .bs-stat-val .unit { font-size: 0.65rem; color: var(--teal-pale); margin-left: 2px; }
+.best-spot-card .tags-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 16px; }
+.best-spot-card .go-link { margin-top: 20px; display: inline-flex; align-items: center; gap: 10px; font-family: "Shippori Mincho B1", serif; color: var(--coral-soft); font-size: 0.95rem; }
+.best-spot-card:hover .go-link { color: var(--coral); }
+
+/* ==========================================================
+   ALL SPOTS GRID
+   ========================================================== */
+.all-spots-section { padding: 70px 36px; border-bottom: 1px solid var(--line); }
+.all-spots-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+
+.spot-mini {
+  background: var(--ink); border: 1px solid var(--line);
+  padding: 24px 22px; text-decoration: none; color: var(--cream);
+  transition: all 0.25s; display: block; position: relative;
+}
+.spot-mini:hover { border-color: var(--coral); background: rgba(229, 82, 52, 0.04); transform: translateY(-2px); }
+.spot-mini.is-best { border-color: var(--coral); }
+.spot-mini.is-best::before {
+  content: "👑 BEST"; position: absolute; top: -10px; left: 16px;
+  background: var(--coral); color: var(--cream); padding: 3px 12px;
+  font-family: "Shippori Mincho B1", serif; font-size: 0.72rem; letter-spacing: 0.1em;
+}
+.sm-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; gap: 10px; }
+.sm-name { font-family: "Shippori Mincho B1", serif; font-weight: 700; font-size: 1.45rem; }
+.sm-name .region { display: block; font-family: "Shippori Mincho B1", serif; font-weight: 400; font-size: 0.85rem; color: var(--coral); margin-top: 2px; }
+.sm-score { font-family: "Fraunces", serif; font-weight: 300; font-size: 2rem; color: var(--coral); line-height: 1; }
+.sm-score .denom { font-family: "JetBrains Mono", monospace; font-size: 0.55rem; color: var(--teal-pale); }
+.sm-stars { font-family: "Fraunces", serif; font-size: 1.2rem; color: var(--coral); letter-spacing: 3px; margin: 6px 0 14px; }
+.sm-verdict { font-family: "Noto Sans JP", sans-serif; font-weight: 700; font-size: 1.05rem; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px dashed var(--line); }
+.sm-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 12px; }
+.sm-stat { text-align: center; }
+.sm-stat-l { font-family: "Shippori Mincho B1", serif; font-size: 0.82rem; color: var(--teal-pale); margin-bottom: 4px; }
+.sm-stat-v { font-family: "Fraunces", serif; font-weight: 300; font-size: 1.1rem; color: var(--cream); }
+.sm-stat-v .u { font-size: 0.72rem; color: var(--teal-pale); }
+.sm-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.sm-tags .sc-tag { font-size: 0.78rem; padding: 3px 10px; }
+.sm-bottom { text-align: right; font-family: "Shippori Mincho B1", serif; font-size: 0.88rem; color: var(--teal-pale); margin-top: 6px; }
+.spot-mini:hover .sm-bottom { color: var(--coral); }
+
+
+/* ==========================================================
+   MAIN FORECAST ARTICLE CARD
+   ========================================================== */
+.main-forecast-section {
+  padding: 46px 36px 56px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(45,100,112,0.08), transparent);
+}
+.main-forecast-section .section-title {
+  margin-bottom: 8px;
+}
+.main-forecast-lead {
+  color: var(--teal-pale);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  margin-bottom: 22px;
+}
+.main-forecast-card {
+  display: grid;
+  grid-template-columns: 34% 1fr;
+  min-height: 220px;
+  border: 1px solid var(--line);
+  background: rgba(11,29,42,0.62);
+  color: var(--cream);
+  text-decoration: none;
+  overflow: hidden;
+  transition: all 0.25s;
+}
+.main-forecast-card:hover {
+  border-color: var(--coral);
+  transform: translateY(-2px);
+  background: rgba(229,82,52,0.05);
+}
+.main-forecast-thumb {
+  min-height: 220px;
+  background: rgba(45,100,112,0.18);
+  border-right: 1px solid var(--line);
+}
+.main-forecast-thumb img {
+  width: 100%;
+  height: 100%;
+  min-height: 220px;
+  object-fit: cover;
+  display: block;
+}
+.main-forecast-thumb.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--coral);
+  font-size: 2.2rem;
+  background: radial-gradient(circle at center, rgba(229,82,52,0.15), rgba(45,100,112,0.12));
+}
+.main-forecast-body {
+  padding: 28px 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.main-forecast-meta {
+  color: var(--coral);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  margin-bottom: 12px;
+}
+.main-forecast-body h3 {
+  font-family: "Shippori Mincho B1", serif;
+  font-weight: 700;
+  font-size: clamp(1.55rem, 3vw, 2.3rem);
+  line-height: 1.45;
+  color: var(--cream);
+  margin-bottom: 14px;
+}
+.main-forecast-body p {
+  color: var(--cream-soft);
+  font-size: 0.92rem;
+  line-height: 1.85;
+  margin-bottom: 18px;
+}
+.main-forecast-link {
+  color: var(--coral-soft);
+  font-family: "Shippori Mincho B1", serif;
+  font-size: 0.9rem;
+}
+.main-forecast-card:hover .main-forecast-link {
+  color: var(--coral);
+}
+
+@media (max-width: 900px) {
+  .main-forecast-section { padding: 38px 18px 44px; }
+  .main-forecast-card { grid-template-columns: 1fr; }
+  .main-forecast-thumb, .main-forecast-thumb img { min-height: 180px; }
+  .main-forecast-body { padding: 22px 20px; }
+}
+
+/* ==========================================================
+   CONTACT FORM
+   ========================================================== */
+.form-wrap { max-width: 720px; margin: 0 auto; padding: 60px 36px; }
+.form-intro { margin-bottom: 36px; text-align: center; }
+.form-intro h1 { font-family: "Shippori Mincho B1", serif; font-weight: 800; font-size: clamp(2rem, 4vw, 2.8rem); margin-bottom: 14px; }
+.form-intro h1 .accent { color: var(--coral); }
+.form-intro p { font-size: 0.95rem; color: var(--cream-soft); line-height: 1.9; }
+.contact-form { background: rgba(11, 29, 42, 0.5); border: 1px solid var(--line); padding: 36px; border-radius: 8px; }
+.form-group { margin-bottom: 22px; }
+.form-group label { display: block; font-family: "Shippori Mincho B1", serif; font-weight: 600; font-size: 0.92rem; color: var(--cream); margin-bottom: 8px; }
+.form-group label .required { display: inline-block; margin-left: 6px; font-family: "JetBrains Mono", monospace; font-size: 0.65rem; padding: 2px 6px; background: var(--coral); color: var(--cream); letter-spacing: 0.1em; vertical-align: middle; }
+.form-group label .optional { display: inline-block; margin-left: 6px; font-family: "JetBrains Mono", monospace; font-size: 0.65rem; padding: 2px 6px; border: 1px solid var(--teal-pale); color: var(--teal-pale); letter-spacing: 0.1em; vertical-align: middle; }
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="tel"],
+.form-group select,
+.form-group textarea { width: 100%; padding: 14px 16px; background: var(--ink-deep); border: 1px solid var(--line); color: var(--cream); font-family: "Noto Sans JP", sans-serif; font-size: 1rem; transition: all 0.2s; }
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus { outline: none; border-color: var(--coral); background: var(--ink); }
+.form-group textarea { min-height: 160px; resize: vertical; line-height: 1.8; }
+.form-group .hint { margin-top: 6px; font-family: "JetBrains Mono", monospace; font-size: 0.7rem; color: var(--teal-pale); }
+.honeypot { position: absolute !important; left: -9999px !important; width: 1px !important; height: 1px !important; opacity: 0 !important; }
+.form-captcha { background: rgba(229, 82, 52, 0.05); border: 1px solid var(--line); padding: 18px; margin-bottom: 22px; }
+.form-captcha .q { font-family: "Shippori Mincho B1", serif; font-weight: 600; font-size: 0.95rem; color: var(--coral-soft); margin-bottom: 10px; }
+.form-captcha input { width: 120px; padding: 10px 14px; background: var(--ink-deep); border: 1px solid var(--line); color: var(--cream); font-family: "Fraunces", serif; font-size: 1.2rem; text-align: center; }
+.submit-btn { display: inline-flex; align-items: center; gap: 12px; padding: 16px 36px; background: var(--coral); color: var(--cream); border: none; font-family: "Shippori Mincho B1", serif; font-weight: 700; font-size: 1.05rem; cursor: pointer; transition: all 0.25s; }
+.submit-btn:hover { background: var(--coral-soft); transform: translateY(-2px); }
+.submit-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.form-message { padding: 18px 22px; margin-bottom: 24px; border-radius: 4px; display: none; }
+.form-message.show { display: block; }
+.form-message.success { background: rgba(107, 193, 120, 0.1); border: 1px solid var(--ok); color: var(--ok); }
+.form-message.error { background: rgba(229, 82, 52, 0.1); border: 1px solid var(--coral); color: var(--coral); }
+.form-message h3 { font-family: "Shippori Mincho B1", serif; margin-bottom: 8px; }
+
+/* ==========================================================
+   FOOTER
+   ========================================================== */
+footer {
+  padding: 50px 36px 32px;
+  background: var(--ink-deep);
+  text-align: center;
+}
+footer .logo { justify-content: center; margin-bottom: 14px; }
+footer .footer-links { display: flex; justify-content: center; gap: 24px; margin-bottom: 22px; flex-wrap: wrap; }
+footer .footer-links a { color: var(--cream-soft); text-decoration: none; font-family: "Shippori Mincho B1", serif; font-size: 0.9rem; transition: color 0.2s; }
+footer .footer-links a:hover { color: var(--coral); }
+footer .attr { font-family: "JetBrains Mono", monospace; font-size: 0.68rem; letter-spacing: 0.15em; color: var(--teal-pale); margin-bottom: 8px; }
+footer .attr a { color: var(--coral-soft); text-decoration: none; }
+
+
+/* ============ 海天気.jp リンクカード ============ */
+.umitenki-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px 26px;
+  margin-top: 24px;
+  max-width: 760px;
+  background: linear-gradient(135deg, rgba(45,100,112,0.25), rgba(11,29,42,0.8));
+  border: 1px solid var(--teal-pale);
+  border-left: 4px solid var(--coral);
+  text-decoration: none !important;
+  color: var(--cream) !important;
+  transition: all 0.3s;
+}
+.umitenki-card:hover {
+  border-color: var(--coral);
+  border-left-color: var(--coral);
+  background: linear-gradient(135deg, rgba(229,82,52,0.12), rgba(11,29,42,0.8));
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(229,82,52,0.2);
+}
+.umi-left { display: flex; align-items: center; gap: 18px; flex: 1; }
+.umi-icon { font-size: 2.4rem; flex-shrink: 0; }
+.umi-info { flex: 1; }
+.umi-title {
+  font-family: "Shippori Mincho B1", serif;
+  font-weight: 700; font-size: 1.1rem;
+  color: var(--cream) !important;
+  margin-bottom: 8px;
+}
+.umi-tags {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.umi-tags span {
+  font-family: "Shippori Mincho B1", serif;
+  font-size: 0.72rem;
+  padding: 3px 10px;
+  background: rgba(45,100,112,0.3);
+  border: 1px solid var(--teal-pale);
+  color: var(--cream-soft) !important;
+  border-radius: 2px;
+}
+.umi-desc {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.68rem;
+  color: var(--teal-pale) !important;
+  letter-spacing: 0.08em;
+}
+.umi-btn {
+  font-family: "Shippori Mincho B1", serif;
+  font-weight: 700; font-size: 0.88rem;
+  padding: 12px 20px;
+  background: var(--coral);
+  color: white !important;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+.umitenki-card:hover .umi-btn { background: var(--coral-soft); }
+
+@media (max-width: 900px) {
+  .umitenki-card { flex-direction: column; align-items: flex-start; }
+  .umi-btn { width: 100%; text-align: center; }
+}
+
+/* ============ グローバルリンク色修正（青文字防止） ============ */
+a { color: inherit; text-decoration: none; }
+a:hover { color: inherit; }
+.cam-link, .cam-link:visited,
+.spot-mini, .spot-mini:visited,
+.best-spot-card, .best-spot-card:visited,
+.top3-item, .top3-item:visited,
+.floating-line, .floating-line:visited,
+.umitenki-card, .umitenki-card:visited { color: var(--cream) !important; }
+
+/* ============ 気象庁潮位リンクカード ============ */
+.tide-link-card {
+  display: flex; align-items: center; gap: 20px;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, rgba(45,100,112,0.2), rgba(11,29,42,0.5));
+  border: 1px solid var(--teal-pale);
+  text-decoration: none; color: var(--cream);
+  transition: all 0.25s; margin-top: 20px; max-width: 600px;
+}
+.tide-link-card:hover {
+  border-color: var(--coral);
+  background: linear-gradient(135deg, rgba(229,82,52,0.1), rgba(11,29,42,0.5));
+  transform: translateX(4px);
+}
+.tide-link-card .tide-ico { font-size: 2.2rem; flex-shrink: 0; }
+.tide-link-card .tide-info { flex: 1; }
+.tide-link-card .tide-title {
+  font-family: "Shippori Mincho B1", serif; font-weight: 700;
+  font-size: 1rem; margin-bottom: 4px;
+}
+.tide-link-card .tide-desc {
+  font-family: "JetBrains Mono", monospace; font-size: 0.72rem;
+  color: var(--teal-pale); letter-spacing: 0.08em;
+}
+.tide-link-card .tide-arr {
+  font-family: "Fraunces", serif; font-size: 1.4rem;
+  color: var(--teal-pale); transition: all 0.25s;
+}
+.tide-link-card:hover .tide-arr { color: var(--coral); transform: translateX(6px); }
+
+/* ==========================================================
+   RESPONSIVE
+   ========================================================== */
+
+/* タブレット */
+@media (max-width: 1100px) {
+  .all-spots-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* スマホ */
+@media (max-width: 900px) {
+  /* ナビ切替: PCナビ非表示 → ハンバーガー表示 */
+  .nav-pc   { display: none !important; }
+  .hamburger{ display: flex !important; }
+  .tag-live { display: none; }
+
+  /* パディング */
+  .top-bar    { padding: 14px 18px; }
+  .top-strip  { padding: 10px 18px; flex-direction: column; gap: 8px; align-items: flex-start; }
+  .verdict-banner { padding: 30px 18px; }
+  .spot-hero  { padding: 36px 18px 44px; }
+  .context-call { padding: 20px 18px; grid-template-columns: 1fr; gap: 10px; }
+  .section    { padding: 50px 18px; }
+  .seo-intro  { padding: 50px 18px; }
+  .top-hero   { padding: 60px 18px 40px; }
+  .best-spot-section  { padding: 40px 18px; }
+  .all-spots-section  { padding: 50px 18px; }
+  footer      { padding: 40px 18px 28px; }
+
+  /* レイアウト変更 */
+  .spot-hero-grid   { grid-template-columns: 1fr; gap: 32px; }
+  .profile-grid     { grid-template-columns: 1fr; gap: 28px; }
+  .profile-list li  { grid-template-columns: 1fr; gap: 4px; }
+  .all-spots-grid   { grid-template-columns: 1fr; }
+  .verdict-score-row{ flex-direction: column; gap: 8px; align-items: center; }
+  .update-info      { flex-wrap: wrap; }
+
+  /* LINE Banner */
+  .line-banner { margin: 0 18px; padding: 24px 20px; }
+  .line-banner .content { grid-template-columns: 1fr; gap: 18px; }
+  .line-banner h2 { font-size: 1.4rem; }
+
+  /* Contact */
+  .contact-cta  { margin: 30px 18px 0; padding: 24px 18px; }
+  .form-wrap    { padding: 30px 18px; }
+  .contact-form { padding: 20px 16px; }
+
+  /* Hourly */
+  .hourly-rows { grid-template-columns: 90px repeat(12, minmax(46px, 1fr)); }
+  .weekly-table th,
+  .weekly-table td  { padding: 10px 8px; font-size: 0.8rem; }
+
+  /* Floating LINE */
+  .floating-line { bottom: 14px; right: 14px; padding: 13px 18px; gap: 10px; }
+  .fl-icon  { width: 32px; height: 32px; font-size: 1.2rem; }
+  .fl-label { font-size: 1rem; }
+  .fl-sub   { font-size: 0.65rem; }
+
+  /* Best spot card */
+  .best-spot-card { padding: 28px 20px; }
+  .best-spot-card .stats-row { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+}
+
+@media (max-width: 500px) {
+  .all-spots-grid { grid-template-columns: 1fr; }
+}
+
+
+/* ==========================================================
+   v3 PATCH: PCナビ9ポイント表示・ブログ2列タイトルカード・明日の予想ラベル
+   ========================================================== */
+@media (min-width: 901px) {
+  .top-bar { padding: 16px 26px; gap: 16px; }
+  .nav-pc { gap: 10px; flex: 1; justify-content: center; min-width: 0; }
+  .nav-pc a { font-size: 0.78rem; letter-spacing: 0.02em; white-space: nowrap; gap: 4px; }
+  .nav-pc a i { font-size: 0.68rem; }
+  .tag-live { flex-shrink: 0; }
+}
+@media (min-width: 901px) and (max-width: 1180px) {
+  .logo .en { display: none; }
+  .nav-pc { gap: 8px; }
+  .nav-pc a { font-size: 0.72rem; }
+}
+.latest-blog-title-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  max-width: 980px;
+}
+.latest-blog-title-card {
+  display: block;
+  border: 1px solid var(--line);
+  background: rgba(11,29,42,0.65);
+  padding: 18px 20px;
+  color: var(--cream) !important;
+  text-decoration: none;
+  transition: all .2s;
+  min-height: 104px;
+}
+.latest-blog-title-card:hover {
+  border-color: var(--coral);
+  background: rgba(229,82,52,.06);
+  transform: translateY(-2px);
+}
+.latest-blog-title-card h3 {
+  font-family: "Shippori Mincho B1", serif;
+  font-size: .98rem;
+  line-height: 1.65;
+  font-weight: 700;
+  margin: 8px 0 0;
+  color: var(--cream);
+}
+.latest-blog-cat {
+  display: inline-block;
+  font-family: "JetBrains Mono", monospace;
+  font-size: .62rem;
+  letter-spacing: .12em;
+  color: var(--coral-soft);
+  border: 1px solid var(--coral);
+  padding: 2px 8px;
+}
+.latest-blog-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 32px;
+  color: var(--teal-pale);
+  border: 1px solid var(--line);
+}
+@media (max-width: 700px) {
+  .latest-blog-title-grid { grid-template-columns: 1fr; }
+  .latest-blog-title-card { min-height: auto; }
+}
+
+
+/* ==========================================================
+   v4 PATCH: 余白・メイン予想カード・ブログカード改善
+   ========================================================== */
+.main-forecast-section,
+.all-spots-section,
+.seo-intro,
+.section,
+.best-spot-section {
+  padding-left: clamp(18px, 5vw, 64px);
+  padding-right: clamp(18px, 5vw, 64px);
+}
+.main-forecast-section > .section-title,
+.main-forecast-card,
+.latest-blog-title-grid,
+#latestBlogGrid,
+.section > .section-title,
+.section > p,
+.all-spots-grid,
+.best-spot-card,
+.seo-intro > * {
+  max-width: 1120px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.main-forecast-section {
+  padding-top: 46px;
+  padding-bottom: 54px;
+}
+.main-forecast-section .section-title {
+  margin-bottom: 24px;
+}
+.main-forecast-lead { display: none; }
+.main-forecast-card {
+  grid-template-columns: minmax(260px, 38%) 1fr;
+  min-height: 236px;
+  border-color: rgba(242,234,217,0.22);
+  box-shadow: 0 10px 36px rgba(0,0,0,0.14);
+}
+.main-forecast-thumb,
+.main-forecast-thumb img {
+  min-height: 236px;
+}
+.main-forecast-body {
+  padding: clamp(24px, 3.4vw, 40px);
+}
+.main-forecast-meta {
+  display: inline-flex;
+  width: fit-content;
+  color: var(--coral-soft);
+  border: 1px solid rgba(229,82,52,0.55);
+  padding: 4px 10px;
+  margin-bottom: 16px;
+  background: rgba(229,82,52,0.06);
+}
+.main-forecast-body h3 {
+  font-size: clamp(1.35rem, 2.35vw, 2.05rem);
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+.main-forecast-body p {
+  font-size: 0.86rem;
+  line-height: 1.75;
+  max-width: 680px;
+}
+.main-forecast-link {
+  margin-top: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.latest-blog-title-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.latest-blog-title-card {
+  position: relative;
+  min-height: 126px;
+  padding: 20px 22px 18px;
+  border-color: rgba(242,234,217,0.2);
+  background: linear-gradient(135deg, rgba(11,29,42,0.85), rgba(45,100,112,0.10));
+}
+.latest-blog-title-card::after {
+  content: "記事を見る →";
+  display: block;
+  margin-top: 12px;
+  color: var(--coral-soft);
+  font-family: "Shippori Mincho B1", serif;
+  font-size: 0.78rem;
+}
+.latest-blog-title-card h3 {
+  font-size: 1.02rem;
+  line-height: 1.7;
+  margin-top: 10px;
+}
+.latest-blog-cat {
+  font-size: 0.6rem;
+}
+@media (max-width: 900px) {
+  .main-forecast-card { grid-template-columns: 1fr; }
+  .main-forecast-thumb,
+  .main-forecast-thumb img { min-height: 190px; }
+  .latest-blog-title-grid { grid-template-columns: 1fr; }
+  .latest-blog-title-card { min-height: auto; }
+}
+
+/* =============================================
+   現地波レポート（wave-report）共通CSS
+   isonoura / kounohama / ikumi / komatsu 等で使用
+   ============================================= */
+.wave-report-box{max-width:1200px;margin:0 auto;padding:28px;border-radius:18px;background:rgba(255,255,255,0.045);border:1px solid rgba(255,255,255,0.10);box-shadow:0 12px 35px rgba(0,0,0,0.18)}
+.wave-report-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:18px}
+.wave-report-head p{margin:6px 0 0;color:var(--cream-soft,#c8c0b0);font-size:0.9rem;line-height:1.7}
+.wave-report-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.wave-report-card{display:block;overflow:hidden;border-radius:14px;background:rgba(0,0,0,0.18);border:1px solid rgba(255,255,255,0.08);color:inherit;text-decoration:none}
+.wave-report-media{width:100%;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.wave-report-media video,.wave-report-media img{width:100%;height:auto;max-height:360px;object-fit:cover;display:block}
+.wave-report-body{padding:12px 14px 15px}
+.wave-report-meta{display:flex;justify-content:space-between;gap:10px;color:var(--teal-pale,#7ecac3);font-size:0.75rem;margin-bottom:7px}
+.wave-report-title{margin:0 0 6px;color:var(--cream,#f5f0e8);font-size:0.95rem;font-weight:700}
+.wave-report-comment{margin:0;color:var(--cream-soft,#c8c0b0);font-size:0.82rem;line-height:1.6}
+.wave-report-empty{text-align:center;color:var(--cream-soft,#c8c0b0);padding:24px 10px;border:1px dashed rgba(255,255,255,0.16);border-radius:14px;line-height:1.8}
+@media(max-width:900px){.wave-report-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.wave-report-box{padding:20px}.wave-report-head{display:block}.wave-report-grid{grid-template-columns:1fr}}
+
+/* LINE現地波レポート：空表示の余白調整 */
+.wave-report-empty {
+  grid-column: 1 / -1;
+  padding: 18px 14px;
+  min-height: auto !important;
+  height: auto !important;
+  line-height: 1.6;
+}
+/* 空の時にグレー部分が大きくならないように */
+.wave-report-grid {
+  min-height: auto !important;
+  align-items: start;
+}
+/* セクション全体の余白を抑える */
+.wave-report-box {
+  padding-bottom: 18px;
+}
