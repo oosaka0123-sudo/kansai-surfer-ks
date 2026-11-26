@@ -33,7 +33,7 @@ jobs:
       - name: Checkout exact reviewed commit (never deploy main)
         uses: actions/checkout@v4
         with:
-          ref: c32d3c69effdbad4ae9d796a042474e223a90aa2
+          ref: ebfccb335dd1e90c0ed78c8c984402b77f46e2db
           fetch-depth: 0
           persist-credentials: false
 
@@ -44,7 +44,7 @@ jobs:
           test "$GITHUB_REF" = 'refs/heads/ops/shizunami-full-release-20261126'
           test "$FTP_HOST" = 'ftp.lolipop.jp' && test "$FTP_ROOT" = '/kansai'
           test "$SITE" = 'https://kansai.rss7.net'
-          test "$(git rev-parse HEAD)" = 'c32d3c69effdbad4ae9d796a042474e223a90aa2'
+          test "$(git rev-parse HEAD)" = 'ebfccb335dd1e90c0ed78c8c984402b77f46e2db'
           test "$(sha256sum shizunami.html | cut -d' ' -f1)" = "$NEW_HTML"
           test "$(sha256sum shizunami-hourly/index.html | cut -d' ' -f1)" = "$SHA_INDEX"
           test "$(sha256sum shizunami-hourly/styles.css | cut -d' ' -f1)" = "$SHA_CSS"
