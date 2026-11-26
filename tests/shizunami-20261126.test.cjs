@@ -18,7 +18,7 @@ test('ten-day aggregation excludes nighttime outliers and matches same-hour data
 test('ten-day missing directions or fewer than seven synchronized observations produce no rating',()=>{let [m,w]=fixture();m.hourly.wave_direction.fill(null);assert(rowsOf(m,w).every(r=>r.judgment===null));[m,w]=fixture();w.hourly.time=w.hourly.time.map(t=>t.replace(/T(\d\d):00$/,'T$1:30'));assert(rowsOf(m,w).every(r=>r.judgment===null));});
 test('ten-day absent data remains blank without invented wave or wind',()=>{const r=rowsOf(null,null);assert.equal(r.length,10);assert(r.every(d=>d.min===null&&d.max===null&&d.speed===null&&d.judgment===null));});
 
-const spotId=process.cwd().split(/[\\/]/).pop().match(/ks-(.+)-overhaul-20261126/)[1];
+const spotId='shizunami';
 const stationCode={shizunami:'OM',hamadutu:'T6',takahama:'MZ',hakuto:'ZE'}[spotId];
 const adapter=fs.readFileSync(spotId+'-hourly/adapter.js','utf8');
 const tideYear=JSON.parse(fs.readFileSync(spotId+'-hourly/data/'+stationCode+'-2026.json'));
