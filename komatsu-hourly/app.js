@@ -19,7 +19,7 @@ const grid=root.querySelector("[data-grid]");
 const scroll=root.querySelector("[data-scroll]"),chartScroll=root.querySelector("[data-chart-scroll]"),chartInner=root.querySelector("[data-chart-inner]"),chart=root.querySelector("[data-chart]");
 const chartEmpty=root.querySelector("[data-chart-empty]"),state=root.querySelector("[data-state]");
 const compactTest=root.dataset.compactTest==="1";
-let compactDay=0,compactSelected=null;
+let compactDay=0,compactSelected=null,compactClockDate=null,compactPreserveScroll=false;
 const waveLabel=root.querySelector("[data-wave-label]"),notice=document.querySelector("[data-forecast-note]");
 const observationBox=root.querySelector("[data-observation]");
 
@@ -100,6 +100,7 @@ function addCell(fragment,className,html,current=false,ariaCurrent=false){
 function connectionLabel(){
   if(source.status==="model_plus_verified_observation")return"モデル＋検証済み実波";
   if(source.status==="model_only")return"モデル予報";
+  if(source.status==="model_unavailable")return"波・風データ取得不可（潮位・降水量は取得分を表示）";
   return getSlots().some(s=>!s.placeholder)?"公開データ接続":"データ未接続";
 }
 
@@ -114,7 +115,6 @@ function compactSlots(){
     const hour=Number(getJst(d).hour);
     return hour>=4&&hour<=20;
   });
-  if(compactDay!==0)return available;
   const byHour=new Map(available.map(s=>[Number(getJst(slotDate(s)).hour),s]));
   return Array.from({length:17},(_,i)=>{
     const hour=i+4;
@@ -183,7 +183,7 @@ function renderCompactGrid(){
   });
   grid.appendChild(frag);
   renderCompactChart(slots,selected);renderCompactExtras(slots,selected);state.textContent=connectionLabel();
-  const targetLeft=first ? (compactDay===0 ? Math.max(0,(selected-2)*getColWidth()) : 0) : prevLeft;
+  const targetLeft=compactPreserveScroll?prevLeft:first ? (compactDay===0 ? Math.max(0,(selected-2)*getColWidth()) : 0) : prevLeft;
   requestAnimationFrame(()=>syncCompactScroll(targetLeft));
 }
 function renderCompactChart(slots,selected){
@@ -191,11 +191,12 @@ function renderCompactChart(slots,selected){
   const waves=slots.map(s=>numeric(s.wave_height_m??s.model_wave_height_m??s.wave?.height_m));
   const winds=slots.map(s=>numeric(s.wind_speed_ms??s.wind?.speed_ms));
   const hasWave=waves.some(Number.isFinite),hasWind=winds.some(Number.isFinite);
-  chartEmpty.hidden=hasWave||hasWind;if(!hasWave&&!hasWind)return;
+  chartEmpty.hidden=hasWave||hasWind;
   const col=getColWidth(),label=getLabelWidth(),width=Math.max(label+slots.length*col,(chartScroll?.clientWidth||320)),height=190,top=42,bottom=184,usable=bottom-top;
   chart.setAttribute("viewBox","0 0 "+width+" "+height);
   chart.setAttribute("width",String(width));chart.setAttribute("height",String(height));
   if(chartInner)chartInner.style.width=width+"px";
+  if(!hasWave&&!hasWind)return;
   const x=i=>label+i*col+col/2;
   const add=(tag,attrs,content)=>{
     const el=document.createElementNS(ns,tag);
@@ -422,6 +423,13 @@ function syncCompactScroll(requested){
 if(compactTest){
   for(const el of [scroll,chartScroll,rainScroll].filter(Boolean)){
     el.addEventListener("scroll",()=>{if(!compactSyncInFlight)syncCompactScroll(el.scrollLeft);},{passive:true});
+    el.addEventListener("keydown",event=>{
+      if(event.target!==el||!["ArrowLeft","ArrowRight","Home","End"].includes(event.key)||event.altKey||event.ctrlKey||event.metaKey)return;
+      const slots=compactSlots();if(!slots.length)return;event.preventDefault();
+      const current=compactSelected===null?(compactDay===0?Math.max(0,currentIndex(slots)):0):compactSelected;
+      compactSelected=event.key==="Home"?0:event.key==="End"?slots.length-1:Math.max(0,Math.min(slots.length-1,current+(event.key==="ArrowRight"?1:-1)));
+      renderGrid();requestAnimationFrame(()=>syncCompactScroll(Math.max(0,(compactSelected-2)*getColWidth())));
+    });
   }
   root.querySelectorAll("[data-compact-day]").forEach(b=>b.addEventListener("click",()=>{
     compactDay=Number(b.dataset.compactDay);compactSelected=null;
@@ -537,13 +545,14 @@ loadSource().then(data=>{
   panel.setAttribute("aria-busy","false");
   selectMode();renderDaily();
   // Keep the pulsing current-time marker aligned to the clock without a page reload.
-  if(compactTest)setInterval(()=>{
-    if(compactDay!==0)return;
-    const slots=compactSlots();
-    if(!slots.length)return;
-    const selected=compactSelected===null?Math.max(0,currentIndex(slots)):
-      Math.min(slots.length-1,Math.max(0,compactSelected));
-    renderCompactExtras(slots,selected);
+  if(compactTest)compactClockDate=dateKey(new Date());setInterval(()=>{
+    const nowDate=dateKey(new Date());
+    const changed=compactClockDate!==null&&compactClockDate!==nowDate;
+    compactClockDate=nowDate;
+    if(changed)compactSelected=null;
+    if(compactDay!==0&&!changed)return;
+    compactPreserveScroll=!changed;
+    try{renderGrid();}finally{compactPreserveScroll=false;}
   },60000);
 });
 })();

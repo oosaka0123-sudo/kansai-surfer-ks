@@ -31,11 +31,12 @@
   const findIndex = obj => new Map(Array.isArray(obj?.hourly?.time) ? obj.hourly.time.map((time,i)=>[timeKey(time),i]) : []);
   const take = (obj, prop, idx) => idx !== undefined && Array.isArray(obj?.hourly?.[prop]) ? nullNum(obj.hourly[prop][idx]) : null;
   const fromSource = (source, precipitation) => {
-    if (!source?.marine?.hourly?.time || !source?.weather?.hourly?.time) throw new Error("KS forecast JSON missing marine/weather hourly");
-    const marine = source.marine, weather = source.weather;
+    const marine = source?.marine, weather = source?.weather;
     const wIndex = findIndex(weather), pIndex = findIndex(precipitation);
-    const hourly = marine.hourly.time.map((time,mi) => {
-      const key=timeKey(time), wi=wIndex.get(key),pi=pIndex.get(key);
+    const mIndex = findIndex(marine);
+    const keys = Array.from({length:72},(_,n)=>dateJst(Math.floor(n/24))+"T"+String(n%24).padStart(2,"0")+":00");
+    const hourly = keys.map(key => {
+      const mi=mIndex.get(key), wi=wIndex.get(key), pi=pIndex.get(key);
       const dir=take(weather,"wind_direction_10m",wi), code=take(weather,"weather_code",wi);
       const modelWave=take(marine,"wave_height",mi);
       // Open-Meteo times are explicitly JST; do not interpret them as UTC.
@@ -52,11 +53,11 @@
       };
     });
     return {
-      status:"model_only",
+      status:source?"model_only":"model_unavailable",
       spot:{name:"小松海岸",id:"komatsu"},
       wave_metric_label:"沖合モデル波高",
       model_notice:"Open-Meteoの沖合モデル波高です。小松海岸で実際に割れる波の高さ・サイズではありません。",
-      updated_at:source.updated_at || null,
+      updated_at:source?.updated_at || null,
       hourly,
       tide:{station:"小松島",station_id:"KM",datum:"気象庁潮位表基準面",unit:"cm",days:[]}
     };
@@ -86,13 +87,13 @@
   }
   async function loadKomatsushima() {
     const years=[...new Set([0,1,2].map(offset=>dateJst(offset).slice(0,4)))];
-    const results=await Promise.all(years.map(async year=>{
+    const results=await Promise.allSettled(years.map(async year=>{
       if(!["2026","2027"].includes(year))return [];
       const raw=await fetchJSON("./data/KM-"+year+".json",12000);
       if(raw.station_id!=="KM"||raw.unit!=="cm"||raw.datum!=="気象庁潮位表基準面"||raw.observation!==false||!Array.isArray(raw.days))throw new Error("Tide station provenance mismatch");
       return raw.days;
     }));
-    return results.flat();
+    return results.flatMap(result=>result.status==="fulfilled"?result.value:[]);
   }
   try {
     if(state)state.textContent="予報読み込み中";
@@ -101,14 +102,19 @@
       rainData(),
       loadKomatsushima()
     ]);
-    if(modelResult.status!=="fulfilled")throw modelResult.reason;
-    const payload=fromSource(modelResult.value,rainResult.status==="fulfilled"?rainResult.value:null);
+    const candidate=modelResult.status==="fulfilled"?modelResult.value:null;
+    const stamp=candidate?.updated_at;
+    const at=typeof stamp==="string"?Date.parse(stamp.replace(" ","T")+"+09:00"):NaN;
+    const age=Date.now()-at;
+    const fresh=candidate?.spot==="komatsu" && Array.isArray(candidate?.marine?.hourly?.time) && Array.isArray(candidate?.weather?.hourly?.time) && Number.isFinite(age) && age>=-300000 && age<86400000;
+    const payload=fromSource(fresh?candidate:null,rainResult.status==="fulfilled"?rainResult.value:null);
+    if(!fresh)console.warn("Hourly wave/wind unavailable or stale; independent tide/rain retained");
     if(tideResult.status==="fulfilled")payload.tide.days=tideResult.value;
     else console.warn("JMA Komatsushima tide unavailable; showing missing markers",tideResult.reason);
     if(rainResult.status!=="fulfilled")console.warn("Rain model unavailable; missing values remain blank",rainResult.reason);
     window.KANTO_FORECAST_DATA=payload;
     const script=document.createElement("script");
-    script.src="./app.js?v=20261125-1";
+    script.src="./app.js?v=20261126-3";
     script.onerror=()=>{if(state)state.textContent="グラフ読み込みに失敗しました";};
     document.body.appendChild(script);
   } catch(error) {
