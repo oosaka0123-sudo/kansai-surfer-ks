@@ -33,7 +33,7 @@ jobs:
       - name: Checkout exact reviewed commit (never deploy main)
         uses: actions/checkout@v4
         with:
-          ref: ec5e37db74efb958cd668c578b144badd805355c
+          ref: af2242c39f4937ecb200da8de4d3e97997585051
           fetch-depth: 0
           persist-credentials: false
 
@@ -44,7 +44,7 @@ jobs:
           test "$GITHUB_REF" = 'refs/heads/ops/takahama-full-release-20261126'
           test "$FTP_HOST" = 'ftp.lolipop.jp' && test "$FTP_ROOT" = '/kansai'
           test "$SITE" = 'https://kansai.rss7.net'
-          test "$(git rev-parse HEAD)" = 'ec5e37db74efb958cd668c578b144badd805355c'
+          test "$(git rev-parse HEAD)" = 'af2242c39f4937ecb200da8de4d3e97997585051'
           test "$(sha256sum takahama.html | cut -d' ' -f1)" = "$NEW_HTML"
           test "$(sha256sum takahama-hourly/index.html | cut -d' ' -f1)" = "$SHA_INDEX"
           test "$(sha256sum takahama-hourly/styles.css | cut -d' ' -f1)" = "$SHA_CSS"
