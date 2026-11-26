@@ -99,3 +99,19 @@ This preview path is intentionally separate from a future audited full-site depl
 ## Repository policy
 
 Do not add FTP `.env` example files merely to mirror GitHub secret configuration. Keep secret values in GitHub secret storage and keep verified non-secret target configuration in reviewed workflow/docs files.
+
+## Nine-spot maintenance (current production-equivalent scope)
+
+Use current main for the nine spot pages; the rest of the site is still a partial migration. Keep manual, explicitly scoped production deployment. Never use generic whole-site deployment to publish these pages: a broad exclusion of data directories would omit the dedicated hourly tide JSON files.
+
+The manifest at docs/nine-spot-unification-release-manifest.json lists all 65 spot files and their current SHA256 in the second element of each pair. The first element describes the previous release baseline. Validate against Git blob bytes (not Windows working-tree CRLF bytes). The shared nami_common.js digest is recorded separately for read-only verification; do not import or overwrite that shared file as part of this scope.
+
+Run the 15 named regression files in tests (105 tests at the November 2026 baseline):
+
+    node --test tests/isonoura-consistency.test.cjs tests/isonoura-unify-20261126.test.cjs tests/kounohama-20261125.test.cjs tests/kounohama-unify-20261126.test.cjs tests/ikumi-20261126.test.cjs tests/ikumi-unify-20261126.test.cjs tests/komatsu-20261126.test.cjs tests/komatsu-unify-20261126.test.cjs tests/irago-20261126.test.cjs tests/irago-unify-20261126.test.cjs tests/shizunami-20261126.test.cjs tests/hamadutu-20261126.test.cjs tests/takahama-20261126.test.cjs tests/hakuto-20261126.test.cjs tests/nine-spot-final-regression.test.cjs
+
+For live verification run node scripts/audit-nine-spot-release.cjs from a clean main checkout. This is read-only: no FTP, no credential access, no production writes.
+
+Before a later release, explicitly confirm destination and current source, back up all files that will change, verify existing HTTPS and FTPS bytes, upload only the scoped assets and page, confirm all new hashes and real browser behavior, and retain a rollback copy. Update the manifest for any changed file. Historical successful guarded release recipes are on the ops branches linked from PR #163. Do not rerun old recipes as their hashes and source commits are pinned to the previous release. Existing general production credentials/settings and workflow triggers must not be changed without a separate task.
+
+Protect the spot-specific forecast coordinates, wind/swell rules, JMA station metadata, Isonoura beach-wave estimator, and Takahama D-audit input (35.65,135.45 marine; 35.49133,135.55782 weather). Tide JSON is astronomical prediction, not beach observation. At the end of each year, check the next year's official JMA tide tables. Missing data must remain unavailable; never fabricate a forecast.
