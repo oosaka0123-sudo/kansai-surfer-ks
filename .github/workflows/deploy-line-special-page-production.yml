@@ -33,7 +33,7 @@ jobs:
       - name: Checkout exact reviewed commit (never deploy main)
         uses: actions/checkout@v4
         with:
-          ref: e27e774ae12b999c2a7105ecadffd00b474c7683
+          ref: 53bd8fc66bbe8719718ea8f48a93a07aecd341cf
           fetch-depth: 0
           persist-credentials: false
 
@@ -44,7 +44,7 @@ jobs:
           test "$GITHUB_REF" = 'refs/heads/ops/hamadutu-full-release-20261126'
           test "$FTP_HOST" = 'ftp.lolipop.jp' && test "$FTP_ROOT" = '/kansai'
           test "$SITE" = 'https://kansai.rss7.net'
-          test "$(git rev-parse HEAD)" = 'e27e774ae12b999c2a7105ecadffd00b474c7683'
+          test "$(git rev-parse HEAD)" = '53bd8fc66bbe8719718ea8f48a93a07aecd341cf'
           test "$(sha256sum hamadutu.html | cut -d' ' -f1)" = "$NEW_HTML"
           test "$(sha256sum hamadutu-hourly/index.html | cut -d' ' -f1)" = "$SHA_INDEX"
           test "$(sha256sum hamadutu-hourly/styles.css | cut -d' ' -f1)" = "$SHA_CSS"
