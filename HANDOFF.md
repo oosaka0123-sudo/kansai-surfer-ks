@@ -1,5 +1,20 @@
 # Kansai Surfer KS - Current Handoff
 
+Updated: 2026-11-26 JST
+
+## Current nine-spot production baseline (completed)
+
+- The nine individual forecast pages are deployed and reconciled in main via PR #163, merge ffcfbdb1d1209a75a6078c802857d57a68af45b1.
+- Production scope: isonoura, kounohama, ikumi, komatsu, irago, shizunami, hamadutu, takahama, hakuto; 65 dedicated files verified byte-for-byte; shared nami_common.js unchanged.
+- For future spot maintenance use the CURRENT main and the versioned manifest, not old feature PRs or preview snapshots.
+- Read docs/PRODUCTION_DEPLOY.md (Nine-spot maintenance) before touching production. Do not trigger generic whole-site uploads; the repository remains a partial migration of the entire site.
+- Keep the ongoing Takahama coordinate audit (Issue #131), cron, ranking, and home page separate; these were not changed by this release.
+- Codex final targeted re-review verified the four prior findings fixed and 11/11 targeted tests. Other provider re-review not confirmed. Do not describe unavailable reviews as completed.
+- Previous per-spot PRs #156–162 are superseded; source branches and review history retained. Older proposals with unrelated/missing paths require individual reconciliation.
+
+## Historical Top + Isonoura redesign handoff (October 2026)
+
+The section below is retained as historical evidence for the separate redesign workstream. It is NOT the restart target for nine-spot maintenance, and its old PR or preview must not overwrite current production.
 Updated: 2026-10-07 18:50 JST
 
 ## Restart first
