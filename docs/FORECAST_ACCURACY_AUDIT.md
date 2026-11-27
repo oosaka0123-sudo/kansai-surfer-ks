@@ -12,3 +12,12 @@ Observations input is an array, with spot, station_id, time_jst (YYYY-MM-DDTHH:0
 ## Scheduled capture
 
 GitHub Actions forecast-audit-capture runs daily at 10:30 UTC (19:30 JST), subject to GitHub scheduler delay. Manual dispatch is a separate sample, never a replacement for the evening run. Scheduled runs outside 19:30–22:00 JST fail rather than recording a mislabeled forecast. Every run has its own artifact (requested retention 90 days, subject to repository limits); partial captures are retained and the run fails visibly. Download records before expiry for long-term comparisons. No production deployment, secrets, paid AI, private or third-party data collection. Actual observations and station mapping remain separate. Exit 2 also indicates missing individual forecast fields.
+
+## Independent observed wind (AMeDAS)
+
+A separate audit reads the JMA public browser JSON (not a guaranteed API) once per station table and four nationwide hourly maps, 07–10 JST. Source: https://www.jma.go.jp/jma/kishou/info/coment.html and https://www.jma.go.jp/jma/kishou/know/amedas/kaisetsu.html . All nine fixed candidates are explicitly land-station proxies, not beach observations: Wakayama, Toba, Kaiyo, Tokushima, Irako, Omaezaki, Taiza, Obama, Tottori. Station IDs/names/coordinates and distance to the forecast grid are preserved. Only quality flag 0 is accepted; calm direction is unavailable, not north. Report speed bias/MAE and circular direction MAE separately from wave Hs. Do not tune surf conditions based only on land wind. No retries or bulk collection. Missing response stays missing.
+
+    node scripts/amedas-wind-audit.cjs capture OUTPUT.json YYYY-MM-DD
+    node scripts/amedas-wind-audit.cjs compare SNAPSHOT.json WIND_OBS.json
+
+NOWPHAS explicitly requests avoidance of periodic automated collection on the realtime site (https://nowphas.mlit.go.jp/info/). Use authorized historical downloads/import, not a crawler. JMA legacy coastal wave-meter observation ended March 2026 (https://www.data.jma.go.jp/kaiyou/shindan/index_wave.html); replacement model information is not independent Hs observation. Existing Takahama buoy audit #131 remains separate. BCM/Surfline reports are reference only; no automated collection or redistribution in this release.
