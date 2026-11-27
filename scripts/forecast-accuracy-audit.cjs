@@ -1,5 +1,5 @@
 'use strict';
-const fs=require('node:fs'),assert=require('node:assert/strict'),crypto=require('node:crypto');
+const fs=require('node:fs'),assert=require('node:assert/strict');
 const SPOTS=['isonoura','kounohama','ikumi','komatsu','irago','shizunami','hamadutu','takahama','hakuto'];
 const HOURS=[7,8,9,10];
 const dateJST=ms=>new Date(ms+9*3600000).toISOString().slice(0,10);
@@ -51,6 +51,6 @@ function compare(snap,observations,asOf=Date.now()){
  const groups={};for(const m of matches){const k=[m.spot,m.station,m.kind].join('|');(groups[k]??=[]).push(m)}
  return {valid_jst:snap.valid_jst,expected_forecast_hours:SPOTS.length*HOURS.length,matches,rejected,groups:Object.fromEntries(Object.entries(groups).map(([k,items])=>[k,{...metrics(items.map(x=>x.error_m)),matched_hours:new Set(items.map(x=>x.time)).size,expected_hours:4}]))};
 }
-async function cli(){const [mode,a,b]=process.argv.slice(2);if(mode==='capture'){assert(a,'output file required');const snap=await capture();fs.writeFileSync(a,JSON.stringify(snap,null,2)+'\n',{flag:'wx'});console.log(JSON.stringify({capture:snap.captured_at,valid:snap.valid_jst,spots:snap.rows.length,missing:snap.missing}));if(snap.missing.length)process.exitCode=2;}else if(mode==='compare'){assert(a&&b,'snapshot and observations files required');console.log(JSON.stringify(compare(JSON.parse(fs.readFileSync(a,'utf8')),JSON.parse(fs.readFileSync(b,'utf8'))),null,2));}else throw Error('capture OUTPUT.json | compare SNAPSHOT.json OBSERVATIONS.json');}
+async function cli(){const [mode,a,b]=process.argv.slice(2);if(mode==='capture'){assert(a,'output file required');const snap=await capture();fs.writeFileSync(a,JSON.stringify(snap,null,2)+'\n',{flag:'wx'});console.log(JSON.stringify({capture:snap.captured_at,valid:snap.valid_jst,spots:snap.rows.length,missing:snap.missing}));if(snap.missing.length||snap.rows.some(r=>r.values.some(v=>v.slice(1).includes(null))))process.exitCode=2;}else if(mode==='compare'){assert(a&&b,'snapshot and observations files required');console.log(JSON.stringify(compare(JSON.parse(fs.readFileSync(a,'utf8')),JSON.parse(fs.readFileSync(b,'utf8'))),null,2));}else throw Error('capture OUTPUT.json | compare SNAPSHOT.json OBSERVATIONS.json');}
 if(require.main===module)cli().catch(e=>{console.error(e.message);process.exitCode=1});
 module.exports={freezeRow,capture,compare,metrics,validateSnapshot};
