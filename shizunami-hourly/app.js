@@ -98,6 +98,7 @@ function addCell(fragment,className,html,current=false,ariaCurrent=false){
   if(ariaCurrent)div.setAttribute("aria-current","time");fragment.appendChild(div);
 }
 function connectionLabel(){
+  if(source.pending_sources?.length)return"予報取得中（取得済みデータを表示）";
   if(source.status==="model_plus_verified_observation")return"モデル＋検証済み実波";
   if(source.status==="model_only")return"モデル予報";
   if(source.status==="model_unavailable")return"波・風データ取得不可（潮位・降水量は取得分を表示）";
@@ -537,13 +538,23 @@ panel.setAttribute("aria-busy","true");
 selectMode();
 state.textContent="読み込み中";
 loadSource().then(data=>{
-  source=data&&typeof data==="object"?data:{};
+  source=window.KANTO_FORECAST_DATA||data||{};
   if(waveLabel)waveLabel.textContent=`${source.wave_metric_label||"モデル波高"}(m)`;
   if(notice&&source.model_notice)notice.textContent=source.model_notice;
   renderObservation();
   const spotName=document.querySelector("[data-spot-name]");if(spotName&&source.spot?.name)spotName.textContent=source.spot.name;
   panel.setAttribute("aria-busy","false");
   selectMode();renderDaily();
+  function applySource(next){
+    if(!next||typeof next!=="object"||source===next)return;
+    source=next;
+    if(waveLabel)waveLabel.textContent=`${source.wave_metric_label||"モデル波高"}(m)`;
+    if(notice&&source.model_notice)notice.textContent=source.model_notice;
+    compactPreserveScroll=true;
+    try{renderObservation();renderGrid();renderDaily();}finally{compactPreserveScroll=false;}
+  }
+  window.ksHourlySourceChanged=applySource;
+  applySource(window.KANTO_FORECAST_DATA);
   // Keep the pulsing current-time marker aligned to the clock without a page reload.
   let lastReload=Date.now(),reloading=false;
   async function refreshData(){
@@ -551,11 +562,7 @@ loadSource().then(data=>{
     reloading=true;
     try{
       const next=await window.ksRefreshHourlyForecast();
-      if(next&&typeof next==="object"){
-        source=next;lastReload=Date.now();
-        compactPreserveScroll=true;
-        try{renderObservation();renderGrid();renderDaily();}finally{compactPreserveScroll=false;}
-      }
+      if(next&&typeof next==="object"){applySource(next);lastReload=Date.now();}
     }catch(e){console.warn("Hourly refresh failed",e);}
     finally{reloading=false;}
   }

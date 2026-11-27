@@ -96,34 +96,58 @@
     return results.flatMap(result=>result.status==="fulfilled"?result.value:[]);
   }
   function usable(obj,field){const h=obj?.hourly;return Array.isArray(h?.time)&&Array.isArray(h[field])&&h.time.some((t,i)=>typeof t==="string"&&t.slice(0,10)>=dateJst()&&t.slice(0,10)<=dateJst(2)&&nullNum(h[field][i])!==null&&h[field][i]>=0);}
-  async function refreshForecast() {
+  let pendingRefresh=null;
+  async function collectForecast(progress){
     if(!window.KANTO_FORECAST_DATA&&state)state.textContent="予報読み込み中";
-    const [modelResult,rainResult,tideResult]=await Promise.allSettled([
-      fetchJSON(modelURL()),
-      rainData(),
-      loadAkabane()
-    ]);
-    const candidate=modelResult.status==="fulfilled"?modelResult.value:null;
-    const stamp=candidate?.updated_at;
-    const t=typeof stamp==="string"?stamp.replace(" ","T"):"";
-    const at=Date.parse(/(?:Z|[+-]\d{2}:\d{2})$/i.test(t)?t:t+"+09:00");
-    const age=Date.now()-at;
-    const fresh=candidate?.spot==="irago" && usable(candidate?.marine,"wave_height") && usable(candidate?.weather,"wind_speed_10m") && Number.isFinite(age) && age>=-300000 && age<86400000;
-    const payload=fromSource(fresh?candidate:null,rainResult.status==="fulfilled"?rainResult.value:null);
-    if(!fresh)console.warn("Hourly wave/wind unavailable or stale; independent tide/rain retained");
-    if(tideResult.status==="fulfilled")payload.tide.days=tideResult.value;
-    else console.warn("JMA Akabane tide unavailable; showing missing markers",tideResult.reason);
-    if(rainResult.status!=="fulfilled")console.warn("Rain model unavailable; missing values remain blank",rainResult.reason);
-    window.KANTO_FORECAST_DATA=payload;
+    const pending=new Set(["model","rain","tide"]);
+    const results={model:null,rain:null,tide:null};
+    function build(){
+      const candidate=results.model;
+      const stamp=candidate?.updated_at;
+      const t=typeof stamp==="string"?stamp.replace(" ","T"):"";
+      const at=Date.parse(/(?:Z|[+-]\d{2}:\d{2})$/i.test(t)?t:t+"+09:00");
+      const age=Date.now()-at;
+      const fresh=candidate?.spot==="irago" && usable(candidate?.marine,"wave_height") && usable(candidate?.weather,"wind_speed_10m") && Number.isFinite(age) && age>=-300000 && age<86400000;
+      const payload=fromSource(fresh?candidate:null,results.rain);
+      payload.tide.days=Array.isArray(results.tide)?results.tide:[];
+      payload.pending_sources=Array.from(pending);
+      return payload;
+    }
+    function publish(payload){
+      window.KANTO_FORECAST_DATA=payload;
+      if(typeof window.ksHourlySourceChanged==="function"){
+        try{window.ksHourlySourceChanged(payload);}catch(e){console.warn("Hourly rendering failed",e);}
+      }
+    }
+    async function settle(key,request){
+      try{results[key]=await request;}
+      catch(e){console.warn("Hourly "+key+" unavailable; missing values remain blank",e);}
+      finally{pending.delete(key);}
+      if(progress&&pending.size){const payload=build();publish(payload);progress();}
+    }
+    await Promise.all([settle("model",fetchJSON(modelURL())),settle("rain",rainData()),settle("tide",loadAkabane())]);
+    const payload=build();
+    if(payload.status==="model_unavailable")console.warn("Hourly wave/wind unavailable or stale; independent tide/rain retained");
+    publish(payload);if(progress)progress();
     return payload;
   }
+  function refreshForecast(progress){
+    if(pendingRefresh)return pendingRefresh;
+    pendingRefresh=collectForecast(progress).finally(()=>{pendingRefresh=null;});
+    return pendingRefresh;
+  }
   window.ksRefreshHourlyForecast=refreshForecast;
-  try {
-    await refreshForecast();
+  let appStarted=false;
+  function startApp(){
+    if(appStarted)return;
+    appStarted=true;
     const script=document.createElement("script");
-    script.src="./app.js?v=20261126-6";
+    script.src="./app.js?v=20261127-1";
     script.onerror=()=>{if(state)state.textContent="グラフ読み込みに失敗しました";};
     document.body.appendChild(script);
+  }
+  try {
+    await refreshForecast(startApp);
   } catch(error) {
     console.warn("Irago hourly source unavailable",error);
     if(state)state.textContent="時間別データを取得できません";
