@@ -1,0 +1,14 @@
+'use strict';
+const {test}=require('node:test'),assert=require('node:assert/strict'),{freezeRow,compare,metrics}=require('../scripts/forecast-accuracy-audit.cjs');
+const captured=Date.parse('2026-11-27T13:14:00+09:00'),date='2026-11-28',time=[7,8,9,10].map(h=>date+'T'+String(h).padStart(2,'0')+':00');
+const model=()=>({spot:'takahama',updated_at:'2026-11-27 13:05:19',_status:'fresh',marine:{latitude:35.708336,longitude:135.45836,hourly_units:{wave_height:'m',wave_period:'s',wave_direction:'°'},hourly:{time,wave_height:[1,2,3,4],wave_period:[7,7,7,7],wave_direction:[300,300,300,300]}},weather:{latitude:35.5,longitude:135.5625,hourly_units:{wind_speed_10m:'m/s',wind_direction_10m:'°'},hourly:{time,wind_speed_10m:[2,3,4,5],wind_direction_10m:[90,90,90,90]}}});
+const snap=()=>({schema:1,captured_at:new Date(captured).toISOString(),valid_jst:date,fields:['hour_jst','offshore_model_hs_m','period_s','wave_dir_deg','wind_ms','wind_dir_deg'],rows:[freezeRow('takahama',model(),captured,date)]});
+const obs=(hour=7)=>({spot:'takahama',station_id:'TEST',time_jst:date+'T'+String(hour).padStart(2,'0')+':00',kind:'observed_significant_wave_height',unit:'m',source_url:'https://example.invalid/test',representativeness:'same_location',location_note:'synthetic fixture',latitude:35.708336,longitude:135.45836,hs_m:0.5});
+const asOf=Date.parse('2026-11-28T11:00:00+09:00');
+test('freeze exact hours and units',()=>assert.deepEqual(snap().rows[0].values[0],[7,1,7,300,2,90]));
+test('reject stale foreign and later-issued snapshots',()=>{for(const x of [{spot:'hakuto'},{_status:'stale'},{updated_at:'2026-11-27 10:00:00'},{updated_at:'2026-11-27 13:15:00'}])assert.throws(()=>freezeRow('takahama',{...model(),...x},captured,date))});
+test('unknown unit and absent data remain null',()=>{const j=model();j.marine.hourly_units.wave_height='cm';j.weather.hourly.wind_speed_10m[0]=null;assert.deepEqual(freezeRow('takahama',j,captured,date).values[0],[7,null,7,300,null,90])});
+test('compare same hour only; no duplicate or future observation',()=>{const r=compare(snap(),[obs(),obs(),obs(6),obs(10)],Date.parse('2026-11-28T08:00:00+09:00'));assert.equal(r.matches.length,1);assert.equal(r.rejected.length,3);assert.equal(r.groups['takahama|TEST|same_location'].mae_m,0.5)});
+test('reject model versus model and surf size comparisons',()=>assert.equal(compare(snap(),[{...obs(),kind:'model'},{...obs(8),kind:'surf_size'}],asOf).matches.length,0));
+test('proxy station is explicitly separate',()=>{const r=compare(snap(),[{...obs(),latitude:35.4},{...obs(8),latitude:35.4,representativeness:'proxy'}],asOf);assert.equal(r.matches.length,1);assert.equal(r.rejected.length,1);assert.equal(r.groups['takahama|TEST|proxy'].n,1)});
+test('empty and signed errors',()=>{assert.deepEqual(metrics([]),{n:0,bias_m:null,mae_m:null,rmse_m:null});assert.deepEqual(metrics([-1,1]),{n:2,bias_m:0,mae_m:1,rmse_m:1})});
