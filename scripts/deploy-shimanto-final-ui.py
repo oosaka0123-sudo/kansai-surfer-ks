@@ -3,9 +3,9 @@ from pathlib import Path
 SITE='https://kansai.rss7.net'
 ROOT='/kansai'
 HOST='ftp.lolipop.jp'
-BASE='ea11494a0bc3138380a635eac91b63756f2e6868'
-SOURCE='0929567ba81706621eb78b0d9cbe2d14730c028d'
-old=['shimanto/unified.js']+[s+'.html' for s in ['ukibuchi','irino','futami','hirano','oki']]
+BASE='f208bae8e96bcba9f02df67004757f8a68d3ca45'
+SOURCE='6bbfcdf45d1c7a58b8f1cb5499f6e0c5cfcadca6'
+old=[s+'.html' for s in ['ukibuchi','irino','futami','hirano','oki']]
 new=[]
 home_hash='9fbafddc3ef123952ee14584683672d843e19d782e6a595a079b2083d6290e50'
 home_after='4b82f4103f68e0c3b3f009d878230b5fd05ea4e9a30904b8e51c049a838b1906'
@@ -13,7 +13,7 @@ tmp=Path(os.environ['RUNNER_TEMP'])/'shimanto-release'
 backup=tmp/'backup'
 stage=tmp/'stage'
 for x in [backup,stage]:x.mkdir(parents=True,exist_ok=True)
-assert os.environ['GITHUB_REF']=='refs/heads/ops/shimanto-final-ui-178'
+assert os.environ['GITHUB_REF']=='refs/heads/ops/shimanto-satellite-178'
 assert os.environ['GITHUB_ACTOR']=='oosaka0123-sudo'
 user,password=os.environ['FTP_USER'],os.environ['FTP_PASS']
 assert user and password and not any(c in user+password for c in '\r\n\x00')
@@ -37,7 +37,7 @@ def listing(dir):
     return {line.strip().rstrip('/').rsplit('/',1)[-1] for line in raw.splitlines() if line.strip()}
 def check_unused():
     root=listing(ROOT)
-    assert set(old[1:]+['shimanto','index.html'])<=root,'root listing not confirmed'
+    assert set(old+['shimanto','index.html'])<=root,'root listing not confirmed'
     assert 'unified.js' in listing(ROOT+'/shimanto')
     print('FTPS_PATHS_VERIFIED',flush=True)
 def current(p,expected):
@@ -49,6 +49,7 @@ def protected():
     current('',home_after)
     for p in ['shimanto/tide/L6-2026.json','shimanto/tide/L6-2027.json','shimanto/tide/TS-2026.json','shimanto/tide/TS-2027.json']:
         current(p,sha(git(BASE,p)))
+    current('shimanto/unified.js',sha(git(BASE,'shimanto/unified.js')))
     print('PROTECTED_LEGACY_AND_TIDE_VERIFIED',flush=True)
 def preflight():
     verify_source()
@@ -58,7 +59,7 @@ def preflight():
     for p in old: (backup/p).parent.mkdir(parents=True,exist_ok=True)
     ftp(['get '+q(ROOT+'/'+p)+' -o '+q(backup/p) for p in old])
     for p in old:assert sha((backup/p).read_bytes())==sha(git(BASE,p)),'FTP backup mismatch '+p
-    print('BACKUP_VERIFIED_6_FILES',flush=True)
+    print('BACKUP_VERIFIED_5_FILES',flush=True)
 def put(p,local):ftp(['put '+q(local)+' -o '+q(ROOT+'/'+p)])
 def publish():
     verify_source()
@@ -81,7 +82,7 @@ def publish():
             print('UPDATED_VERIFIED',p,flush=True)
         for p in new+old:current(p,sha(git(SOURCE,p)))
         protected()
-        print('RELEASE_VERIFIED_6_FINAL_UI_FILES_PROTECTED_LEGACY',flush=True)
+        print('RELEASE_VERIFIED_5_SATELLITE_PAGES_PROTECTED_LEGACY',flush=True)
     except Exception:
         for p in reversed(attempted):
             put(p,backup/p)
