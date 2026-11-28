@@ -169,13 +169,13 @@
   </style>
   <div style="width:100%;overflow:hidden;border-radius:14px;border:1px solid var(--line);background:#0b2839;">
     <iframe title="Windy 双海周辺の風・波予報マップ"
-      src="https://embed.windy.com/embed2.html?lat=32.97011&amp;lon=133.00056&amp;detailLat=32.97011&amp;detailLon=133.00056&amp;zoom=11&amp;level=surface&amp;overlay=wind&amp;product=ecmwf&amp;menu=&amp;message=&amp;marker=true&amp;calendar=now&amp;pressure=&amp;type=map&amp;location=coordinates&amp;detail=&amp;metricWind=m%2Fs&amp;metricTemp=%C2%B0C&amp;radarRange=-1"
+      src="https://embed.windy.com/embed2.html?lat=32.96866&amp;lon=133.0005&amp;detailLat=32.96866&amp;detailLon=133.0005&amp;zoom=11&amp;level=surface&amp;overlay=wind&amp;product=ecmwf&amp;menu=&amp;message=&amp;marker=true&amp;calendar=now&amp;pressure=&amp;type=map&amp;location=coordinates&amp;detail=&amp;metricWind=m%2Fs&amp;metricTemp=%C2%B0C&amp;radarRange=-1"
       loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen
       style="display:block;width:100%;height:clamp(370px,75vw,540px);border:0;background:#0b2839;"></iframe>
   </div>
   <p style="font-size:0.73rem;color:var(--teal-pale);line-height:1.65;margin:10px 0 0;">
     ※ Windyは外部のモデル予報で、現地の波高やサーフサイズの実測ではありません。
-    <a href="https://www.windy.com/?wind,32.97011,133.00056,11" target="_blank" rel="noopener noreferrer" style="color:var(--coral-soft);text-decoration:underline;">Windyで大きく見る</a>
+    <a href="https://www.windy.com/?wind,32.96866,133.0005,11" target="_blank" rel="noopener noreferrer" style="color:var(--coral-soft);text-decoration:underline;">Windyで大きく見る</a>
   </p>
   <script>
   (function(){
@@ -185,8 +185,8 @@
     var state=document.getElementById('ks-windy-state'),link=document.querySelector('#futami-windy a[href*="windy.com"]');
     if(!frame||!wind||!wave||!state)return;
     var sources={
-      wind:{src:"https://embed.windy.com/embed2.html?lat=32.97011&lon=133.00056&detailLat=32.97011&detailLon=133.00056&zoom=11&level=surface&overlay=wind&product=ecmwf&menu=&message=&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=m%2Fs&metricTemp=%C2%B0C&radarRange=-1",link:"https://www.windy.com/?wind,32.97011,133.00056,11",label:"風"},
-      waves:{src:"https://embed.windy.com/embed2.html?lat=32.97011&lon=133.00056&detailLat=32.97011&detailLon=133.00056&zoom=11&level=surface&overlay=waves&product=ecmwfWaves&menu=&message=&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=m%2Fs&metricTemp=%C2%B0C&radarRange=-1",link:"https://www.windy.com/?waves,32.97011,133.00056,11",label:"波"}
+      wind:{src:"https://embed.windy.com/embed2.html?lat=32.96866&lon=133.0005&detailLat=32.96866&detailLon=133.0005&zoom=11&level=surface&overlay=wind&product=ecmwf&menu=&message=&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=m%2Fs&metricTemp=%C2%B0C&radarRange=-1",link:"https://www.windy.com/?wind,32.96866,133.0005,11",label:"風"},
+      waves:{src:"https://embed.windy.com/embed2.html?lat=32.96866&lon=133.0005&detailLat=32.96866&detailLon=133.0005&zoom=11&level=surface&overlay=waves&product=ecmwfWaves&menu=&message=&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=m%2Fs&metricTemp=%C2%B0C&radarRange=-1",link:"https://www.windy.com/?waves,32.96866,133.0005,11",label:"波"}
     };
     var current="wind";
     function select(which){
@@ -207,9 +207,9 @@
   </script>
 </section>
 <section class="section"><h2 class="section-title"><span class="no">02</span><i class="fa-solid fa-camera-retro ico"></i>現地波レポート</h2><div class="wave-report-box" style="margin:0"><div class="wave-report-grid" id="shimanto-reports"><div class="wave-report-empty">読み込み中…</div></div></div></section>
-<section class="section"><h2 class="section-title"><span class="no">06</span><i class="fa-solid fa-circle-info ico"></i>スポット情報</h2><p>高知県 四万十市｜双海</p><p><a href="https://www.google.com/maps?q=32.97011,133.00056" target="_blank" rel="noopener noreferrer">周辺地図（参考位置）</a></p></section>
+<section class="section"><h2 class="section-title"><span class="no">06</span><i class="fa-solid fa-circle-info ico"></i>スポット情報</h2><p>高知県 四万十市｜双海</p><p><a href="https://www.google.com/maps?q=32.96866,133.0005" target="_blank" rel="noopener noreferrer">周辺地図（参考位置）</a></p></section>
 <section class="section"><h2 class="section-title">高知・四万十エリア</h2><div class="cam-link-grid"><a class="cam-link" href="ukibuchi.html">大方浮鞭</a><a class="cam-link" href="irino.html">入野</a><a class="cam-link" href="futami.html">双海</a><a class="cam-link" href="hirano.html">平野</a><a class="cam-link" href="oki.html">大岐の浜</a></div></section>
-<section class="section" id="shimanto-location-map" aria-labelledby="shimanto-location-title" style="background:var(--ink-deep);padding-top:28px;padding-bottom:32px"><h2 class="section-title" id="shimanto-location-title"><i class="fa-solid fa-map-location-dot ico" aria-hidden="true"></i>双海 アクセスマップ</h2><div style="overflow:hidden;border-radius:14px;border:1px solid var(--line);background:#0b2839"><iframe title="双海のGoogleマップ" src="https://maps.google.com/maps?q=%E9%AB%98%E7%9F%A5%E7%9C%8C%E5%9B%9B%E4%B8%87%E5%8D%81%E5%B8%82%20%E5%8F%8C%E6%B5%B7%E3%82%B5%E3%83%BC%E3%83%95%E3%83%93%E3%83%BC%E3%83%81&amp;z=14&amp;output=embed" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen style="display:block;width:100%;height:clamp(280px,65vw,420px);border:0"></iframe></div><p style="margin:10px 0 0;font-size:0.85rem"><a href="https://www.google.com/maps/search/?api=1&amp;query=%E9%AB%98%E7%9F%A5%E7%9C%8C%E5%9B%9B%E4%B8%87%E5%8D%81%E5%B8%82%20%E5%8F%8C%E6%B5%B7%E3%82%B5%E3%83%BC%E3%83%95%E3%83%93%E3%83%BC%E3%83%81" target="_blank" rel="noopener noreferrer" style="color:var(--coral-soft);text-decoration:underline">Googleマップで開く</a></p></section>
+<section class="section" id="shimanto-location-map" aria-labelledby="shimanto-location-title" style="background:var(--ink-deep);padding-top:28px;padding-bottom:32px"><h2 class="section-title" id="shimanto-location-title"><i class="fa-solid fa-map-location-dot ico" aria-hidden="true"></i>双海 アクセスマップ</h2><div style="overflow:hidden;border-radius:14px;border:1px solid var(--line);background:#0b2839"><iframe title="双海のGoogleマップ" src="https://maps.google.com/maps?q=32.96866%2C133.0005&amp;z=15&amp;output=embed" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen style="display:block;width:100%;height:clamp(280px,65vw,420px);border:0"></iframe></div><p style="margin:10px 0 0;font-size:0.85rem"><a href="https://www.google.com/maps/search/?api=1&amp;query=32.96866%2C133.0005" target="_blank" rel="noopener noreferrer" style="color:var(--coral-soft);text-decoration:underline">Googleマップで開く</a>　<span style="color:var(--cream-soft);font-size:.75rem">海岸の参考位置</span></p></section>
 <footer>
   <a href="https://kansai.rss7.net/index.html" class="logo" style="text-decoration:none;justify-content:center;">
     <img src="https://kansai.rss7.net/img/logo-ks-white.png" alt="KS" style="height:24px;width:auto;margin-right:6px;vertical-align:middle;">
