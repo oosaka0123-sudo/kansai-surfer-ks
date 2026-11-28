@@ -1,0 +1,7 @@
+# Shimanto extension - issue #178
+
+Candidate registry only; not consumed by runtime. The five beach reference coordinates are approximate third-party guide positions, not independently confirmed exact peaks or approved forecast input coordinates. A read-only parallel Marine API probe on 2026-11-28 JST returned 72 valid hourly wave heights per location. Four northern spots shared the same returned grid (32.958336, 133.12502); Oki returned (32.791664, 132.95836). These observations do not validate local breaking wave heights. No score calibration or ranking integration is authorized.
+
+Official camera pages: Kuroshio town for Ukibuchi; Shimanto city for Hirano. Playback and embed permissions not verified. Nearby cameras must not be presented as direct cameras for another beach. JMA candidate tide stations L6 (Kochishimoda) and TS (Tosashimizu): https://www.data.jma.go.jp/kaiyou/db/tide/suisan/station.php . Verify representativeness, datum and year coverage before release.
+
+Parallel implementation lanes: (1) coordinate and model grid verification, local wind and tide calibration; (2) five independent pages following existing spot UI; (3) small region menu and unscored home links using verified production source; (4) regression tests ensuring legacy nine, cron, ranking, and social articles remain unchanged. Current root index.html is absent from main; live home HTTP 200 was checked on PC04, but the exact production source must be captured and audited before a home change. No deployment or production edits in this PR.
