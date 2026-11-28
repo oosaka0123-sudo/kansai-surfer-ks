@@ -1,7 +1,8 @@
 name: KS forecast audit capture
 on:
   schedule:
-    - cron: '30 10 * * *'
+    - cron: '30 19 * * *'
+      timezone: Asia/Tokyo
   workflow_dispatch:
 permissions:
   contents: read
