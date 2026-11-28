@@ -1,7 +1,8 @@
 name: KS morning wind audit
 on:
   schedule:
-    - cron: '0 2 * * *'
+    - cron: '13 11 * * *'
+      timezone: Asia/Tokyo
   workflow_dispatch:
 permissions:
   contents: read
