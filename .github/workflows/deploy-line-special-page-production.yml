@@ -1,4 +1,4 @@
-name: Guarded Shimanto navigation release
+name: Guarded Shimanto final UI release
 on:
   workflow_dispatch:
 permissions:
@@ -8,7 +8,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   release:
-    if: github.ref == 'refs/heads/ops/shimanto-nav-178' && github.actor == 'oosaka0123-sudo'
+    if: github.ref == 'refs/heads/ops/shimanto-final-ui-178' && github.actor == 'oosaka0123-sudo'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -19,24 +19,24 @@ jobs:
       - name: Test scoped candidate and install FTPS
         run: |
           set -euo pipefail
-          for t in candidates unified tides home legacy-menu verdict nav; do node "tests/shimanto-$t.test.cjs"; done
+          for t in candidates unified tides home verdict final-ui; do node "tests/shimanto-$t.test.cjs"; done
           node --check shimanto/unified.js
           node --check shimanto/hourly/adapter.js
-          python3 -m py_compile scripts/deploy-shimanto-nav.py
+          python3 -m py_compile scripts/deploy-shimanto-final-ui.py
           sudo apt-get update -qq && sudo apt-get install -y lftp
       - name: Read-only FTP collision and baseline check
         env:
           FTP_USER: ${{ secrets.KS_NAMI_FTP_USER }}
           FTP_PASS: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
-        run: python3 scripts/deploy-shimanto-nav.py preflight
+        run: python3 scripts/deploy-shimanto-final-ui.py preflight
       - uses: actions/upload-artifact@v4
         with:
           name: shimanto-unified-backup-${{ github.run_id }}
           path: ${{ runner.temp }}/shimanto-release/backup/
           if-no-files-found: error
           retention-days: 14
-      - name: Publish five navigation pages, verify or restore
+      - name: Publish six Shimanto files, verify or restore
         env:
           FTP_USER: ${{ secrets.KS_NAMI_FTP_USER }}
           FTP_PASS: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
-        run: python3 scripts/deploy-shimanto-nav.py publish
+        run: python3 scripts/deploy-shimanto-final-ui.py publish
