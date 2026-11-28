@@ -3,6 +3,10 @@ on:
   schedule:
     - cron: '30 19 * * *'
       timezone: Asia/Tokyo
+    - cron: '7 20 * * *'
+      timezone: Asia/Tokyo
+    - cron: '7 21 * * *'
+      timezone: Asia/Tokyo
   workflow_dispatch:
 permissions:
   contents: read
@@ -34,11 +38,12 @@ jobs:
             fi
           fi
       - name: Freeze publicly served KS forecast
+        id: freeze
         run: |
           mkdir -p audit-output
           node scripts/forecast-accuracy-audit.cjs capture audit-output/snapshot.json
       - name: Retain immutable run snapshot
-        if: always()
+        if: always() && (steps.freeze.outcome == 'success' || steps.freeze.outcome == 'failure')
         uses: actions/upload-artifact@v4
         with:
           name: ks-forecast-${{ github.event_name }}-${{ github.run_id }}-${{ github.run_attempt }}

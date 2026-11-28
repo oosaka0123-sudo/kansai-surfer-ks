@@ -27,12 +27,14 @@ function parse(text,expectedCode,date){
  for(const h of [7,8,9,10]){const time=date+'T'+String(h).padStart(2,'0')+':00';if(!seen.has(time))missing.push({time,reason:'absent'});}
  return {station_code:expectedCode,header:header[2].trim(),date,rows,missing};
 }
+const nameKey=s=>typeof s==='string'?s.normalize('NFC').trim().replace(/\s+/g,' '):'';
+function officialUrl(value,hosts){try{const u=new URL(value);return u.protocol==='https:'&&!u.username&&!u.password&&!u.port&&hosts.includes(u.hostname)}catch{return false}}
 function normalize(result,meta){
  assert(SPOTS.includes(meta.spot)&&meta.station_code===result.station_code,'unapproved spot or code');
- assert(meta.station_name&&result.header.startsWith(meta.station_name),'station name mismatch');
- assert(meta.verified_for_date===result.date&&meta.location_note?.trim()&&meta.verified_metadata_url?.startsWith('https://'),'station verification required');
+ assert(nameKey(meta.station_name)&&nameKey(result.header)===nameKey(meta.station_name),'station name mismatch');
+ assert(meta.verified_for_date===result.date&&meta.location_note?.trim()&&officialUrl(meta.verified_metadata_url,['nowphas.mlit.go.jp','www.mlit.go.jp','www.pari.go.jp','pari.go.jp']),'station verification required');
  assert(meta.data_class==='provisional'||meta.data_class==='final','data quality class required');
- assert(meta.source_url?.startsWith('https://nowphas.mlit.go.jp/'),'official source required');
+ assert(officialUrl(meta.source_url,['nowphas.mlit.go.jp']),'official source required');
  assert(Number.isFinite(meta.latitude)&&meta.latitude>=20&&meta.latitude<=50&&Number.isFinite(meta.longitude)&&meta.longitude>=120&&meta.longitude<=150,'invalid station coordinates');
  return result.rows.map(r=>({spot:meta.spot,station_id:'nowphas_'+result.station_code,time_jst:r.time_jst,kind:'observed_significant_wave_height',unit:'m',hs_m:r.hs_m,period_s:r.period_s,latitude:meta.latitude,longitude:meta.longitude,source_url:meta.source_url,representativeness:'proxy',location_note:meta.location_note,quality_class:meta.data_class,metadata_url:meta.verified_metadata_url,attribution:'全国港湾海洋波浪情報網（ナウファス）を加工して作成'}));
 }
