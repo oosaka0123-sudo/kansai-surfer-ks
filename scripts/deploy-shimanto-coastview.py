@@ -4,7 +4,7 @@ SITE='https://kansai.rss7.net'
 ROOT='/kansai'
 HOST='ftp.lolipop.jp'
 BASE='28df7d6b6b1476abcc67ff4e2d489610490ac504'
-SOURCE='089fcf1e7954e33787123243260b2a165c9a9b07'
+SOURCE='4ed1ad386a37b8e790fddd9d7698706277c008f3'
 old=[s+'.html' for s in ['ukibuchi','irino','futami','hirano','oki']]
 new=[]
 home_hash='9fbafddc3ef123952ee14584683672d843e19d782e6a595a079b2083d6290e50'
@@ -13,7 +13,7 @@ tmp=Path(os.environ['RUNNER_TEMP'])/'shimanto-release'
 backup=tmp/'backup'
 stage=tmp/'stage'
 for x in [backup,stage]:x.mkdir(parents=True,exist_ok=True)
-assert os.environ['GITHUB_REF']=='refs/heads/ops/shimanto-coastview-178'
+assert os.environ['GITHUB_REF']=='refs/heads/ops/shimanto-beachcenter-178'
 assert os.environ['GITHUB_ACTOR']=='oosaka0123-sudo'
 user,password=os.environ['FTP_USER'],os.environ['FTP_PASS']
 assert user and password and not any(c in user+password for c in '\r\n\x00')
@@ -51,7 +51,17 @@ def protected():
         current(p,sha(git(BASE,p)))
     current('shimanto/unified.js',sha(git(BASE,'shimanto/unified.js')))
     print('PROTECTED_LEGACY_AND_TIDE_VERIFIED',flush=True)
+def select_base():
+    global BASE
+    live={p:sha(http(p)) for p in old}
+    for ref in ['089fcf1e7954e33787123243260b2a165c9a9b07','28df7d6b6b1476abcc67ff4e2d489610490ac504']:
+        if all(live[p]==sha(git(ref,p)) for p in old):
+            BASE=ref
+            print('BASE_VERIFIED',ref,flush=True)
+            return
+    raise RuntimeError('No known complete production baseline; no writes performed')
 def preflight():
+    select_base()
     verify_source()
     check_unused()
     protected()
@@ -62,6 +72,7 @@ def preflight():
     print('BACKUP_VERIFIED_5_FILES',flush=True)
 def put(p,local):ftp(['put '+q(local)+' -o '+q(ROOT+'/'+p)])
 def publish():
+    select_base()
     verify_source()
     check_unused()
     protected()
@@ -82,7 +93,7 @@ def publish():
             print('UPDATED_VERIFIED',p,flush=True)
         for p in new+old:current(p,sha(git(SOURCE,p)))
         protected()
-        print('RELEASE_VERIFIED_5_COASTVIEW_PAGES_PROTECTED_LEGACY',flush=True)
+        print('RELEASE_VERIFIED_5_BEACHCENTER_PAGES_PROTECTED_LEGACY',flush=True)
     except Exception:
         for p in reversed(attempted):
             put(p,backup/p)
