@@ -1,0 +1,22 @@
+name: KS calibration holdout tests
+on:
+  pull_request:
+    paths:
+      - 'scripts/wave-calibration-holdout.cjs'
+      - 'tests/wave-calibration-holdout.test.cjs'
+      - '.github/workflows/wave-calibration-tests.yml'
+      - 'docs/FORECAST_AUDIT_SOURCE_POLICY.md'
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/forecast-accuracy-audit.test.cjs tests/wave-28day-summary.test.cjs tests/wave-calibration-holdout.test.cjs
