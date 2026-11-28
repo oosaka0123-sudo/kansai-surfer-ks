@@ -1,0 +1,104 @@
+name: KS frozen forecast archive and audit health
+on:
+  pull_request:
+    paths:
+      - 'scripts/forecast-audit-archive.cjs'
+      - 'tests/forecast-audit-archive.test.cjs'
+      - '.github/workflows/forecast-audit-archive.yml'
+  workflow_run:
+    workflows: ['KS forecast audit capture']
+    types: [completed]
+    branches: [main]
+  schedule:
+    - cron: '47 16 * * *'
+      timezone: Asia/Tokyo
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: 'Recover archive for a successful scheduled capture run (blank: check health)'
+        required: false
+        type: string
+permissions:
+  contents: read
+  actions: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && 'refs/heads/main' || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/forecast-accuracy-audit.test.cjs tests/forecast-audit-archive.test.cjs
+  archive:
+    needs: test
+    if: >-
+      (github.event_name == 'workflow_run' &&
+      github.event.workflow_run.event == 'schedule' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository) ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.run_id != '')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      actions: read
+    concurrency:
+      group: ks-forecast-archive-writer
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/heads/main
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Retrieve exact successful schedule artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.event.workflow_run.id || inputs.run_id }}
+        run: |
+          [[ "$RUN_ID" =~ ^[0-9]+$ ]]
+          gh api "repos/$GH_REPO/actions/runs/$RUN_ID" > "$RUNNER_TEMP/ks-run.json"
+          jq -e '.event == "schedule" and .head_branch == "main" and .status == "completed" and .conclusion == "success" and .path == ".github/workflows/forecast-audit-capture.yml"' "$RUNNER_TEMP/ks-run.json"
+          attempt=$(jq -er '.run_attempt' "$RUNNER_TEMP/ks-run.json")
+          [[ "$attempt" =~ ^[0-9]+$ ]]
+          gh run download "$RUN_ID" -R "$GH_REPO" -n "ks-forecast-schedule-$RUN_ID-$attempt" -D "$RUNNER_TEMP/ks-archive-input"
+          EXPECTED_RUN_ATTEMPT="$attempt" node scripts/forecast-audit-archive.cjs archive "$GH_REPO" "$RUN_ID" "$RUNNER_TEMP/ks-archive-input/snapshot.json"
+  health:
+    needs: test
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.run_id == ''))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check completed observation day
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          mkdir -p audit-health
+          day=$(TZ=Asia/Tokyo date +%F)
+          hour=$(TZ=Asia/Tokyo date +%H%M)
+          if [ "$hour" -lt 1500 ]; then day=$(TZ=Asia/Tokyo date -d yesterday +%F); fi
+          node scripts/forecast-audit-archive.cjs health "$GH_REPO" "$day" audit-health/report.json
+      - name: Retain health status
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ks-forecast-health-${{ github.run_id }}-${{ github.run_attempt }}
+          path: audit-health/report.json
+          if-no-files-found: error
+          retention-days: 90
