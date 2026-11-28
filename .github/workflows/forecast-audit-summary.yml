@@ -1,0 +1,51 @@
+name: KS rolling 28-day wind audit
+on:
+  pull_request:
+    paths:
+      - 'scripts/*wind*28day*.cjs'
+      - 'tests/*wind*28day*.cjs'
+      - '.github/workflows/forecast-audit-summary.yml'
+  schedule:
+    - cron: '17 16 * * *'
+      timezone: Asia/Tokyo
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: ks-rolling-wind-audit-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  summary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate audit code
+        run: node --test tests/forecast-accuracy-audit.test.cjs tests/amedas-wind-audit.test.cjs tests/wind-28day-summary.test.cjs tests/collect-wind-28day.test.cjs
+      - name: Collect immutable scheduled artifacts and summarize
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          mkdir -p audit-summary
+          day=$(TZ=Asia/Tokyo date +%F)
+          hour=$(TZ=Asia/Tokyo date +%H%M)
+          if [ "$hour" -lt 1500 ]; then
+            day=$(TZ=Asia/Tokyo date -d yesterday +%F)
+          fi
+          node scripts/collect-wind-28day.cjs "$GH_REPO" "$day" audit-summary/report.json
+      - name: Retain aggregate only
+        if: always() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ks-wind-28day-${{ github.run_id }}-${{ github.run_attempt }}
+          path: audit-summary/report.json
+          if-no-files-found: error
+          retention-days: 90
