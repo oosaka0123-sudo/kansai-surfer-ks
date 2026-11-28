@@ -1,0 +1,3 @@
+const assert=require('node:assert/strict'),{patch}=require('../scripts/patch-home-shimanto.cjs');
+const base='<html><div class="mobile-menu" id="mobileMenu"><div class="mm-section">その他</div><a href="about.html">About</a></div>\n\n<main>original</main><footer>foot</footer><script>const SPOTS = [1,2,3,4,5,6,7,8,9];</script></html>';
+const result=patch(base);assert.ok(result.includes('data-ks-shimanto="home"'));assert.ok(result.includes('const SPOTS = [1,2,3,4,5,6,7,8,9]'));assert.throws(()=>patch(result));assert.throws(()=>patch(base.replace('<footer>','<section>')));assert.throws(()=>patch(base+'<footer>'));assert.throws(()=>patch(base.replace('const SPOTS = [','const OTHER = [')));console.log('home patch positive and fail-closed cases passed');
