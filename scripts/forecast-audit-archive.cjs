@@ -41,6 +41,7 @@ async function cli(){
  if(mode==='archive'){
   assert(/^\d+$/.test(arg)&&input,'run ID and snapshot required');
   const run=await api('actions/runs/'+arg);
+  assert(String(run.run_attempt)===process.env.EXPECTED_RUN_ATTEMPT,'run attempt changed');
   const {path,record}=archiveRecord(run,JSON.parse(fs.readFileSync(input,'utf8')),validateSnapshot);
   const payload=JSON.stringify(record,null,2)+'\n';
   const old=await api(readPath(path),{allow404:true});
