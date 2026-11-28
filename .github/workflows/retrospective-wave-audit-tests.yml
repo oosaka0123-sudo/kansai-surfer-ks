@@ -1,0 +1,21 @@
+name: KS retrospective wave audit tests
+on:
+  pull_request:
+    paths:
+      - 'scripts/retrospective-wave-audit.cjs'
+      - 'tests/retrospective-wave-audit.test.cjs'
+      - '.github/workflows/retrospective-wave-audit-tests.yml'
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/forecast-accuracy-audit.test.cjs tests/nowphas-import.test.cjs tests/wave-28day-summary.test.cjs tests/wave-calibration-holdout.test.cjs tests/retrospective-wave-audit.test.cjs

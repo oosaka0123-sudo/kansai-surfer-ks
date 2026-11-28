@@ -1,0 +1,10 @@
+'use strict';
+const {test}=require('node:test'),assert=require('node:assert/strict'),{build}=require('../scripts/retrospective-wave-audit.cjs');
+const end='2026-11-28';
+const snapshot={schema:1,captured_at:'2026-11-27T10:30:00Z',valid_jst:end,fields:['hour_jst','offshore_model_hs_m','period_s','wave_dir_deg','wind_ms','wind_dir_deg'],rows:['isonoura','kounohama','ikumi','komatsu','irago','shizunami','hamadutu','takahama','hakuto'].map(s=>({s,issued:'2026-11-27 19:05:00',marine:[35.7,134.1],weather:[35.5,134.1],values:[7,8,9,10].map(h=>[h,1,7,180,4,90])})),missing:[]};
+const record={path:'forecasts/'+end+'/12-1.json',record:{schema:1,forecast_event:'schedule',forecast_run_id:12,forecast_run_attempt:1,snapshot}};
+const late={path:'forecasts/'+end+'/13-1.json',record:{...record.record,forecast_run_id:13,snapshot:{...snapshot,captured_at:'2026-11-27T11:07:00Z'}}};
+const o={spot:'hakuto',station_id:'fixture',time_jst:end+'T07:00',hs_m:1};
+test('deterministic earliest archive, exact-date joins and coverage',()=>{const r=build(end,[late,record],[o]);assert.equal(r.manifest[0].forecast_run_id,12);assert.equal(r.manifest[0].observations.length,1);assert.equal(r.coverage.missing_forecast_dates.length,27);assert.equal(r.coverage.alternate_forecasts[0].excluded[0].run_id,13);assert.equal(r.coverage.coefficient_changes_allowed,false)});
+test('unpaired observations retained as coverage, not reconstructed',()=>{const r=build(end,[],[o]);assert.equal(r.manifest.length,0);assert.equal(r.coverage.unpaired_observations[0].observations,1);assert.equal(r.coverage.missing_forecast_dates.length,28)});
+test('reject duplicate, wrong archive path, manual and rounded observation',()=>{assert.throws(()=>build(end,[record,record],[]));assert.throws(()=>build(end,[{...record,path:'wrong'}],[]));assert.throws(()=>build(end,[{...record,record:{...record.record,forecast_event:'workflow_dispatch'}}],[]));assert.throws(()=>build(end,[record],[{...o,time_jst:end+'T06:55'}]));assert.throws(()=>build(end,[record],[o,o]))});
