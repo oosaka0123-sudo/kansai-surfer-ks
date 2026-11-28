@@ -1,4 +1,4 @@
-name: Guarded Shimanto final UI release
+name: Guarded Shimanto satellite map release
 on:
   workflow_dispatch:
 permissions:
@@ -8,7 +8,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   release:
-    if: github.ref == 'refs/heads/ops/shimanto-final-ui-178' && github.actor == 'oosaka0123-sudo'
+    if: github.ref == 'refs/heads/ops/shimanto-satellite-178' && github.actor == 'oosaka0123-sudo'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -35,7 +35,7 @@ jobs:
           path: ${{ runner.temp }}/shimanto-release/backup/
           if-no-files-found: error
           retention-days: 14
-      - name: Publish six Shimanto files, verify or restore
+      - name: Publish five satellite map pages, verify or restore
         env:
           FTP_USER: ${{ secrets.KS_NAMI_FTP_USER }}
           FTP_PASS: ${{ secrets.KS_NAMI_FTP_PASSWORD }}
