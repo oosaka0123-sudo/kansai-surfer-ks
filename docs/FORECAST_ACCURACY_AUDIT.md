@@ -11,7 +11,7 @@ Observations input is an array, with spot, station_id, time_jst (YYYY-MM-DDTHH:0
 
 ## Scheduled capture
 
-GitHub Actions forecast-audit-capture runs daily at 10:30 UTC (19:30 JST), subject to GitHub scheduler delay. Manual dispatch is a separate sample, never a replacement for the evening run. Scheduled runs outside 19:30–22:00 JST fail rather than recording a mislabeled forecast. Every run has its own artifact (requested retention 90 days, subject to repository limits); partial captures are retained and the run fails visibly. Download records before expiry for long-term comparisons. No production deployment, secrets, paid AI, private or third-party data collection. Actual observations and station mapping remain separate. Exit 2 also indicates missing individual forecast fields.
+GitHub Actions forecast-audit-capture runs daily at 19:30 with explicit Asia/Tokyo timezone, subject to GitHub scheduler delay. Manual dispatch is a separate sample, never a replacement for the evening run. Scheduled runs outside 19:30–22:00 JST fail rather than recording a mislabeled forecast. Every run has its own artifact (requested retention 90 days, subject to repository limits); partial captures are retained and the run fails visibly. Download records before expiry for long-term comparisons. No production deployment, secrets, paid AI, private or third-party data collection. Actual observations and station mapping remain separate. Exit 2 also indicates missing individual forecast fields.
 
 ## Independent observed wind (AMeDAS)
 
@@ -21,3 +21,5 @@ A separate audit reads the JMA public browser JSON (not a guaranteed API) once p
     node scripts/amedas-wind-audit.cjs compare SNAPSHOT.json WIND_OBS.json
 
 NOWPHAS explicitly requests avoidance of periodic automated collection on the realtime site (https://nowphas.mlit.go.jp/info/). Use authorized historical downloads/import, not a crawler. JMA legacy coastal wave-meter observation ended March 2026 (https://www.data.jma.go.jp/kaiyou/shindan/index_wave.html); replacement model information is not independent Hs observation. Existing Takahama buoy audit #131 remains separate. BCM/Surfline reports are reference only; no automated collection or redistribution in this release.
+
+Morning wind audit is scheduled at 11:13 Asia/Tokyo (avoiding the top of the hour). Both schedules retain the actual JST execution-window guards; delayed or missing runs must not masquerade as valid forecasts. The first capture schedule on 2026-11-27 ran at 04:34 JST the following day and was rejected. The first morning schedule had no recorded run as of 2026-11-28 15:50 JST. Explicit timezone syntax is a mitigation, not a guarantee of punctual scheduling. Manual afternoon captures remain a separate lead-time cohort and are not substituted for evening captures.
