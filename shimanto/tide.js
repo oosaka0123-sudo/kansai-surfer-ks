@@ -1,0 +1,14 @@
+(function(){
+'use strict';const root=document.querySelector('.ks-shimanto');if(!root)return;
+const station=root.dataset.tide;if(!['L6','TS'].includes(station))return;
+const $=id=>document.getElementById(id),cache=new Map();let gen=0;
+const day=(offset=0)=>new Date(Date.now()+9*3600000+offset*86400000).toISOString().slice(0,10);
+const svg=(tag,attrs)=>{const e=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const [k,v] of Object.entries(attrs))e.setAttribute(k,v);return e;};
+const dateValid=(d)=>typeof d==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(d);
+async function year(y){if(cache.has(y))return cache.get(y);const res=await fetch('shimanto/tide/'+station+'-'+y+'.json',{signal:AbortSignal.timeout(10000)});if(!res.ok)throw Error('HTTP '+res.status);const t=await res.json();if(t.station_id!==station||t.year!==y||t.timezone!=='Asia/Tokyo'||t.unit!=='cm'||t.observation!==false||!Array.isArray(t.days)||t.days.length!==(Date.UTC(y+1,0,1)-Date.UTC(y,0,1))/86400000)throw Error('tide identity');const map=new Map(t.days.map(d=>[d.date,d]));if(map.size!==t.days.length)throw Error('duplicate date');cache.set(y,map);return map;}
+async function render(){const g=++gen;const offset=Number(document.querySelector('[data-day][aria-pressed="true"]')?.dataset.day||0);const date=day(offset);$('tide-graph').replaceChildren();$('tide-high').textContent='—';$('tide-low').textContent='—';$('tide-status').textContent=date+' JST：潮位取得中';try{const d=(await year(Number(date.slice(0,4)))).get(date);if(g!==gen)return;if(!d||!dateValid(d.date)||!Array.isArray(d.hourly_cm)||d.hourly_cm.length!==24||!d.hourly_cm.every(v=>Number.isFinite(v)&&Math.abs(v)<500))throw Error('tide values');const ev=a=>{if(!Array.isArray(a)||!a.every(e=>/^([01]\d|2[0-3]):[0-5]\d$/.test(e.time)&&Number.isFinite(e.height_cm)&&Math.abs(e.height_cm)<500))throw Error('tide events');return a.map(e=>e.time+' '+e.height_cm+'cm').join(' / ')||'なし';};const high=ev(d.high),low=ev(d.low);const s=$('tide-graph'),v=d.hourly_cm,lo=Math.floor(Math.min(...v)/20)*20,hi=Math.max(lo+20,Math.ceil(Math.max(...v)/20)*20),x=i=>35+i*29,y=z=>145-(z-lo)/(hi-lo)*115;
+for(const z of [lo,hi]){s.append(svg('line',{x1:35,y1:y(z),x2:702,y2:y(z),stroke:'#426777'}));const t=svg('text',{x:0,y:y(z)+4,fill:'#d7edf2','font-size':11});t.textContent=z;s.append(t);}
+s.append(svg('polyline',{points:v.map((z,i)=>x(i)+','+y(z)).join(' '),fill:'none',stroke:'#60bde2','stroke-width':3}));for(let i=0;i<24;i+=3){const t=svg('text',{x:x(i),y:170,fill:'#d7edf2','font-size':11});t.textContent=i;s.append(t);}
+$('tide-high').textContent=high;$('tide-low').textContent=low;$('tide-status').textContent=date+' JST｜気象庁 潮位表基準面（cm・推算値）';}catch(e){if(g===gen)$('tide-status').textContent=date+' JST：潮位データなし';}}
+document.querySelectorAll('[data-day]').forEach(b=>b.addEventListener('click',()=>queueMicrotask(render)));$('reload').addEventListener('click',render);render();setInterval(render,60000);
+})();
