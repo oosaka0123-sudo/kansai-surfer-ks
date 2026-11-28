@@ -1,0 +1,134 @@
+{
+  "region": "shimanto",
+  "status": "candidate",
+  "includeInKansaiRanking": false,
+  "showScoreOnHome": false,
+  "showRankingOnHome": false,
+  "spots": [
+    {
+      "id": "ukibuchi",
+      "name": "大方浮鞭",
+      "page": "ukibuchi.html",
+      "beachReference": {
+        "lat": 33.03001,
+        "lon": 133.02776,
+        "source": "https://surf-ok.jp/surf-spot-kochi-ogata/",
+        "verified": false
+      },
+      "marineProbe": {
+        "lat": 33.03001,
+        "lon": 133.02776,
+        "returnedGrid": [
+          32.958336,
+          133.12502
+        ],
+        "validHours": 72,
+        "observedOn": "2026-11-28",
+        "approved": false
+      },
+      "tideStationCandidate": "L6",
+      "officialCameraPage": "https://www.town.kuroshio.lg.jp/pb/cont/livecamera/1169",
+      "cameraPlaybackVerified": false
+    },
+    {
+      "id": "irino",
+      "name": "入野",
+      "page": "irino.html",
+      "beachReference": {
+        "lat": 33.01991,
+        "lon": 133.01685,
+        "source": "https://surf-ok.jp/surf-spot-kochi-irino/",
+        "verified": false
+      },
+      "marineProbe": {
+        "lat": 33.01991,
+        "lon": 133.01685,
+        "returnedGrid": [
+          32.958336,
+          133.12502
+        ],
+        "validHours": 72,
+        "observedOn": "2026-11-28",
+        "approved": false
+      },
+      "tideStationCandidate": "L6",
+      "officialCameraPage": null,
+      "cameraPlaybackVerified": false
+    },
+    {
+      "id": "futami",
+      "name": "双海",
+      "page": "futami.html",
+      "beachReference": {
+        "lat": 32.97011,
+        "lon": 133.00056,
+        "source": "https://surf-ok.jp/surf-spot-kochi-futami/",
+        "verified": false
+      },
+      "marineProbe": {
+        "lat": 32.97011,
+        "lon": 133.00056,
+        "returnedGrid": [
+          32.958336,
+          133.12502
+        ],
+        "validHours": 72,
+        "observedOn": "2026-11-28",
+        "approved": false
+      },
+      "tideStationCandidate": "L6",
+      "officialCameraPage": null,
+      "cameraPlaybackVerified": false
+    },
+    {
+      "id": "hirano",
+      "name": "平野",
+      "page": "hirano.html",
+      "beachReference": {
+        "lat": 32.95983,
+        "lon": 132.99572,
+        "source": "https://surf-ok.jp/surf-spot-kochi-hirano/",
+        "verified": false
+      },
+      "marineProbe": {
+        "lat": 32.95983,
+        "lon": 132.99572,
+        "returnedGrid": [
+          32.958336,
+          133.12502
+        ],
+        "validHours": 72,
+        "observedOn": "2026-11-28",
+        "approved": false
+      },
+      "tideStationCandidate": "L6",
+      "officialCameraPage": "https://www.city.shimanto.lg.jp/site/scp/1741.html",
+      "cameraPlaybackVerified": false
+    },
+    {
+      "id": "oki",
+      "name": "大岐の浜",
+      "page": "oki.html",
+      "beachReference": {
+        "lat": 32.82454,
+        "lon": 132.95235,
+        "source": "https://surf-ok.jp/surf-spot-kochi-oki/",
+        "verified": false
+      },
+      "marineProbe": {
+        "lat": 32.82454,
+        "lon": 132.95235,
+        "returnedGrid": [
+          32.791664,
+          132.95836
+        ],
+        "validHours": 72,
+        "observedOn": "2026-11-28",
+        "approved": false
+      },
+      "tideStationCandidate": "TS",
+      "officialCameraPage": null,
+      "cameraPlaybackVerified": false
+    }
+  ]
+}

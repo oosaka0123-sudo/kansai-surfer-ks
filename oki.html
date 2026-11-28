@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0a1520"><meta name="robots" content="noindex,follow"><title>大岐の浜 波情報・波予想｜関西サーファーKS</title><meta name="description" content="大岐の浜の波・風・潮位・10日間予報。高知・四万十エリア"><link rel="canonical" href="https://kansai.rss7.net/oki.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@400;600;800&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,300&family=Noto+Sans+JP:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="icon" href="img/favicon.png" type="image/png">
+<link rel="stylesheet" href="nami_common.css?v=1018">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32.png">
+<link rel="stylesheet" href="shimanto/unified.css?v=20261128-2"></head><body data-shimanto-id="oki">
+<header class="top-bar">
+  <a href="index.html" class="logo" style="text-decoration:none;">
+    <img src="img/logo-ks-white.png" alt="KS" style="height:36px;width:auto;margin-right:8px;vertical-align:middle;">
+    <span class="en">Kansai Surf</span>
+  </a>
+  <nav class="nav-pc">
+    <a href="isonoura.html"><i class="fa-solid fa-water"></i>磯ノ浦</a>
+    <a href="kounohama.html"><i class="fa-solid fa-water"></i>国府の浜</a>
+    <a href="ikumi.html"><i class="fa-solid fa-water"></i>生見</a>
+    <a href="komatsu.html"><i class="fa-solid fa-water"></i>小松海岸</a>
+    <a href="irago.html"><i class="fa-solid fa-water"></i>伊良湖</a>
+    <a href="shizunami.html"><i class="fa-solid fa-water"></i>静波</a>
+    <a href="hamadutu.html"><i class="fa-solid fa-water"></i>浜詰</a>
+    <a href="takahama.html"><i class="fa-solid fa-water"></i>高浜</a>
+    <a href="hakuto.html"><i class="fa-solid fa-water"></i>白兎</a>
+    <a href="contact.html"><i class="fa-solid fa-envelope"></i>お問い合わせ</a>
+    <a href="https://kansai.rss7.net/about.html"><i class="fa-solid fa-circle-info"></i>当サイトについて</a>
+  </nav>
+  <button class="hamburger" id="hamburger" aria-label="メニュー">
+    <span></span><span></span><span></span>
+  </button>
+  <span class="tag-live" id="clockTag"><span class="dot"></span>LIVE --:--</span>
+</header>
+
+<div class="mobile-menu" id="mobileMenu">
+  <div class="mm-section">メインメニュー</div>
+  <a href="index.html"><span class="mm-left"><i class="fa-solid fa-house"></i>ホーム</span></a>
+  <a href="blog/index.php"><span class="mm-left"><i class="fa-solid fa-newspaper"></i>ブログ</span></a>
+  <a href="https://suzuri.jp/kansaisurfer" target="_blank" rel="noopener"><span class="mm-left"><i class="fa-solid fa-shirt"></i>ショップ</span></a>
+
+  <div class="mm-section">サーフポイント</div>
+  <a href="isonoura.html"><span class="mm-left"><i class="fa-solid fa-water"></i>磯ノ浦（和歌山）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='isonoura_guide.html';">GUIDE</span></a>
+  <a href="kounohama.html"><span class="mm-left"><i class="fa-solid fa-water"></i>伊勢・国府の浜（三重）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='kounohama_guide.html';">GUIDE</span></a>
+  <a href="ikumi.html"><span class="mm-left"><i class="fa-solid fa-water"></i>四国・生見（高知）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='ikumi_guide.html';">GUIDE</span></a>
+  <a href="komatsu.html"><span class="mm-left"><i class="fa-solid fa-water"></i>四国・小松海岸（徳島）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='komatsu_guide.html';">GUIDE</span></a>
+  <a href="irago.html"><span class="mm-left"><i class="fa-solid fa-water"></i>伊良湖（愛知）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='irago_guide.html';">GUIDE</span></a>
+  <a href="shizunami.html"><span class="mm-left"><i class="fa-solid fa-water"></i>静波（静岡）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='shizunami_guide.html';">GUIDE</span></a>
+  <a href="hamadutu.html"><span class="mm-left"><i class="fa-solid fa-water"></i>浜詰（京都・日本海）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='hamadutu_guide.html';">GUIDE</span></a>
+  <a href="takahama.html"><span class="mm-left"><i class="fa-solid fa-water"></i>高浜（福井・日本海）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='takahama_guide.html';">GUIDE</span></a>
+  <a href="hakuto.html"><span class="mm-left"><i class="fa-solid fa-water"></i>白兎（鳥取・日本海）</span><span class="mm-guide-badge" onclick="event.preventDefault();event.stopPropagation();location.href='hakuto_guide.html';">GUIDE</span></a>
+
+  <div class="mm-section" style="font-size:12px">高知・四万十エリア</div>
+  <a href="ukibuchi.html" style="font-size:13px;min-height:44px"><span class="mm-left"><i class="fa-solid fa-water" aria-hidden="true"></i>大方浮鞭</span></a>
+  <a href="irino.html" style="font-size:13px;min-height:44px"><span class="mm-left"><i class="fa-solid fa-water" aria-hidden="true"></i>入野</span></a>
+  <a href="futami.html" style="font-size:13px;min-height:44px"><span class="mm-left"><i class="fa-solid fa-water" aria-hidden="true"></i>双海</span></a>
+  <a href="hirano.html" style="font-size:13px;min-height:44px"><span class="mm-left"><i class="fa-solid fa-water" aria-hidden="true"></i>平野</span></a>
+  <a href="oki.html" style="font-size:13px;min-height:44px"><span class="mm-left"><i class="fa-solid fa-water" aria-hidden="true"></i>大岐の浜</span></a>
+  <div class="mm-section">その他</div>
+  <a href="about.html"><span class="mm-left"><i class="fa-solid fa-circle-info"></i>当サイトについて</span></a>
+  <a href="contact.html"><span class="mm-left"><i class="fa-solid fa-envelope"></i>お問い合わせ</span></a>
+  <a href="https://kansai.rss7.net/secret/test.php"><span class="mm-left"><i class="fa-solid fa-lock"></i>SECRET MODE</span></a>
+</div>
+
+
+<div class="top-strip"><div class="crumbs"><a href="index.html">ホーム</a><span class="sep">/</span><span>高知・四万十</span><span class="sep">/</span><span class="now">大岐の浜</span></div><div class="update-info"><span>最終更新: <span id="lastUpdate">--:--</span></span><button class="refresh-btn" id="refreshBtn" type="button">更新</button></div></div>
+<section class="spot-hero">
+  <div class="spot-hero-grid">
+    <div>
+      <div class="spot-meta"><span><i class="fa-solid fa-map-pin"></i>高知県 土佐清水市</span><span><i class="fa-solid fa-location-crosshairs"></i>高知・四万十エリア</span></div>
+      <h1 class="spot-title" style="font-size:clamp(2rem,5vw,4.5rem);overflow-wrap:anywhere">大岐の浜の<wbr>波情報・波予想</h1>
+      <p class="spot-intro">沖合モデルの波高・風・潮位を掲載。現地のブレイクサイズや評価点ではありません。</p>
+    </div>
+    <div class="stats-card">
+      <div class="stats-grid">
+        <div class="stat-cell"><span class="stat-ico"><i class="fa-solid fa-water"></i></span><div class="stat-label">沖合波高</div><div class="stat-val" id="waveVal">--<span class="unit">m</span></div></div>
+        <div class="stat-cell"><span class="stat-ico"><i class="fa-solid fa-stopwatch"></i></span><div class="stat-label">周期</div><div class="stat-val" id="periodVal">--<span class="unit">秒</span></div></div>
+        <div class="stat-cell"><span class="stat-ico"><i class="fa-solid fa-wind"></i></span><div class="stat-label">風</div><div class="stat-val" id="windVal" style="font-size:1.1rem;">--</div></div>
+        <div class="stat-cell"><span class="stat-ico"><i class="fa-solid fa-arrows-to-dot"></i></span><div class="stat-label">波向</div><div class="stat-val" id="swellVal" style="font-size:1.1rem;">--</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="section cam-section"><h2 class="section-title"><span class="no">03</span><i class="fa-solid fa-video ico"></i>ライブカメラ</h2><p class="cam-intro">この地点の公式ライブカメラは確認できていません。</p></section>
+<section class="section" id="shimanto-hourly-section"><h2 class="section-title"><span class="no">04</span><i class="fa-solid fa-chart-line ico"></i>波・風</h2><div class="ks-hourly4"><p class="shimanto-external"><a href="shimanto/hourly/oki.html?v=20261128-2" target="_blank" rel="noopener noreferrer">別画面で開く</a></p><iframe id="shimanto-hourly" src="shimanto/hourly/oki.html?v=20261128-2" title="大岐の浜の波・風・潮位・降水量の1時間別予報グラフ" loading="eager" scrolling="no"></iframe></div><div class="data-src">データ提供：<a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a> ／ 潮位：気象庁・土佐清水（推算値）</div></section>
+<section class="section ks10-section" id="ks10-forecast" aria-labelledby="ks10-title">
+  <div class="ks10-heading">
+    <h2 class="section-title ks10-title" id="ks10-title"><span class="no">05</span><i class="fa-solid fa-calendar-week ico" aria-hidden="true"></i>10日間の波・風予報</h2>
+    <span class="ks10-subtitle">大岐の浜｜5:00〜17:00</span>
+  </div>
+  <div class="ks10-table-wrap">
+    <table class="ks10-table" aria-label="大岐の浜 10日間の波と風の予報">
+      <colgroup><col style="width:15%"><col style="width:9%"><col style="width:25%"><col style="width:23%"><col style="width:12%"><col style="width:16%"></colgroup>
+      <thead><tr>
+        <th scope="col">日付</th>
+        <th scope="col">天気</th>
+        <th scope="col">沖合波高 <small>(m)</small></th>
+        <th scope="col">風速 <small>(m/s)</small></th>
+        <th scope="col">風向</th>
+        <th scope="col">判定</th>
+      </tr></thead>
+      <tbody id="ks10-body"><tr><td colspan="6">データ取得中...</td></tr></tbody>
+    </table>
+  </div>
+  <div class="ks10-meta"><span id="ks10-updated">データ取得中...</span><span>提供：Open-Meteo</span></div>
+  <p class="ks10-note">日中5〜17時の沖合波高の最小〜最大、平均風速、代表風向。判定は同時刻の沖合波高・周期・波向・風から算出する暫定参考評価（日中中央値）。現地の波サイズ・安全性を保証するものではありません。潮位は時間別グラフで確認できます。欠測は「—」。</p>
+  <style>
+    #ks10-forecast{min-width:0}
+    #ks10-forecast .ks10-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+    #ks10-forecast .ks10-title{margin:0;line-height:1.3;letter-spacing:-.025em;flex:1 1 auto}
+    #ks10-forecast .ks10-title .ico{margin-right:7px}
+    #ks10-forecast .ks10-subtitle{font-size:11px;color:#b4d5e4;white-space:nowrap;padding-left:3px}
+    #ks10-forecast .ks10-table-wrap{border:0.5px solid rgba(64,181,224,.55);border-radius:15px;overflow:hidden;background:#05263a}
+    #ks10-forecast .ks10-table{width:100%;min-width:0;border:0;border-collapse:separate;border-spacing:0;table-layout:fixed;margin:0;background:transparent;color:#f6fbff;font-variant-numeric:tabular-nums}
+    #ks10-forecast .ks10-table th,#ks10-forecast .ks10-table td{padding:9px 3px;border-right:0.5px solid rgba(90,170,207,.20);border-bottom:0.5px solid rgba(90,170,207,.20);text-align:center;vertical-align:middle;overflow:hidden;white-space:nowrap;box-sizing:border-box}
+    #ks10-forecast .ks10-table th:last-child,#ks10-forecast .ks10-table td:last-child{border-right:0}
+    #ks10-forecast .ks10-table tr:last-child td{border-bottom:0}
+    #ks10-forecast .ks10-table th{height:37px;font-size:10px;line-height:1.2;font-weight:700;letter-spacing:0;background:#083044}
+    #ks10-forecast .ks10-table th small{font-size:8px}
+    #ks10-forecast .ks10-table td{height:50px;font-size:10px;line-height:1.2;background:transparent}
+    #ks10-forecast .ks10-table tbody tr:first-child td{background:rgba(10,128,159,.19);box-shadow:inset 0 1px rgba(34,207,236,.23)}
+    #ks10-forecast .ks10-date{font-size:9px;font-weight:700}
+    #ks10-forecast .ks10-sat{color:#3dd0fa}
+    #ks10-forecast .ks10-sun{color:#ff7487}
+    #ks10-forecast .ks10-weather{font-size:17px;line-height:1}
+    #ks10-forecast .ks10-track{height:30px;border-radius:7px;background:#183f54;display:flex;position:relative;align-items:center;justify-content:center;overflow:hidden}
+    #ks10-forecast .ks10-fill{position:absolute;top:0;bottom:0;left:0;border-radius:7px;width:var(--ks10-fill,0%);max-width:100%;transition:width .35s ease}
+    #ks10-forecast .ks10-wave{background:linear-gradient(90deg,#058cb4,#19d1ed)}
+    #ks10-forecast .ks10-wind{background:linear-gradient(90deg,#b55b0a,#ffa826)}
+    #ks10-forecast .ks10-val{position:relative;z-index:1;font-size:9px;line-height:1;white-space:nowrap;font-weight:600;color:#f9fcff;text-shadow:0 1px 2px #031b28}
+    #ks10-forecast .ks10-dir{display:flex;gap:0;align-items:center;justify-content:center;white-space:nowrap;font-size:9px;font-weight:600}
+    #ks10-forecast .ks10-arrow{font-size:13px;line-height:1}
+    #ks10-forecast .ks10-judgment{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;line-height:1.12;min-width:0}
+    #ks10-forecast .ks10-judgment-main{font-size:8.5px;font-weight:700;letter-spacing:-.03em;white-space:nowrap}
+    #ks10-forecast .ks10-judgment-stars{font-size:8px;letter-spacing:-.045em;white-space:nowrap;color:#ffd57a}
+    #ks10-forecast .ks10-action-go .ks10-judgment-main{color:#6df3b8}
+    #ks10-forecast .ks10-action-ok .ks10-judgment-main{color:#7de2f5}
+    #ks10-forecast .ks10-action-meh .ks10-judgment-main{color:#f4c87e}
+    #ks10-forecast .ks10-action-no .ks10-judgment-main{color:#abb9c8}
+    #ks10-forecast .ks10-meta{display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap;margin:12px 2px 8px;font-size:11px;color:#a5c7d8}
+    #ks10-forecast .ks10-note{margin:0 2px;font-size:11px;line-height:1.6;color:#a5c7d8}
+    @media(max-width:390px){
+      #ks10-forecast .ks10-table th,#ks10-forecast .ks10-table td{padding-left:2px;padding-right:2px}
+      #ks10-forecast .ks10-table th{font-size:9px}
+      #ks10-forecast .ks10-table td{height:48px}
+      #ks10-forecast .ks10-val{font-size:9px}
+      #ks10-forecast .ks10-dir{font-size:8px}
+      #ks10-forecast .ks10-arrow{font-size:12px}
+      #ks10-forecast .ks10-date{font-size:9px}
+    }
+    @media(prefers-reduced-motion:reduce){#ks10-forecast .ks10-fill{transition:none}}
+  </style>
+</section>
+<section class="section ks-windy-section" id="oki-windy" aria-labelledby="oki-windy-title" style="padding-top:34px;padding-bottom:42px;">
+  <h2 class="section-title" id="oki-windy-title" style="margin-bottom:12px;">
+    <i class="fa-solid fa-wind ico" aria-hidden="true"></i>Windy｜風・波マップ
+  </h2>
+  <p style="font-size:0.83rem;color:var(--cream-soft);line-height:1.7;margin:0 0 14px;">大岐の浜周辺の風・波の予測マップです。地図上で日時や表示項目を切り替えられます。</p>
+  <div class="ks-windy-switch" role="group" aria-label="Windyの表示切り替え" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0 14px;">
+    <button type="button" id="ks-windy-wind" class="ks-windy-tab" aria-pressed="true" style="min-width:110px;">風</button>
+    <button type="button" id="ks-windy-wave" class="ks-windy-tab" aria-pressed="false" style="min-width:110px;">波</button>
+    <span id="ks-windy-state" role="status" aria-live="polite" style="font-size:12px;color:#a9cad7;">風予報を表示中</span>
+  </div>
+  <style>
+    #oki-windy .ks-windy-tab{appearance:none;border:1px solid rgba(148,189,202,.75);color:#e8f4f8;background:#123747;border-radius:999px;padding:11px 22px;min-height:44px;font:700 14px/1.3 sans-serif;cursor:pointer;transition:background .15s,color .15s,border-color .15s}
+    #oki-windy .ks-windy-tab[aria-pressed="true"]{background:#f5a23c;color:#082331;border-color:#f5a23c}
+    #oki-windy .ks-windy-tab:focus-visible{outline:3px solid #77dbea;outline-offset:3px}
+    @media(max-width:520px){#oki-windy .ks-windy-tab{min-width:92px;padding:11px 18px}}
+  </style>
+  <div style="width:100%;overflow:hidden;border-radius:14px;border:1px solid var(--line);background:#0b2839;">
+    <iframe title="Windy 大岐の浜周辺の風・波予報マップ"
+      src="https://embed.windy.com/embed2.html?lat=32.82348&amp;lon=132.95328&amp;detailLat=32.82348&amp;detailLon=132.95328&amp;zoom=11&amp;level=surface&amp;overlay=wind&amp;product=ecmwf&amp;menu=&amp;message=&amp;marker=true&amp;calendar=now&amp;pressure=&amp;type=map&amp;location=coordinates&amp;detail=&amp;metricWind=m%2Fs&amp;metricTemp=%C2%B0C&amp;radarRange=-1"
+      loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen
+      style="display:block;width:100%;height:clamp(370px,75vw,540px);border:0;background:#0b2839;"></iframe>
+  </div>
+  <p style="font-size:0.73rem;color:var(--teal-pale);line-height:1.65;margin:10px 0 0;">
+    ※ Windyは外部のモデル予報で、現地の波高やサーフサイズの実測ではありません。
+    <a href="https://www.windy.com/?wind,32.82348,132.95328,11" target="_blank" rel="noopener noreferrer" style="color:var(--coral-soft);text-decoration:underline;">Windyで大きく見る</a>
+  </p>
+  <script>
+  (function(){
+    'use strict';
+    var frame=document.querySelector('#oki-windy iframe');
+    var wind=document.getElementById('ks-windy-wind'),wave=document.getElementById('ks-windy-wave');
+    var state=document.getElementById('ks-windy-state'),link=document.querySelector('#oki-windy a[href*="windy.com"]');
+    if(!frame||!wind||!wave||!state)return;
+    var sources={
+      wind:{src:"https://embed.windy.com/embed2.html?lat=32.82348&lon=132.95328&detailLat=32.82348&detailLon=132.95328&zoom=11&level=surface&overlay=wind&product=ecmwf&menu=&message=&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=m%2Fs&metricTemp=%C2%B0C&radarRange=-1",link:"https://www.windy.com/?wind,32.82348,132.95328,11",label:"風"},
+      waves:{src:"https://embed.windy.com/embed2.html?lat=32.82348&lon=132.95328&detailLat=32.82348&detailLon=132.95328&zoom=11&level=surface&overlay=waves&product=ecmwfWaves&menu=&message=&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=m%2Fs&metricTemp=%C2%B0C&radarRange=-1",link:"https://www.windy.com/?waves,32.82348,132.95328,11",label:"波"}
+    };
+    var current="wind";
+    function select(which){
+      if(which===current)return;
+      var item=sources[which];if(!item)return;
+      current=which;
+      wind.setAttribute("aria-pressed",String(which==="wind"));
+      wave.setAttribute("aria-pressed",String(which==="waves"));
+      state.textContent=item.label+"予報を読み込み中…";
+      frame.title="Windy 大岐の浜周辺 "+item.label+"の予報マップ";
+      if(link)link.href=item.link;
+      frame.src=item.src;
+    }
+    frame.addEventListener("load",function(){state.textContent=sources[current].label+"予報を表示中";});
+    wind.addEventListener("click",function(){select("wind");});
+    wave.addEventListener("click",function(){select("waves");});
+  })();
+  </script>
+</section>
+<section class="section" id="shimanto-location-map" aria-labelledby="shimanto-location-title" style="background:var(--ink-deep);padding-top:28px;padding-bottom:32px"><h2 class="section-title" id="shimanto-location-title"><i class="fa-solid fa-map-location-dot ico" aria-hidden="true"></i>大岐の浜 アクセスマップ</h2><div style="overflow:hidden;border-radius:14px;border:1px solid var(--line);background:#0b2839"><iframe title="大岐の浜のGoogleマップ" src="https://maps.google.com/maps?q=32.82348%2C132.95328&amp;z=15&amp;output=embed" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen style="display:block;width:100%;height:clamp(280px,65vw,420px);border:0"></iframe></div><p style="margin:10px 0 0;font-size:0.85rem"><a href="https://www.google.com/maps/search/?api=1&amp;query=32.82348%2C132.95328" target="_blank" rel="noopener noreferrer" style="color:var(--coral-soft);text-decoration:underline">Googleマップで開く</a>　<span style="color:var(--cream-soft);font-size:.75rem">海岸の参考位置</span></p><a class="shimanto-nav-btn" href="https://www.google.com/maps/dir/?api=1&amp;destination=%E5%A4%A7%E5%B2%90%E3%81%AE%E6%B5%9C%20%E9%A7%90%E8%BB%8A%E5%A0%B4%20%E9%AB%98%E7%9F%A5%E7%9C%8C%E5%9C%9F%E4%BD%90%E6%B8%85%E6%B0%B4%E5%B8%82%E5%A4%A7%E5%B2%90&amp;travelmode=driving&amp;dir_action=navigate" target="_blank" rel="noopener noreferrer" aria-label="大岐の浜へ行く（Googleマップで車の経路案内）" style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;box-sizing:border-box;min-height:56px;margin-top:16px;padding:14px 12px;border-radius:9px;background:#f44324;color:#fff;font-size:1.15rem;font-weight:800;text-decoration:none;text-align:center"><i class="fa-solid fa-car" aria-hidden="true"></i>大岐の浜へ行く</a><p style="margin:7px 0 0;color:var(--cream-soft);font-size:.75rem">目的地：大岐の浜 駐車場 高知県土佐清水市大岐（現地の駐車案内に従ってください）</p></section>
+<section class="section"><h2 class="section-title"><span class="no">02</span><i class="fa-solid fa-camera-retro ico"></i>現地波レポート</h2><div class="wave-report-box" style="margin:0"><div class="wave-report-grid" id="shimanto-reports"><div class="wave-report-empty">読み込み中…</div></div></div></section>
+<section class="section"><h2 class="section-title"><span class="no">06</span><i class="fa-solid fa-circle-info ico"></i>スポット情報</h2><p>高知県 土佐清水市｜大岐の浜</p><p><a href="https://www.google.com/maps?q=32.82348,132.95328" target="_blank" rel="noopener noreferrer">周辺地図（参考位置）</a></p></section>
+<section class="section"><h2 class="section-title">高知・四万十エリア</h2><div class="cam-link-grid"><a class="cam-link" href="ukibuchi.html">大方浮鞭</a><a class="cam-link" href="irino.html">入野</a><a class="cam-link" href="futami.html">双海</a><a class="cam-link" href="hirano.html">平野</a><a class="cam-link" href="oki.html">大岐の浜</a></div></section>
+<footer>
+  <a href="https://kansai.rss7.net/index.html" class="logo" style="text-decoration:none;justify-content:center;">
+    <img src="https://kansai.rss7.net/img/logo-ks-white.png" alt="KS" style="height:24px;width:auto;margin-right:6px;vertical-align:middle;">
+    <span class="en" style="font-size:0.75rem;">Kansai Surf</span>
+  </a>
+
+  <div class="footer-sns" style="display:flex;align-items:center;justify-content:center;gap:24px;margin:22px 0;padding:8px 0;">
+    <a href="https://www.instagram.com/kansaisurfer.ks/" target="_blank" rel="noopener" aria-label="Instagram" title="Instagram" style="color:var(--cream-soft);font-size:1.7rem;line-height:1;padding:6px;text-decoration:none;"><i class="fa-brands fa-instagram" aria-hidden="true"></i></a>
+    <a href="https://facebook.com/kansaisurfer" target="_blank" rel="noopener" aria-label="Facebook" title="Facebook" style="color:var(--cream-soft);font-size:1.7rem;line-height:1;padding:6px;text-decoration:none;"><i class="fa-brands fa-facebook" aria-hidden="true"></i></a>
+    <a href="https://www.tiktok.com/@ks295223" target="_blank" rel="noopener" aria-label="TikTok" title="TikTok" style="color:var(--cream-soft);font-size:1.7rem;line-height:1;padding:6px;text-decoration:none;"><i class="fa-brands fa-tiktok" aria-hidden="true"></i></a>
+    <a href="https://x.com/kansaisurfer" target="_blank" rel="noopener" aria-label="X" title="X" style="color:var(--cream-soft);font-size:1.7rem;line-height:1;padding:6px;text-decoration:none;"><i class="fa-brands fa-x-twitter" aria-hidden="true"></i></a>
+    <a href="https://www.youtube.com/@kansaisurfes" target="_blank" rel="noopener" aria-label="YouTube" title="YouTube" style="color:var(--cream-soft);font-size:1.7rem;line-height:1;padding:6px;text-decoration:none;"><i class="fa-brands fa-youtube" aria-hidden="true"></i></a>
+  </div>
+
+  <div class="footer-links">
+    <a href="https://kansai.rss7.net/index.html"><i class="fa-solid fa-house" aria-hidden="true"></i> ホーム</a>
+    <a href="https://kansai.rss7.net/blog/index.php"><i class="fa-solid fa-newspaper" aria-hidden="true"></i> ブログ</a>
+    <a href="https://suzuri.jp/kansaisurfer" target="_blank" rel="noopener"><i class="fa-solid fa-shirt" aria-hidden="true"></i> ショップ</a>
+  </div>
+
+  <div class="footer-links">
+    <a href="https://kansai.rss7.net/isonoura.html"><i class="fa-solid fa-water" aria-hidden="true"></i> 磯ノ浦</a>
+    <a href="https://kansai.rss7.net/kounohama.html"><i class="fa-solid fa-water" aria-hidden="true"></i> 伊勢</a>
+    <a href="https://kansai.rss7.net/ikumi.html"><i class="fa-solid fa-water" aria-hidden="true"></i> 生見</a>
+    <a href="https://kansai.rss7.net/komatsu.html"><i class="fa-solid fa-water" aria-hidden="true"></i> 小松</a>
+    <a href="https://kansai.rss7.net/irago.html"><i class="fa-solid fa-water" aria-hidden="true"></i> 伊良湖</a>
+    <a href="https://kansai.rss7.net/shizunami.html"><i class="fa-solid fa-water" aria-hidden="true"></i> 静波</a>
+    <a href="https://kansai.rss7.net/hamadutu.html"><i class="fa-solid fa-water" aria-hidden="true"></i> 浜詰</a>
+    <a href="https://kansai.rss7.net/takahama.html"><i class="fa-solid fa-water" aria-hidden="true"></i> 高浜</a>
+    <a href="https://kansai.rss7.net/hakuto.html"><i class="fa-solid fa-water" aria-hidden="true"></i> 白兎</a>
+  </div>
+
+  <div class="footer-links" style="margin-bottom:16px;">
+    <span style="color:var(--teal-pale);font-family:'JetBrains Mono',monospace;font-size:0.65rem;letter-spacing:0.1em;align-self:center;"><i class="fa-solid fa-book-open" aria-hidden="true"></i> GUIDE</span>
+    <a href="https://kansai.rss7.net/isonoura_guide.html">磯ノ浦ガイド</a>
+    <a href="https://kansai.rss7.net/kounohama_guide.html">国府の浜ガイド</a>
+    <a href="https://kansai.rss7.net/ikumi_guide.html">生見ガイド</a>
+    <a href="https://kansai.rss7.net/komatsu_guide.html">小松ガイド</a>
+    <a href="https://kansai.rss7.net/irago_guide.html">伊良湖ガイド</a>
+    <a href="https://kansai.rss7.net/shizunami_guide.html">静波ガイド</a>
+    <a href="https://kansai.rss7.net/hamadutu_guide.html">浜詰ガイド</a>
+    <a href="https://kansai.rss7.net/takahama_guide.html">高浜ガイド</a>
+    <a href="https://kansai.rss7.net/hakuto_guide.html">白兎ガイド</a>
+  </div>
+
+  <div class="footer-links">
+    <a href="https://kansai.rss7.net/contact.html"><i class="fa-solid fa-envelope" aria-hidden="true"></i> お問い合わせ</a>
+    <a href="https://kansai.rss7.net/about.html"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> 当サイトについて</a>
+    <a href="https://kansai.rss7.net/privacy.html"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> プライバシーポリシー</a>
+  </div>
+
+  <div class="attr"><i class="fa-solid fa-cloud" aria-hidden="true"></i> Weather data by <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo.com</a></div>
+  <div class="attr" style="margin-top:14px;">
+    <a href="https://kiseki.rss7.net/" target="_blank" rel="noopener">映像工房 軌跡</a> ·
+    <a href="https://bitframe.rss7.net/" target="_blank" rel="noopener">AI動画CM制作.bitframe</a> ·
+    <a href="https://rss7.net/" target="_blank" rel="noopener">RSS7 AI Works 総合制作</a> ·
+    <a href="https://sleague.rss7.net/" target="_blank" rel="noopener"><i class="fa-solid fa-trophy" aria-hidden="true"></i> S.LEAGUE NOW</a> ·
+    <a href="https://surfboard.rss7.net/" target="_blank" rel="noopener"><i class="fa-solid fa-person-surfing" aria-hidden="true"></i> Surfboard Finder｜45〜60歳のための次の1本診断</a>
+  </div>
+  <div class="attr">© 2026 関西サーファー.ks · MADE IN OSAKA</div>
+</footer>
+<script src="shimanto/unified.js?v=20261128-3" defer></script></body></html>
