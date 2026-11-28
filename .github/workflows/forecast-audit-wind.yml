@@ -55,8 +55,9 @@ jobs:
               t = datetime.fromisoformat(r["run_started_at"].replace("Z","+00:00")).astimezone(jst)
               if r["event"]=="schedule" and r["head_branch"]=="main" and r["conclusion"]=="success" and t.date()==date-timedelta(days=1) and (19,30)<=(t.hour,t.minute)<=(22,0):
                   candidates.append(r)
-          if len(candidates)>1:
-              raise SystemExit("Ambiguous scheduled forecasts")
+          # Primary and fallback runs may all succeed. Use the earliest successful
+          # in-window run, never mix forecasts or substitute a later current model.
+          candidates.sort(key=lambda r: (datetime.fromisoformat(r["run_started_at"].replace("Z","+00:00")), r["id"]))
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
               if candidates:
                   r=candidates[0]
